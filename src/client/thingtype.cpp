@@ -66,11 +66,19 @@ void ThingType::unserializeAppearance(const uint16_t clientId, const ThingCatego
             m_layers = spriteInfo.layers();
             m_opaque = spriteInfo.is_opaque();
 
-            m_animationPhases += std::max<int>(1, spritesPhases.size());
-
-            if (const auto& sheet = g_spriteAppearances.getSheetBySpriteId(spriteInfo.sprite_id(0), false)) {
+            // Determine logical size (in tiles). Prefer protobuf bounding box, fallback to sheet layout.
+            m_size = Size(1, 1);
+            if (spriteInfo.bounding_box_per_direction_size() > 0) {
+                const auto& box = spriteInfo.bounding_box_per_direction(0);
+                const int tile = g_gameConfig.getSpriteSize();
+                const int wTiles = std::max<int>(1, static_cast<int>(box.width() / tile));
+                const int hTiles = std::max<int>(1, static_cast<int>(box.height() / tile));
+                m_size = Size(wTiles, hTiles);
+            } else if (const auto& sheet = g_spriteAppearances.getSheetBySpriteId(spriteInfo.sprite_id(0), false)) {
                 m_size = sheet->getSpriteSize() / g_gameConfig.getSpriteSize();
             }
+
+            m_animationPhases += std::max<int>(1, spritesPhases.size());
 
             // animations
             if (spritesPhases.size() > 1) {
@@ -83,15 +91,15 @@ void ThingType::unserializeAppearance(const uint16_t clientId, const ThingCatego
                     m_idleAnimator = animator;
             }
 
-            const int totalSprites = m_layers * m_numPatternX * m_numPatternY * m_numPatternZ * std::max<int>(1, spritesPhases.size());
+            // Use the amount of sprite ids provided by protobuf to avoid mismatch with tile area
+            const int totalSprites = framegroup.sprite_info().sprite_id_size();
 
             if (totalSpritesCount + totalSprites > 4096)
                 throw Exception("a thing type has more than 4096 sprites");
 
             m_spritesIndex.resize(totalSpritesCount + totalSprites);
-            for (int j = totalSpritesCount, spriteId = 0; j < (totalSpritesCount + totalSprites); ++j, ++spriteId) {
+            for (int j = totalSpritesCount, spriteId = 0; j < (totalSpritesCount + totalSprites); ++j, ++spriteId)
                 m_spritesIndex[j] = spriteInfo.sprite_id(spriteId);
-            }
 
             totalSpritesCount += totalSprites;
         }
@@ -426,10 +434,8 @@ void ThingType::unserialize(const uint16_t clientId, const ThingCategory categor
                 attr = ThingAttrAnimateAlways;
 
             /* "Multi Use" and "Force Use" are swapped */
-            if (attr == ThingAttrMultiUse)
-                attr = ThingAttrForceUse;
-            else if (attr == ThingAttrForceUse)
-                attr = ThingAttrMultiUse;
+            if (attr == ThingAttrMultiUse) attr = ThingAttrForceUse;
+            else if (attr == ThingAttrForceUse) attr = ThingAttrMultiUse;
         }
 
         const auto thingAttr = static_cast<ThingAttr>(attr);
@@ -704,108 +710,138 @@ void ThingType::loadTexture(const int animationPhase)
 
     const bool useCustomImage = animationPhase == 0 && !m_customImage.empty();
     const int indexSize = textureLayers * m_numPatternX * m_numPatternY * m_numPatternZ;
-    const auto& textureSize = getBestTextureDimension(m_size.width(), m_size.height(), indexSize);
-    const auto& fullImage = useCustomImage ? Image::load(m_customImage) : std::make_shared<Image>(textureSize * g_gameConfig.getSpriteSize());
-    const bool protobufSupported = g_game.isUsingProtobuf();
 
-    static Color maskColors[] = { Color::red, Color::green, Color::blue, Color::yellow };
+    // Detect macro-sprite mode (one sprite per frame/pattern/layer) vs tile-based (split by 32x32)
+    const size_t expectedMacroCount = static_cast<size_t>(m_layers) * m_numPatternX * m_numPatternY * m_numPatternZ * m_animationPhases;
+    const size_t expectedTileCount = static_cast<size_t>(m_size.area()) * expectedMacroCount;
+    const bool isMacroSpriteMode = m_spritesIndex.size() == expectedMacroCount && m_spritesIndex.size() != expectedTileCount;
 
-    textureData.pos.resize(indexSize);
-    for (int z = 0; z < m_numPatternZ; ++z) {
-        for (int y = 0; y < m_numPatternY; ++y) {
-            for (int x = 0; x < m_numPatternX; ++x) {
-                for (int l = 0; l < numLayers; ++l) {
-                    const bool spriteMask = m_category == ThingCategoryCreature && l > 0;
-                    const int frameIndex = getTextureIndex(l % textureLayers, x, y, z);
-
-                    const auto& framePos = Point(frameIndex % (textureSize.width() / m_size.width()) * m_size.width(),
-                        frameIndex / (textureSize.width() / m_size.width()) * m_size.height()) * g_gameConfig.getSpriteSize();
-
-                    if (!useCustomImage) {
-                        if (protobufSupported) {
-                            const uint32_t spriteIndex = getSpriteIndex(-1, -1, spriteMask ? 1 : l, x, y, z, animationPhase);
-                            auto spriteId = m_spritesIndex[spriteIndex];
-                            bool isLoading = false;
-                            const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
-
-                            if (isLoading)
-                                return;
-
-                            // verifies that the first block in the lower right corner is transparent.
-                            if (!spriteImage || spriteImage->hasTransparentPixel()) {
-                                fullImage->setTransparentPixel(true);
-                            }
-
-                            if (spriteImage) {
-                                if (spriteMask) {
-                                    spriteImage->overwriteMask(maskColors[(l - 1)]);
-                                }
-
-                                auto spriteSize = spriteImage->getSize() / g_gameConfig.getSpriteSize();
-
-                                const Point& spritePos = Point(m_size.width() - spriteSize.width(), m_size.height() - spriteSize.height()) * g_gameConfig.getSpriteSize();
-                                fullImage->blit(framePos + spritePos, spriteImage);
-                            }
-                        } else {
-                            for (int h = 0; h < m_size.height(); ++h) {
-                                for (int w = 0; w < m_size.width(); ++w) {
-                                    const uint32_t spriteIndex = getSpriteIndex(w, h, spriteMask ? 1 : l, x, y, z, animationPhase);
-                                    auto spriteId = m_spritesIndex[spriteIndex];
-                                    bool isLoading = false;
-                                    const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
-
-                                    if (isLoading)
-                                        return;
-
-                                    // verifies that the first block in the lower right corner is transparent.
-                                    if (h == 0 && w == 0 && (!spriteImage || spriteImage->hasTransparentPixel())) {
-                                        fullImage->setTransparentPixel(true);
-                                    }
-
-                                    if (spriteImage) {
-                                        if (spriteMask) {
-                                            spriteImage->overwriteMask(maskColors[(l - 1)]);
-                                        }
-
-                                        const Point& spritePos = Point(m_size.width() - w - 1, m_size.height() - h - 1) * g_gameConfig.getSpriteSize();
-                                        fullImage->blit(framePos + spritePos, spriteImage);
-                                    }
-                                }
-                            }
-                        }
+    // Determine per-frame cell size in tiles used for packing in the atlas
+    Size cellSizeInTiles = m_size;
+    if (!useCustomImage && isMacroSpriteMode) {
+        // Pre-scan all patterns/layers to find the maximum macro-sprite size in tiles for this animation phase
+        Size maxTiles(1, 1);
+        for (int z = 0; z < m_numPatternZ; ++z) {
+            for (int y = 0; y < m_numPatternY; ++y) {
+                for (int x = 0; x < m_numPatternX; ++x) {
+                    for (int l = 0; l < numLayers; ++l) {
+                        const bool spriteMask = m_category == ThingCategoryCreature && l > 0;
+                        const uint32_t spriteIndex = getSpriteIndex(-1, -1, spriteMask ? 1 : l, x, y, z, animationPhase);
+                        if (spriteIndex >= m_spritesIndex.size()) continue;
+                        const auto spriteId = m_spritesIndex[spriteIndex];
+                        bool isLoading = false;
+                        const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
+                        if (isLoading) return; // wait for async load and retry later
+                        if (!spriteImage) continue;
+                        const Size pxSize = spriteImage->getSize();
+                        const int tile = g_gameConfig.getSpriteSize();
+                        const Size tilesSize((pxSize.width() + tile - 1) / tile, (pxSize.height() + tile - 1) / tile);
+                        maxTiles.setWidth((std::max)(maxTiles.width(), tilesSize.width()));
+                        maxTiles.setHeight((std::max)(maxTiles.height(), tilesSize.height()));
                     }
-
-                    auto& posData = textureData.pos[frameIndex];
-                    posData.rects = { framePos + Point(m_size.width(), m_size.height()) * g_gameConfig.getSpriteSize() - Point(1), framePos };
-                    for (int fx = framePos.x; fx < framePos.x + m_size.width() * g_gameConfig.getSpriteSize(); ++fx) {
-                        for (int fy = framePos.y; fy < framePos.y + m_size.height() * g_gameConfig.getSpriteSize(); ++fy) {
-                            const uint8_t* p = fullImage->getPixel(fx, fy);
-                            if (p[3] == 0x00)
-                                continue;
-
-                            posData.rects.setTop(std::min<int>(fy, posData.rects.top()));
-                            posData.rects.setLeft(std::min<int>(fx, posData.rects.left()));
-                            posData.rects.setBottom(std::max<int>(fy, posData.rects.bottom()));
-                            posData.rects.setRight(std::max<int>(fx, posData.rects.right()));
-                        }
-                    }
-
-                    posData.originRects = Rect(framePos, Size(m_size.width(), m_size.height()) * g_gameConfig.getSpriteSize());
-                    posData.offsets = posData.rects.topLeft() - framePos;
                 }
             }
         }
+        cellSizeInTiles = Size((std::max)(m_size.width(), maxTiles.width()), (std::max)(m_size.height(), maxTiles.height()));
     }
 
-    if (m_opacity < 1.0f)
-        fullImage->setTransparentPixel(true);
+    const auto& textureSize = getBestTextureDimension(cellSizeInTiles.width(), cellSizeInTiles.height(), indexSize);
+    const auto& fullImage = useCustomImage ? Image::load(m_customImage) : std::make_shared<Image>(textureSize * g_gameConfig.getSpriteSize());
 
-    if (m_opaque == -1)
-        m_opaque = !fullImage->hasTransparentPixel();
+     static Color maskColors[] = { Color::red, Color::green, Color::blue, Color::yellow };
+ 
+     textureData.pos.resize(indexSize);
+     for (int z = 0; z < m_numPatternZ; ++z) {
+         for (int y = 0; y < m_numPatternY; ++y) {
+             for (int x = 0; x < m_numPatternX; ++x) {
+                 for (int l = 0; l < numLayers; ++l) {
+                     const bool spriteMask = m_category == ThingCategoryCreature && l > 0;
+                     const int frameIndex = getTextureIndex(l % textureLayers, x, y, z);
 
-    textureData.source = std::make_shared<Texture>(fullImage, true, false);
-    textureData.source->allowAtlasCache();
-}
+                    const Point framePos = Point(frameIndex % (textureSize.width() / cellSizeInTiles.width()) * cellSizeInTiles.width(),
+                        frameIndex / (textureSize.width() / cellSizeInTiles.width()) * cellSizeInTiles.height()) * g_gameConfig.getSpriteSize();
+ 
+                     if (!useCustomImage) {
+                        // Compose by tiles regardless of protobuf usage, to support sizes > 64x64
+                        for (int h = 0; h < m_size.height(); ++h) {
+                            for (int w = 0; w < m_size.width(); ++w) {
+                                const uint32_t spriteIndex = getSpriteIndex(w, h, spriteMask ? 1 : l, x, y, z, animationPhase);
+                                auto spriteId = m_spritesIndex[spriteIndex];
+                                bool isLoading = false;
+                                const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
+
+                                if (isLoading)
+                                    return;
+                                // verifies that the first block in the lower right corner is transparent.
+                                if (!spriteImage || spriteImage->hasTransparentPixel()) {
+                                    fullImage->setTransparentPixel(true);
+                                }
+
+                                if (spriteImage) {
+                                    if (spriteMask) {
+                                        spriteImage->overwriteMask(maskColors[(l - 1)]);
+                                    }
+
+                                    fullImage->blit(framePos + Point(m_size.width() - w - 1, m_size.height() - h - 1) * g_gameConfig.getSpriteSize(), spriteImage);
+                                }
+                           }
+                        }
+                        if (!isMacroSpriteMode) {
+                            // Tile-based composition (legacy split sprites)
+                            for (int h = 0; h < m_size.height(); ++h) {
+                                for (int w = 0; w < m_size.width(); ++w) {
+                                    const uint32_t spriteIndex = getSpriteIndex(w, h, spriteMask ? 1 : l, x, y, z, animationPhase);
+                                    const auto spriteId = m_spritesIndex[spriteIndex];
+                                    bool isLoading = false;
+                                   const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
+                                    if (isLoading) return;
+                                    if (!spriteImage || spriteImage->hasTransparentPixel()) fullImage->setTransparentPixel(true);
+                                    if (spriteImage) {
+                                        if (spriteMask) spriteImage->overwriteMask(maskColors[(l - 1)]);
+                                        fullImage->blit(framePos + Point(m_size.width() - w - 1, m_size.height() - h - 1) * g_gameConfig.getSpriteSize(), spriteImage);
+                                    }
+                                }
+                            }
+                        } else {
+                            // Macro-sprite composition (one big image per frame/pattern/layer)
+                            const uint32_t spriteIndex = getSpriteIndex(-1, -1, spriteMask ? 1 : l, x, y, z, animationPhase);
+                            if (spriteIndex < m_spritesIndex.size()) {
+                                const auto spriteId = m_spritesIndex[spriteIndex];
+                                bool isLoading = false;
+                                const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
+                                if (isLoading) return;
+                                if (!spriteImage || spriteImage->hasTransparentPixel()) fullImage->setTransparentPixel(true);
+                                if (spriteImage) {
+                                    if (spriteMask) spriteImage->overwriteMask(maskColors[(l - 1)]);
+                                    const Size pxSize = spriteImage->getSize();
+                                    const int tile = g_gameConfig.getSpriteSize();
+                                    const Size tilesSize((pxSize.width() + tile - 1) / tile, (pxSize.height() + tile - 1) / tile);
+                                    const Point spritePos = Point(cellSizeInTiles.width() - tilesSize.width(), cellSizeInTiles.height() - tilesSize.height()) * tile;
+                                    fullImage->blit(framePos + spritePos, spriteImage);
+                                }
+                            }
+                        }
+                     }
+
+                    // Initialize position entry and set defaults
+                    textureData.pos[frameIndex] = TextureData::Pos();
+                    textureData.pos[frameIndex].offsets = Point(0);
+                    // Base rects for logical m_size (may be overridden by cell size below)
+                    textureData.pos[frameIndex].rects = Rect(framePos, m_size * g_gameConfig.getSpriteSize());
+                    textureData.pos[frameIndex].originRects = Rect(framePos, m_size * g_gameConfig.getSpriteSize());
+                    // Adjust offsets so that drawing anchors to logical m_size even if cell size is bigger
+                    const Point anchorOffset = Point((m_size.width() - cellSizeInTiles.width()) * g_gameConfig.getSpriteSize(), (m_size.height() - cellSizeInTiles.height()) * g_gameConfig.getSpriteSize());
+                    textureData.pos[frameIndex].offsets = anchorOffset;
+                    // Final rects/originRects reflect actual cell size in the atlas
+                    textureData.pos[frameIndex].rects = Rect(framePos, cellSizeInTiles * g_gameConfig.getSpriteSize());
+                    textureData.pos[frameIndex].originRects = Rect(framePos, cellSizeInTiles * g_gameConfig.getSpriteSize());
+                 }
+             }
+         }
+     }
+ 
+     textureData.source = std::make_shared<Texture>(fullImage);
+ }
 
 Size ThingType::getBestTextureDimension(int w, int h, const int count)
 {
@@ -879,7 +915,7 @@ int ThingType::getExactSize(const int layer, const int xPattern, const int yPatt
     const int frameIndex = getTextureIndex(layer, xPattern, yPattern, zPattern);
     const auto& pos = m_textureData[animationPhase].pos;
 
-    const auto& textureDataPos = pos[std::min<int>(frameIndex, pos.size() - 1)];
+    const auto& textureDataPos = pos[(std::min)(static_cast<int>(frameIndex), static_cast<int>(pos.size() - 1))];
     const auto& size = textureDataPos.originRects.size() - textureDataPos.offsets.toSize();
     return std::max<int>(size.width(), size.height());
 }

@@ -313,3 +313,6 @@ google-services.json
 # Android libraries
 android/app/libs
 android/app/src/main/assets
+*.md
+OTCLIENT_DEVELOPMENT_RULES.md
+guia_criar_mods.md
