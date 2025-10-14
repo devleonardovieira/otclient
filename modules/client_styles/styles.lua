@@ -1,13 +1,27 @@
+local function importTTF(filePath)
+    local name = g_resources.getFileName(filePath)
+    name = name:gsub("%.ttf$", ""):gsub("%.otf$", "")
+    -- tamanho padrão: 16px; ajuste conforme necessário
+    local ok, res = pcall(g_fonts.importTTFFont, name, filePath, 16)
+    if not ok or not res then
+        g_logger.error(string.format("Failed to import TTF/OTF font '%s'", filePath))
+    end
+end
+
 local resourceLoaders = {
     ["otui"] = g_ui.importStyle,
     ["otfont"] = g_fonts.importFont,
     ["otps"] = g_particles.importParticle,
+    ["ttf"] = importTTF,
+    ["otf"] = importTTF,
 }
 
 function init()
     local device = g_platform.getDevice()
     importResources("styles", "otui", device)
     importResources("fonts", "otfont", device)
+    importResources("fonts", "ttf", device)
+    importResources("fonts", "otf", device)
     importResources("particles", "otps", device)
 
     g_mouse.loadCursors('/cursors/cursors')

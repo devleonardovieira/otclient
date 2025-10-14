@@ -32,6 +32,13 @@ public:
     void clearFonts();
 
     bool importFont(const std::string& file);
+    // Importa uma fonte TrueType (.ttf), rasteriza para atlas PNG e registra como BitmapFont
+    bool importTTFFont(const std::string& fontName,
+                       const std::string& ttfFile,
+                       int pixelHeight,
+                       int spacingX = 1,
+                       int spacingY = 0,
+                       int yOffset = 0);
 
     bool fontExists(std::string_view fontName);
     BitmapFontPtr getFont(std::string_view fontName);

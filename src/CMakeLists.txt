@@ -386,6 +386,7 @@ if (TOGGLE_FRAMEWORK_GRAPHICS)
           framework/graphics/drawpool.cpp
           framework/graphics/drawpoolmanager.cpp
           framework/graphics/fontmanager.cpp
+          framework/graphics/truetypefont.cpp
           framework/graphics/framebuffer.cpp
           framework/graphics/graphics.cpp
           framework/graphics/image.cpp
