@@ -6,6 +6,7 @@
     "abseil",
     "cpp-httplib",
     "cppcodec",
+    "ffmpeg",
     "discord-rpc",
     "liblzma",
     "libobfuscate",

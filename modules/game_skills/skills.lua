@@ -104,6 +104,7 @@ function init()
                                                                    '/images/options/button_skills', toggle, false, 1)
     skillsButton:setOn(true)
     skillsWindow = g_ui.loadUI('skills')
+    g_ui.getRootWidget():setFont("Montserrat-VariableFont_wght")
     skillsWindow:setContentMinimumHeight(80)
 
     Keybind.new("Windows", "Show/hide skills windows", "Alt+S", "")

@@ -192,6 +192,7 @@ find_package(pugixml CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(httplib CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+find_package(FFMPEG REQUIRED)
 
 find_path(CPPCODEC_INCLUDE_DIRS "cppcodec/base32_crockford.hpp")
 
@@ -379,6 +380,7 @@ if (TOGGLE_FRAMEWORK_GRAPHICS)
           framework/input/mouse.cpp
           framework/graphics/animatedtexture.cpp
           framework/graphics/apngloader.cpp
+          framework/graphics/videoloader.cpp
           framework/graphics/bitmapfont.cpp
           framework/graphics/cachedtext.cpp
           framework/graphics/coordsbuffer.cpp
@@ -503,6 +505,7 @@ if(MSVC)
           ${PARALLEL_HASHMAP_INCLUDE_DIRS}
           ${NLOHMANN_JSON_INCLUDE_DIR}
           ${CPPCODEC_INCLUDE_DIRS}
+          ${FFMPEG_INCLUDE_DIRS}
   )
   target_link_libraries(${PROJECT_NAME}
           PRIVATE
@@ -532,6 +535,7 @@ if(MSVC)
           winmm.lib
           pugixml::pugixml
           fmt::fmt-header-only
+          ${FFMPEG_LIBRARIES}
   )
 elseif(ANDROID)
   target_include_directories(${PROJECT_NAME}
