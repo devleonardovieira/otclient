@@ -22,11 +22,13 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <vector>
 #include <framework/core/eventdispatcher.h>
 #include <framework/html/htmlmanager.h>
 #include <framework/html/htmlnode.h>
 #include "uimanager.h"
 #include "uiwidget.h"
+#include "uilayoutflexbox.h"
 
 namespace {
     inline uint32_t SIZE_VERSION_COUNTER = 1;
@@ -1385,7 +1387,7 @@ void UIWidget::updateSize() {
         auto height = m_textSizeNowrap.height();
         if (parentSize.width() < m_textSizeNowrap.width()) {
             if (isTextWrap() && m_rect.isValid()) {
-                const auto& text = m_font->wrapText(m_text, parentSize.width() - m_textOffset.x);
+                const auto& text = m_font->wrapText(m_text, parentSize.width() - m_textOffset.x, m_textWrapOptions);
                 height *= std::count(text.begin(), text.end(), '\n') + 1;
             }
         }
@@ -1486,6 +1488,13 @@ void UIWidget::updateSize() {
         int width = 0;
         int height = 0;
         applyFitContentRecursive(this, width, height);
+    }
+
+    if (m_displayType == DisplayType::Flex || m_displayType == DisplayType::InlineFlex) {
+        layoutFlex(*this);
+        m_width.pendingUpdate = false;
+        m_height.pendingUpdate = false;
+        return;
     }
 
     if (m_displayType == DisplayType::Table) {
