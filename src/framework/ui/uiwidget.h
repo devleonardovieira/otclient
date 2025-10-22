@@ -327,7 +327,7 @@ protected:
     OverflowType m_overflowType = OverflowType::Hidden;
     PositionType m_positionType = PositionType::Static;
     uint32_t m_flexLayoutVersion = 0;
-
+    Fw::AlignmentFlag m_placement = Fw::AlignNone;
     SizeUnit m_width;
     SizeUnit m_height;
     SizeUnit m_lineHeight;
@@ -440,6 +440,9 @@ public:
     void setFlexShrink(float shrink);
     void setFlexBasis(const FlexBasis& basis);
     void setAlignSelf(AlignSelf align);
+    void setPlacement(const std::string& placement);
+
+    auto getPlacement() const { return m_placement; }
     FlexDirection getFlexDirection() const { return m_flexContainer.direction; }
     FlexWrap getFlexWrap() const { return m_flexContainer.wrap; }
     JustifyContent getJustifyContent() const { return m_flexContainer.justify; }
@@ -657,7 +660,10 @@ public:
     bool isPhantom() { return hasProp(PropPhantom); }
     bool isDraggable() { return hasProp(PropDraggable); }
     bool isFixedSize() { return hasProp(PropFixedSize); }
-    bool isClipping() { return hasProp(PropClipping) || isOnHtml() && (m_overflowType == OverflowType::Clip || m_overflowType == OverflowType::Scroll); }
+    bool isClipping() {
+        return hasProp(PropClipping) ||
+            (isOnHtml() && (m_overflowType == OverflowType::Clip || m_overflowType == OverflowType::Scroll));
+    }
     bool isDestroyed() { return hasProp(PropDestroyed); }
     bool isFirstOnStyle() { return hasProp(PropFirstOnStyle); }
     bool isEffectivelyVisible() { return isVisible() || m_displayType != DisplayType::None; }
@@ -727,10 +733,10 @@ public:
     void setX(const int x) { move(x, getY()); }
     void setY(const int y) { move(getX(), y); }
 
-    void setTop(int v) { m_positions.top.unit = Unit::Px; m_positions.top.value = v;  scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
-    void setBottom(int v) { m_positions.top.unit = Unit::Px; m_positions.bottom.value = v;  scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
-    void setLeft(int v) { m_positions.top.unit = Unit::Px; m_positions.left.value = v;  scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
-    void setRight(int v) { m_positions.top.unit = Unit::Px; m_positions.right.value = v;  scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
+    void setTop(int v) { m_positions.top.unit = Unit::Px; m_positions.top.value = v; scheduleHtmlTask(PropUpdateSize); scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
+    void setBottom(int v) { m_positions.top.unit = Unit::Px; m_positions.bottom.value = v; scheduleHtmlTask(PropUpdateSize); scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
+    void setLeft(int v) { m_positions.top.unit = Unit::Px; m_positions.left.value = v;  scheduleHtmlTask(PropUpdateSize); scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
+    void setRight(int v) { m_positions.top.unit = Unit::Px; m_positions.right.value = v;  scheduleHtmlTask(PropUpdateSize); scheduleHtmlTask(PropApplyAnchorAlignment); updateLayout(); }
 
     void setHeight(std::string heightStr) { applyDimension(false, std::move(heightStr)); }
     void setWidth(std::string widthStr) { applyDimension(true, std::move(widthStr)); }
@@ -922,8 +928,6 @@ public:
     int getImageTextureWidth() { return m_imageTexture ? m_imageTexture->getWidth() : 0; }
     int getImageTextureHeight() { return m_imageTexture ? m_imageTexture->getHeight() : 0; }
 
-    const auto& getTextSizeNoWrap() const { return m_textSizeNowrap; }
-
     // text related
 private:
     void initText();
@@ -931,17 +935,19 @@ private:
 
     Rect m_textCachedScreenCoords;
     Size m_textSize;
-    Size m_textSizeNowrap;
+    Size m_realTextSize;
 
 protected:
     virtual void updateText();
     virtual bool isTextEdit() { return false; }
     void drawText(const Rect& screenCoords);
-
     void computeHtmlTextIntrinsicSize();
+    void applyWhiteSpace();
 
     virtual void onTextChange(std::string_view text, std::string_view oldText);
     virtual void onFontChange(std::string_view font);
+
+    const WrapOptions& getTextWrapOptions();
 
     WrapOptions m_textWrapOptions;
     std::vector<Point> m_glyphsPositionsCache;

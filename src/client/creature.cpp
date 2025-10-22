@@ -60,7 +60,7 @@ void Creature::onCreate() {
 
 void Creature::draw(const Point& dest, const bool drawThings, const LightViewPtr& /*lightView*/)
 {
-    if (!canBeSeen() || !canDraw())
+    if (!canBeSeen() || !canDraw() || isDead())
         return;
 
     if (drawThings) {
@@ -820,7 +820,9 @@ void Creature::setOutfit(const Outfit& outfit, bool fireEvent)
     m_outfit = outfit;
     m_numPatternZ = 0;
     m_exactSize = 0;
-    m_walkAnimationPhase = 0; // might happen when player is walking and outfit is changed.
+    if (m_walkingAnimationSpeed == 0) {
+        m_walkAnimationPhase = 0; // might happen when player is walking and outfit is changed.
+    }
 
     if (m_outfit.isInvalid())
         m_outfit.setCategory(m_outfit.getAuxId() > 0 ? ThingCategoryItem : ThingCategoryCreature);
