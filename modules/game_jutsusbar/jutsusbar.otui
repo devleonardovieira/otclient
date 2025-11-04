@@ -1,0 +1,85 @@
+
+JutsuSlot < Button
+  size: 36 36
+  image-source: /images/ui/button_rounded
+  image-color: #1e1e1f
+  icon-size: 28 28
+  text-align: center
+  color: #cfd3da
+  $hover:
+    image-color: #2a2b2d
+    border-width: 1
+    border-color: #ffffff33
+  $pressed:
+    image-color: #35373a
+  $disabled:
+    image-color: #191a1b
+    color: #7a7e8585
+
+UIWidget
+
+  UIWidget
+  id: jbar
+  size: 432 44
+  focusable: false
+  phantom: false
+  anchors.centerIn: parent
+  image-source: /images/ui/3pixel_frame_borderimage
+  image-border: 4
+  padding: 5
+  layout:
+    type: horizontalBox
+    spacing: 5
+
+  Button
+    id: lockButton
+    size: 12 12
+    margin-right: 2
+    image-source: /images/options/button_control
+    image-clip: 0 0 12 12
+    tooltip: Fixar/Desafixar barra
+
+  Button
+    id: rotateButton
+    size: 12 12
+    margin-right: 2
+    image-source: /images/options/button_control
+    image-clip: 0 0 12 12
+    tooltip: Rotacionar barra
+
+  JutsuSlot
+    id: slot1
+
+  JutsuSlot
+    id: slot2
+
+  JutsuSlot
+    id: slot3
+
+  JutsuSlot
+    id: slot4
+
+  JutsuSlot
+    id: slot5
+
+  JutsuSlot
+    id: slot6
+
+  JutsuSlot
+    id: slot7
+
+  JutsuSlot
+    id: slot8
+
+  JutsuSlot
+    id: slot9
+
+  JutsuSlot
+    id: slot10
+
+  Button
+    id: editButton
+    size: 4 4
+    margin-left: 4
+    image-source: /images/options/button_control
+    tooltip: Editar barra

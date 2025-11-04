@@ -1,6 +1,6 @@
 Panel
   id: background
-  image-source: /images/background
+  image-source: /images/video_mp4.mp4
   image-smooth: false
   image-fixed-ratio: true
   anchors.top: parent.top

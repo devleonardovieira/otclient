@@ -1,0 +1,9 @@
+Module
+  name: game_jutsusbar
+  description: Jutsus Bar
+  author: LoveCraft
+  website: shinonline.com.br
+  scripts: [ jutsusbar.lua ]
+  sandboxed: true
+  @onLoad: JutsusBar:init()
+  @onUnload: JutsusBar:terminate()

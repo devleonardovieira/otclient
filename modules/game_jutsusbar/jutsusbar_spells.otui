@@ -1,0 +1,53 @@
+Window
+  id: jutsuSpellWindow
+  !text: tr('Selecionar Magia')
+  size: 360 420
+  anchors.centerIn: parent
+  draggable: true
+  @onEscape: controller:closeSpellAssign()
+
+  Label
+    id: header
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-align: center
+    font: verdana-11px-monochrome
+    !text: tr('Escolha uma magia para o slot')
+    margin-top: 6
+
+  UIScrollArea
+    id: scroll
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: next.top
+    margin: 6
+
+    UIWidget
+      id: spellsPanel
+      layout: verticalBox
+      anchors.fill: parent
+      padding: 2
+
+  Button
+    id: closeButton
+    !text: tr('Fechar')
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    margin: 6
+    @onClick: controller:closeSpellAssign()
+
+JutsuSpellButton < Button
+  height: 40
+  image-size: 32 32
+  image-offset: 4 4
+  text-offset: 44 6
+  font: verdana-11px-monochrome
+  margin-bottom: 2
+  focusable: true
+  draggable: true
+  $focus:
+    background-color: #ffffff22
+    color: #ffffff

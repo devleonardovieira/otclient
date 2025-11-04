@@ -26,10 +26,12 @@
 #include "apngloader.h"
 #include "drawpool.h"
 #include "image.h"
-#include "texture.h"
-#include "framework/core/clock.h"
-#include "framework/core/eventdispatcher.h"
-#include "framework/core/resourcemanager.h"
+
+#include <framework/core/clock.h>
+#include <framework/core/eventdispatcher.h>
+#include <framework/core/resourcemanager.h>
+#include <framework/graphics/apngloader.h>
+#include <framework/graphics/drawpool.h>
 
 #ifdef FRAMEWORK_NET
 #include <framework/net/protocolhttp.h>
@@ -125,12 +127,41 @@ TexturePtr TextureManager::getTexture(const std::string& fileName, const bool sm
     // texture not found, load it
     if (!texture) {
         try {
-            const auto& filePathEx = g_resources.guessFilePath(filePath, "png");
+            // MP4 support: when file is .mp4, decode via FFmpeg
+            if (g_resources.isFileType(filePath, "mp4")) {
+                const auto& videoPath = g_resources.guessFilePath(filePath, "mp4");
+                const auto& realPath = g_resources.getRealPath(videoPath);
 
-            // load texture file data
-            std::stringstream fin;
-            g_resources.readFileStream(filePathEx, fin);
-            texture = loadTexture(fin);
+                video_data vdata;
+                if (videoloader_load_mp4(realPath, &vdata) == 0) {
+                    const Size imageSize(vdata.width, vdata.height);
+                    std::vector<ImagePtr> frames;
+                    std::vector<uint16_t> framesDelay;
+                    frames.reserve(vdata.num_frames);
+                    framesDelay.reserve(vdata.num_frames);
+                    for (uint32_t i = 0; i < vdata.num_frames; ++i) {
+                        uint8_t* frameData = vdata.pdata + (i * imageSize.area() * vdata.bpp);
+                        framesDelay.push_back(vdata.frames_delay ? vdata.frames_delay[i] : 40);
+                        frames.emplace_back(std::make_shared<Image>(imageSize, vdata.bpp, frameData));
+                    }
+
+                    const auto& animatedTexture = std::make_shared<AnimatedTexture>(imageSize, frames, framesDelay, vdata.num_plays);
+                    {
+                        std::scoped_lock l(m_mutex);
+                        texture = m_animatedTextures.emplace_back(animatedTexture);
+                    }
+                    videoloader_free(&vdata);
+                }
+            }
+
+            // Fallback: PNG/APNG
+            if (!texture) {
+                const auto& filePathEx = g_resources.guessFilePath(filePath, "png");
+                // load texture file data
+                std::stringstream fin;
+                g_resources.readFileStream(filePathEx, fin);
+                texture = loadTexture(fin);
+            }
         } catch (const stdext::exception& e) {
             g_logger.error("Unable to load texture '{}': {}", fileName, e.what());;
         }

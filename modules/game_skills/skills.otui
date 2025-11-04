@@ -9,7 +9,7 @@ SmallSkillButton < SkillButton
   height: 14
 
 SkillNameLabel < GameLabel
-  font: verdana-11px-monochrome
+  font: Chicago Athletic Slab Serif 2
   anchors.left: parent.left
   anchors.top: parent.top
   anchors.bottom: parent.bottom
