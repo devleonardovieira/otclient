@@ -27,6 +27,7 @@
 #include "drawpool.h"
 #include "image.h"
 
+#include "texture.h"
 #include <framework/core/clock.h>
 #include <framework/core/eventdispatcher.h>
 #include <framework/core/resourcemanager.h>
