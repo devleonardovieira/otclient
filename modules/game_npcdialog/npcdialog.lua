@@ -136,6 +136,8 @@ function NpcDialog.show(name, message, creaturePos, displayText)
     perror('[NpcDialog] Falha ao exibir UI npcdialog')
     return
   end
+  -- Suprimir mensagens de NPC na console enquanto a janela estiver aberta
+  ignoreNpcMessages = true
   NpcDialog.window.onEscape = function()
     NpcDialog.close()
   end
@@ -261,6 +263,8 @@ function NpcDialog.close()
     NpcDialog.window:destroy()
     NpcDialog.window = nil
   end
+  -- Reexibir mensagens de NPC na console quando a janela fecha
+  ignoreNpcMessages = false
   NpcDialog.portrait = nil
   NpcDialog.messageLabel = nil
   NpcDialog.optionsPanel = nil
