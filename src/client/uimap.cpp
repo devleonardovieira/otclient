@@ -25,6 +25,11 @@
 #include "lightview.h"
 #include "map.h"
 #include "mapview.h"
+#include "game.h"
+#include "creature.h"
+#include "tile.h"
+#include "position.h"
+#include "localplayer.h"
 #include "framework/graphics/drawpoolmanager.h"
 #include "framework/otml/otmlnode.h"
 #include <framework/platform/platformwindow.h>
@@ -265,6 +270,29 @@ bool UIMap::onMouseMove(const Point& mousePos, const Point& mouseMoved)
 
 bool UIMap::onMousePress(const Point& mousePos, Fw::MouseButton button)
 {
+    // Se houver um NPC com ícone 'F' sob o mouse, falar com ele
+    if (m_mapView && containsPoint(mousePos)) {
+        const CreaturePtr hovered = m_mapView->getHoveredCreature();
+        if (hovered && hovered->isNpc()) {
+            const auto pos = getPosition(mousePos);
+            if (pos.isValid()) {
+                const auto tile = getTile(mousePos);
+                const CreaturePtr clickedTop = tile ? tile->getTopCreature() : nullptr;
+                if (clickedTop && clickedTop == hovered) {
+                    if (const auto player = g_game.getLocalPlayer()) {
+                        const auto playerPos = player->getPosition();
+                        const auto dir = Position::getDirectionFromPositions(playerPos, hovered->getPosition());
+                        if (dir != Otc::InvalidDirection)
+                            g_game.turn(dir);
+                    }
+                    g_game.setNpcFocusTarget(hovered->getName(), hovered->getPosition(), 1500);
+                    g_game.talkPrivate(Otc::MessageNpcTo, hovered->getName(), "hi");
+                    return true; // consumimos o clique
+                }
+            }
+        }
+    }
+
     return UIWidget::onMousePress(mousePos, button);
 }
 

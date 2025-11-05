@@ -235,23 +235,23 @@ void MapView::drawCreatureInformation() {
                 m_posInfo.hoveredCreature = tile->getTopCreature();
         }
         // Proximidade do jogador: se não houver hover por mouse, mostra o 'F' para o NPC mais próximo
-        // dentro de 1 tile de distância no mesmo andar.
+        // dentro de 1 tile (inclui diagonais, distância de Chebyshev <= 1) no mesmo andar.
         if (!m_posInfo.hoveredCreature) {
             if (const auto& localPlayer = g_game.getLocalPlayer()) {
                 const auto lpPos = localPlayer->getPosition();
                 CreaturePtr nearestNpc;
-                int bestDist2 = std::numeric_limits<int>::max();
+                int bestChebyshev = std::numeric_limits<int>::max();
                 for (const auto& [uid, creature] : g_map.getCreatures()) {
                     if (!creature || !creature->isNpc()) continue;
                     const auto cpos = creature->getPosition();
                     if (cpos.z != lpPos.z) continue;
                     const int dx = static_cast<int>(cpos.x) - static_cast<int>(lpPos.x);
                     const int dy = static_cast<int>(cpos.y) - static_cast<int>(lpPos.y);
-                    const int d2 = dx * dx + dy * dy;
-                    if (d2 < bestDist2) { bestDist2 = d2; nearestNpc = creature; }
+                    const int chebyshev = std::max(std::abs(dx), std::abs(dy));
+                    if (chebyshev < bestChebyshev) { bestChebyshev = chebyshev; nearestNpc = creature; }
                 }
-                // Limite de proximidade: até 1 tile (distância Euclidiana <= 1)
-                if (bestDist2 <= 1)
+                // Limite de proximidade: até 1 tile em qualquer direção (inclui diagonais)
+                if (bestChebyshev <= 1)
                     m_posInfo.hoveredCreature = nearestNpc;
             }
         }
