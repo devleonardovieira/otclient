@@ -44,6 +44,25 @@ StaticText::StaticText()
 void StaticText::drawText(const Point& dest, const Rect& parentRect)
 {
     const auto& textSize = m_cachedText.getTextSize();
+    // Fade-in/out da mensagem: calcula opacidade com base no tempo decorrido/restante
+    float messageOpacity = 1.f;
+    if (!m_messages.empty()) {
+        const auto& currentText = m_messages.front().first;
+        const int now = g_clock.millis();
+        const int expireTick = m_messages.front().second;
+        const int remaining = std::max<int>(expireTick - now, 0);
+
+        // Recalcula a duração padrão usando mesma regra do addMessage
+        int total = std::max<int>(g_gameConfig.getStaticDurationPerCharacter() * currentText.length(), g_gameConfig.getMinStatictextDuration());
+        if (isYell()) total *= 2;
+        if (g_app.mustOptimize()) total /= 2;
+
+        const int elapsed = std::clamp(total - remaining, 0, total);
+        const float FADE_MS = 180.f;
+        const float fin = std::min(1.f, elapsed / FADE_MS);
+        const float fout = std::min(1.f, remaining / FADE_MS);
+        messageOpacity = std::min(fin, fout);
+    }
 
     // calcular deslocamento vertical para ficar sempre acima do nome do jogador
     int dynamicOffsetY = 21; // fallback padrão
@@ -52,12 +71,21 @@ void StaticText::drawText(const Point& dest, const Rect& parentRect)
             ? m_anchorCreature->getExactSize()
             : 12;
         dynamicOffsetY = cropSizeText + 5;
+        // Se houver indicador de interação "F" no NPC, garantir espaço extra acima dele
+        // O ícone é desenhado a ~24px de altura com ~4px de margem acima do nome.
+        // Para que a fala fique acima do "F", somamos um offset fixo.
+        if (m_anchorCreature->isNpc()) {
+            dynamicOffsetY += 28; // 24 (tamanho) + 4 (margem)
+        }
     } else if (const auto& tile = g_map.getTile(m_position)) {
         if (const auto& creature = tile->getTopCreature()) {
             const int cropSizeText = g_gameConfig.isAdjustCreatureInformationBasedCropSize()
                 ? creature->getExactSize()
                 : 12;
             dynamicOffsetY = cropSizeText + 5;
+            if (creature->isNpc()) {
+                dynamicOffsetY += 28;
+            }
         }
     }
 
@@ -76,7 +104,7 @@ void StaticText::drawText(const Point& dest, const Rect& parentRect)
         // sem sombra/borda: apenas fundo preto
 
         // corpo da bolha com cantos arredondados (aproximação por triângulos)
-        const Color bubbleColor(0, 0, 0, 220);
+        const Color bubbleColor(0, 0, 0, 200);
 
         int r = static_cast<int>(8 * s);
         r = std::min(r, std::min(bgRect.width(), bgRect.height()) / 2 - 1);
@@ -89,6 +117,7 @@ void StaticText::drawText(const Point& dest, const Rect& parentRect)
         const Rect topRect(bgRect.left() + r, bgRect.top(), bgRect.width() - 2 * r, r);
         const Rect bottomRect(bgRect.left() + r, bgRect.bottom() - r + 1, bgRect.width() - 2 * r, r);
 
+        g_drawPool.setOpacity(messageOpacity);
         g_drawPool.addFilledRect(center, bubbleColor);
         g_drawPool.addFilledRect(leftRect, bubbleColor);
         g_drawPool.addFilledRect(rightRect, bubbleColor);
@@ -136,11 +165,16 @@ void StaticText::drawText(const Point& dest, const Rect& parentRect)
         // tail vetorial (sem imagem)
         g_drawPool.addFilledTriangle(baseLeft.translated(0, static_cast<int>(2 * s)), baseRight.translated(0, static_cast<int>(2 * s)), apex.translated(0, static_cast<int>(2 * s)), Color(0, 0, 0, 60));
         g_drawPool.addFilledTriangle(baseLeft, baseRight, apex, bubbleColor);
+
+        // reset opacidade após desenhar a bolha
+        g_drawPool.setOpacity(1.f);
     }
 
     // draw only if the real center is not too far from the parent center, or its a yell
     //if(g_map.isAwareOfPosition(m_position) || isYell()) {
+    g_drawPool.setOpacity(messageOpacity);
     m_cachedText.draw(rect, m_color);
+    g_drawPool.setOpacity(1.f);
     //}
 }
 

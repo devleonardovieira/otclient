@@ -34,6 +34,7 @@
 #include "protocolcodes.h"
 #include "statictext.h"
 #include "thingtype.h"
+#include "framework/graphics/fontmanager.h"
 #include "thingtypemanager.h"
 #include "tile.h"
 #include "framework/core/clock.h"
@@ -256,6 +257,38 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         m_name.draw(textRect, fillColor);
         // Removido o desenho direto de m_text aqui para evitar duplicidade
         // e jitter. O StaticText é desenhado e ancorado no MapView::drawForeground.
+    }
+
+    // Ícone "F": aparece somente quando o mouse está sobre um NPC
+    // Com efeito de fade-in/out ao aparecer/desaparecer
+    {
+        const bool hoveredNpc = isNpc() && mapRect.hoveredCreature && mapRect.hoveredCreature.get() == this;
+        // atualizar opacidade com easing temporal
+        const float FADE_MS = 180.f;
+        const float dt = std::min<float>(m_fKeyFadeTimer.ticksElapsed(), 1000.f);
+        m_fKeyFadeTimer.restart();
+        const float step = std::min(dt / FADE_MS, 1.f);
+        if (hoveredNpc)
+            m_fKeyOpacity = std::min(1.f, m_fKeyOpacity + step);
+        else
+            m_fKeyOpacity = std::max(0.f, m_fKeyOpacity - step);
+
+        if (m_fKeyOpacity > 0.f) {
+            static TexturePtr s_keyTexture;
+            if (!s_keyTexture)
+                s_keyTexture = g_textures.getTexture("images/ui/keyboard_key_f");
+
+            if (s_keyTexture) {
+                const int size = 24;
+                Rect iconRect(
+                    textRect.x() + (textRect.width() - size) / 2,
+                    textRect.y() - size - 4,
+                    Size(size, size)
+                );
+                g_drawPool.setOpacity(m_fKeyOpacity, true);
+                g_drawPool.addTexturedRect(iconRect, s_keyTexture);
+            }
+        }
     }
 
     if (m_skull != Otc::SkullNone && m_skullTexture)

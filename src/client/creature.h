@@ -351,6 +351,10 @@ private:
     StaticTextPtr m_text;
 
     uint8_t m_vocation{ 0 };
+
+    // Estado de fade para o ícone de interação "F" em NPCs
+    float m_fKeyOpacity{ 0.f };
+    Timer m_fKeyFadeTimer;
 };
 
 // @bindclass

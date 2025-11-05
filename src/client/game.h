@@ -231,6 +231,11 @@ public:
 
     void sendTyping(bool typing);
 
+    // Define a short-lived NPC focus after pressing 'F' to filter replies
+    void setNpcFocusTarget(std::string_view name, uint16_t windowMs = 1500);
+    void setNpcFocusTarget(std::string_view name, const Position& pos, uint16_t windowMs = 1500);
+    void clearNpcFocusTarget();
+
     // vip related
     void addVip(std::string_view name);
     void removeVip(uint32_t playerId);
@@ -492,6 +497,12 @@ private:
     stdext::timer m_pingTimer;
 
     ticks_t m_ping{ -1 };
+
+    // Transient NPC focus used to suppress replies from non-focused NPCs
+    std::string m_npcFocusName;
+    Position m_npcFocusPos;
+    Timer m_npcFocusTimer;
+    uint16_t m_npcFocusWindowMs{ 1500 };
 };
 
 extern Game g_game;

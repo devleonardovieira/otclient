@@ -38,7 +38,10 @@
 #include "framework/graphics/painter.h"
 #include "framework/graphics/shadermanager.h"
 #include "framework/graphics/texturemanager.h"
+#include <framework/core/clock.h>
 #include <framework/platform/platformwindow.h>
+// Needed for turning and talking
+#include "game.h"
 
 MapView::MapView() : m_lightView(std::make_unique<LightView>(Size())), m_pool(g_drawPool.get(DrawPoolType::MAP))
 {
@@ -216,6 +219,43 @@ void MapView::drawCreatureInformation() {
     if (m_drawNames) { flags |= Otc::DrawNames; }
     if (m_drawHealthBars) { flags |= Otc::DrawBars; }
     if (m_drawManaBar) { flags |= Otc::DrawManaBar; }
+
+    // Atualiza a criatura sob o mouse para dicas de interação (ícone "F")
+    m_posInfo.hoveredCreature = nullptr;
+    if (m_lastHighlightTile) {
+        m_posInfo.hoveredCreature = m_lastHighlightTile->getTopCreature();
+    }
+    // Fallback quando o highlight está desativado: usa a última posição do mouse
+    // para obter o tile e a criatura do topo, sem selecionar/realçar o tile.
+    if (!m_posInfo.hoveredCreature) {
+        const bool mouseInside = m_posInfo.rect.contains(g_window.getMousePosition() * g_window.getDisplayDensity());
+        if (mouseInside && m_mousePosition.isValid()) {
+            const auto& tile = m_shiftPressed ? getTopTile(m_mousePosition) : g_map.getTile(m_mousePosition);
+            if (tile)
+                m_posInfo.hoveredCreature = tile->getTopCreature();
+        }
+        // Proximidade do jogador: se não houver hover por mouse, mostra o 'F' para o NPC mais próximo
+        // dentro de 1 tile de distância no mesmo andar.
+        if (!m_posInfo.hoveredCreature) {
+            if (const auto& localPlayer = g_game.getLocalPlayer()) {
+                const auto lpPos = localPlayer->getPosition();
+                CreaturePtr nearestNpc;
+                int bestDist2 = std::numeric_limits<int>::max();
+                for (const auto& [uid, creature] : g_map.getCreatures()) {
+                    if (!creature || !creature->isNpc()) continue;
+                    const auto cpos = creature->getPosition();
+                    if (cpos.z != lpPos.z) continue;
+                    const int dx = static_cast<int>(cpos.x) - static_cast<int>(lpPos.x);
+                    const int dy = static_cast<int>(cpos.y) - static_cast<int>(lpPos.y);
+                    const int d2 = dx * dx + dy * dy;
+                    if (d2 < bestDist2) { bestDist2 = d2; nearestNpc = creature; }
+                }
+                // Limite de proximidade: até 1 tile (distância Euclidiana <= 1)
+                if (bestDist2 <= 1)
+                    m_posInfo.hoveredCreature = nearestNpc;
+            }
+        }
+    }
 
     Position _camera = m_posInfo.camera;
     const bool alwaysTransparent = m_floorViewMode == Otc::ALWAYS_WITH_TRANSPARENCY && _camera.coveredUp(m_posInfo.camera.z - m_floorMin);
@@ -618,6 +658,62 @@ void MapView::onKeyRelease(const InputEvent& inputEvent)
     if (shiftPressed != m_shiftPressed) {
         m_shiftPressed = shiftPressed;
         onMouseMove(m_mousePosition);
+    }
+
+    // Auto-talk to focused NPC on 'F' key (private, with cooldown)
+    if (inputEvent.keyCode == Fw::KeyF) {
+        static ticks_t s_lastNpcTalkMs = 0;
+        const ticks_t now = g_clock.millis();
+        const uint16_t COOLDOWN_MS = 600;
+        if (now - s_lastNpcTalkMs < COOLDOWN_MS)
+            return;
+
+        const auto player = g_game.getLocalPlayer();
+        if (!player)
+            return;
+
+        const auto playerPos = player->getPosition();
+
+        // Seleciona NPC focado: raio curto e desempate pela direção do player
+        const uint16_t FOCUS_RANGE = 2;
+        CreaturePtr focusedNpc;
+        uint16_t bestDist = std::numeric_limits<uint16_t>::max();
+        const auto playerDir = player->getDirection();
+
+        for (const auto& [uid, creature] : g_map.getCreatures()) {
+            if (!creature || !creature->isNpc()) continue;
+
+            const auto& cpos = creature->getPosition();
+            if (cpos.z != playerPos.z) continue;
+            if (!m_posInfo.isInRangeEx(cpos)) continue;
+
+            const uint16_t dist = playerPos.manhattanDistance(cpos);
+            if (dist > FOCUS_RANGE) continue;
+
+            if (!focusedNpc || dist < bestDist) {
+                focusedNpc = creature;
+                bestDist = dist;
+            } else if (dist == bestDist) {
+                const auto dirTo = Position::getDirectionFromPositions(playerPos, cpos);
+                const auto dirCurrent = Position::getDirectionFromPositions(playerPos, focusedNpc->getPosition());
+                const bool dirToMatches = (dirTo == playerDir);
+                const bool dirCurrentMatches = (dirCurrent == playerDir);
+                if (dirToMatches && !dirCurrentMatches)
+                    focusedNpc = creature;
+            }
+        }
+
+        if (focusedNpc) {
+            const auto dir = Position::getDirectionFromPositions(playerPos, focusedNpc->getPosition());
+            if (dir != Otc::InvalidDirection)
+                g_game.turn(dir);
+
+            // Inicia conversa em modo privado para o NPC, evitando eco no chat
+            // Define foco de NPC por nome e posição para filtrar respostas de outros NPCs iguais
+            g_game.setNpcFocusTarget(focusedNpc->getName(), focusedNpc->getPosition(), 1500);
+            s_lastNpcTalkMs = now;
+            g_game.talkPrivate(Otc::MessageNpcTo, focusedNpc->getName(), "hi");
+        }
     }
 }
 

@@ -35,7 +35,8 @@ SpeakTypesSettings = {
         speakType = MessageModes.NpcTo,
         color = '#9F9DFD',
         private = true,
-        npcChat = true
+        npcChat = true,
+        hideInConsole = true
     },
     privateNpcToPlayer = {
         speakType = MessageModes.NpcFrom,
