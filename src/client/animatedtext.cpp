@@ -27,6 +27,7 @@
 #include "map.h"
 #include "framework/core/eventdispatcher.h"
 #include "framework/core/graphicalapplication.h"
+#include "framework/graphics/drawpoolmanager.h"
 
 AnimatedText::AnimatedText()
 {
@@ -62,6 +63,19 @@ void AnimatedText::drawText(const Point& dest, const Rect& visibleRect)
     Color color = m_color;
     if (t > t0) {
         color.setAlpha(1 - (t - t0) / (tf - t0));
+    }
+    // draw background behind animated text (improves readability)
+    {
+        // small padding around text
+        const int padX = static_cast<int>(4 * g_app.getAnimatedTextScale());
+        const int padY = static_cast<int>(2 * g_app.getAnimatedTextScale());
+        Rect bgRect(rect.left() - padX, rect.top() - padY, rect.width() + padX * 2, rect.height() + padY * 2);
+
+        Color bgColor(0, 0, 0, 180); // semi-transparent black
+        if (t > t0)
+            bgColor.setAlpha(1 - (t - t0) / (tf - t0));
+
+        g_drawPool.addFilledRect(bgRect, bgColor);
     }
 
     m_cachedText.draw(rect, color);

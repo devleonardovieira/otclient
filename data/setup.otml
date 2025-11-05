@@ -18,10 +18,10 @@ game
 
   creature
     draw-information-by-widget-beta: false
-    force-new-walking-formula: false
+    force-new-walking-formula: true
     shield-blink-ticks: 500
     volatile-square-duration: 1000
-    adjust-creature-information-based-crop-size: false
+    adjust-creature-information-based-crop-size: true
     use-crop-size-for-ui-draw: true
     diagonal-walk-speed: 3
 

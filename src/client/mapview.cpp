@@ -243,15 +243,64 @@ void MapView::drawForeground(const Rect& rect)
         if (staticText->getMessageMode() == Otc::MessageNone)
             continue;
 
-        const auto& pos = staticText->getPosition();
-        if (pos.z != m_posInfo.camera.z && staticText->getMessageMode() == Otc::MessageNone)
-            continue;
+        // Se houver uma criatura com o mesmo nome da mensagem, 
+        // desenhe a bolha ancorada à criatura (segue o movimento).
+        Point p;
+        bool anchoredToCreature = false;
 
-        Point p = transformPositionTo2D(pos) - m_posInfo.drawOffset;
-        p.x *= m_posInfo.horizontalStretchFactor;
-        p.y *= m_posInfo.verticalStretchFactor;
-        p += rect.topLeft();
-        staticText->drawText(p.scale(g_app.getStaticTextScale()), rect);
+        // Tenta encontrar a criatura pelo nome do emissor
+        const std::string speakerName = staticText->getName();
+        if (!speakerName.empty()) {
+            for (const auto& [uid, creature] : g_map.getCreatures()) {
+                if (!creature) continue;
+                if (creature->getName() != speakerName) continue;
+
+                // Garante o mesmo andar da câmera
+                if (creature->getPosition().z != m_posInfo.camera.z)
+                    break;
+
+                // Atualiza a posição do StaticText para o tile atual da criatura
+                staticText->setPosition(creature->getPosition());
+
+                // Reproduz exatamente o cálculo de Creature::drawInformation para ancorar à posição do nome
+                // e evitar pulos tanto ao clicar quanto nas setinhas.
+                p = transformPositionTo2D(creature->getPosition()) - m_posInfo.drawOffset;
+
+                const auto displacementX = g_game.getFeature(Otc::GameNegativeOffset) ? 0 : creature->getDisplacementX();
+                const auto displacementY = g_game.getFeature(Otc::GameNegativeOffset) ? 0 : creature->getDisplacementY();
+                const auto creatureOffset = Point(16 - displacementX, -displacementY - 2) + creature->getDrawOffset();
+                const auto jumpOffset = creature->getJumpOffset() * g_drawPool.getScaleFactor();
+
+                p += (creatureOffset - Point(std::round(jumpOffset.x), std::round(jumpOffset.y))) * m_posInfo.scaleFactor;
+                p.x *= m_posInfo.horizontalStretchFactor;
+                p.y *= m_posInfo.verticalStretchFactor;
+                p += rect.topLeft();
+
+                // Ancorar o StaticText diretamente à criatura para cálculos estáveis do offset
+                staticText->setAnchorCreature(creature);
+                anchoredToCreature = true;
+                break;
+            }
+        }
+
+        if (!anchoredToCreature) {
+            staticText->clearAnchorCreature();
+            // Fallback: desenha pela posição fixa atual do StaticText
+            const auto& pos = staticText->getPosition();
+            if (pos.z != m_posInfo.camera.z)
+                continue;
+
+            p = transformPositionTo2D(pos) - m_posInfo.drawOffset;
+            p.x *= m_posInfo.horizontalStretchFactor;
+            p.y *= m_posInfo.verticalStretchFactor;
+            p += rect.topLeft();
+        }
+
+        // Evita dupla escala: o DrawPool já está escalado.
+        // Também arredonda para evitar jitter por subpixel ao andar nas setinhas.
+        p.x = std::round(p.x);
+        p.y = std::round(p.y);
+        staticText->drawText(p, rect);
     }
 
     g_drawPool.scale(g_app.getAnimatedTextScale());

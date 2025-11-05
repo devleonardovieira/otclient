@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -254,12 +254,8 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
     if (drawFlags & Otc::DrawNames) {
         m_name.draw(textRect, fillColor);
-
-        if (m_text) {
-            auto extraTextSize = m_text->getTextSize();
-            Rect extraTextRect = Rect(p.x - extraTextSize.width() / 2.0, p.y + 15, extraTextSize);
-            m_text->drawText(extraTextRect.center(), extraTextRect);
-        }
+        // Removido o desenho direto de m_text aqui para evitar duplicidade
+        // e jitter. O StaticText é desenhado e ancorado no MapView::drawForeground.
     }
 
     if (m_skull != Otc::SkullNone && m_skullTexture)

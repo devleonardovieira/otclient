@@ -33,6 +33,7 @@
 #include <framework/core/resourcemanager.h>
 #include <framework/graphics/apngloader.h>
 #include <framework/graphics/drawpool.h>
+#include <framework/graphics/videoloader.h>
 
 #ifdef FRAMEWORK_NET
 #include <framework/net/protocolhttp.h>
