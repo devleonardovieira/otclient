@@ -457,6 +457,12 @@ function updateStretchShrink()
         -- Set gameMapPanel size to height = 11 * 32 + 2
         bottomSplitter:setMarginBottom(bottomSplitter:getMarginBottom() + (gameMapPanel:getHeight() - 32 * 11) - 10)
     end
+     -- Update action bar layout when window geometry changes
+    if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
+        addEvent(function()
+            modules.game_actionbar.updateVisibleWidgetsExternal()
+        end)
+    end
 end
 
 function onMouseGrabberRelease(self, mousePosition, mouseButton)
@@ -1123,6 +1129,10 @@ function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, u
                             -- For pickupable containers like quivers, backpacks, etc., open them instead of quicklooting
                             g_game.open(useThing)
                             return true
+						elseif table.find({3497, 3498, 3499, 3500, 3502, 12902}, useThing:getId()) then
+                            -- For depot chests, lockers, depot boxes, inbox, etc., always open them
+                            g_game.open(useThing)
+                            return true
                         elseif g_game.getFeature(GameThingQuickLoot) and modules.game_quickloot then
                             -- For containers in the world, quickloot
                             g_game.sendQuickLoot(1, useThing)
@@ -1226,7 +1236,11 @@ function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, u
                     -- ONLY quickloot containers/corpses in the game world
                     if (useThing:isContainer() or useThing:isLyingCorpse()) and not useThing:getParentContainer() then
                         -- Only handle containers that are in the game world (not in inventory)
-                        if g_game.getFeature(GameThingQuickLoot) and modules.game_quickloot then
+                        if table.find({3497, 3498, 3499, 3500, 3502, 12902}, useThing:getId()) then
+                            -- For depot chests, lockers, depot boxes, inbox, etc., always open them
+                            g_game.open(useThing)
+                            return true
+                        elseif g_game.getFeature(GameThingQuickLoot) and modules.game_quickloot then
                             g_game.sendQuickLoot(1, useThing)
                             return true
                         else
@@ -1655,12 +1669,24 @@ function onIncreaseLeftPanels()
     leftDecreaseSidePanels:setEnabled(true)
     if not modules.client_options.getOption('showLeftPanel') then
         modules.client_options.setOption('showLeftPanel', true)
+        -- Update action bars when left panel is shown
+        if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
+            addEvent(function()
+                modules.game_actionbar.updateVisibleWidgetsExternal()
+            end)
+        end
         return
     end
 
     if not modules.client_options.getOption('showLeftExtraPanel') then
         modules.client_options.setOption('showLeftExtraPanel', true)
         leftIncreaseSidePanels:setEnabled(false)
+        -- Update action bars when left extra panel is shown
+        if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
+            addEvent(function()
+                modules.game_actionbar.updateVisibleWidgetsExternal()
+            end)
+        end
         return
     end
 end
@@ -1691,6 +1717,12 @@ function onDecreaseLeftPanels()
         if g_platform.isMobile() then
             leftDecreaseSidePanels:setEnabled(false)
         end
+        -- Update action bars when left extra panel is hidden
+        if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
+            addEvent(function()
+                modules.game_actionbar.updateVisibleWidgetsExternal()
+            end)
+        end
         return
     end
 
@@ -1699,6 +1731,12 @@ function onDecreaseLeftPanels()
             modules.client_options.setOption('showLeftPanel', false)
             movePanel(gameLeftPanel)
             leftDecreaseSidePanels:setEnabled(false)
+            -- Update action bars when left panel is hidden
+            if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
+                addEvent(function()
+                    modules.game_actionbar.updateVisibleWidgetsExternal()
+                end)
+            end
             return
         end
     end
@@ -1708,6 +1746,12 @@ function onIncreaseRightPanels()
     rightIncreaseSidePanels:setEnabled(false)
     rightDecreaseSidePanels:setEnabled(true)
     modules.client_options.setOption('showRightExtraPanel', true)
+    -- Update action bars when right extra panel is shown
+    if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
+        addEvent(function()
+            modules.game_actionbar.updateVisibleWidgetsExternal()
+        end)
+    end
 end
 
 function onDecreaseRightPanels()
@@ -1715,6 +1759,12 @@ function onDecreaseRightPanels()
     rightDecreaseSidePanels:setEnabled(false)
     movePanel(gameRightExtraPanel)
     modules.client_options.setOption('showRightExtraPanel', false)
+    -- Update action bars when right extra panel is hidden
+    if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
+        addEvent(function()
+            modules.game_actionbar.updateVisibleWidgetsExternal()
+        end)
+    end
 end
 
 function setupOptionsMainButton()
