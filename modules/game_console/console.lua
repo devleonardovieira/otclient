@@ -35,7 +35,8 @@ SpeakTypesSettings = {
         speakType = MessageModes.NpcTo,
         color = '#9F9DFD',
         private = true,
-        npcChat = true
+        npcChat = true,
+        hideInConsole = true
     },
     privateNpcToPlayer = {
         speakType = MessageModes.NpcFrom,
@@ -1624,7 +1625,13 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 
     local isNpcMode = (mode == MessageModes.NpcFromStartBlock or mode == MessageModes.NpcFrom)
 
-    if ignoreNpcMessages and isNpcMode then
+    -- Suprimir mensagens de NPC quando o diálogo clicável estiver aberto,
+    -- independente da ordem de execução dos callbacks.
+    local npcDialogOpen = false
+    if modules and modules.game_npcdialog and modules.game_npcdialog.NpcDialog then
+        npcDialogOpen = modules.game_npcdialog.NpcDialog.window ~= nil
+    end
+    if isNpcMode and (ignoreNpcMessages or npcDialogOpen) then
         return
     end
 

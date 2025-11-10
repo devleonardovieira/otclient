@@ -750,6 +750,9 @@ bool Tile::checkForDetachableThing(const TileSelectType selectType)
 {
     const auto& markIfYouNeed = [&] {
         if (m_selectType == TileSelectType::NONE) return;
+        // Evita marcar em amarelo quando há criatura no tile (NPC/jogador/monstro),
+        // para não causar piscadas visuais ao mostrar o ícone de interação.
+        if (hasCreatures()) return;
         markHighlightedThing(Color::yellow);
     };
 
@@ -907,7 +910,9 @@ void Tile::select(const TileSelectType selectType)
         checkForDetachableThing(selectType);
     }
 
-    markHighlightedThing(Color::yellow);
+    // Não destacar em amarelo se houver criatura no tile
+    if (!hasCreatures())
+        markHighlightedThing(Color::yellow);
 }
 
 void Tile::unselect()

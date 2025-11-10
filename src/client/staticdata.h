@@ -24,6 +24,7 @@
 
 #include "outfit.h"
 #include "position.h"
+#include "declarations.h"
 
 struct AwareRange
 {
@@ -49,6 +50,9 @@ struct MapPosInfo
     float horizontalStretchFactor;
     float verticalStretchFactor;
     float scaleFactor;
+
+    // Criatura atualmente sob o mouse (tile destacado). Usado para dicas de interação.
+    CreaturePtr hoveredCreature;
 
     bool isInRange(const Position& pos, const bool ignoreZ = false) const
     {

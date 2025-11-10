@@ -23,11 +23,17 @@
 #include "statictext.h"
 
 #include "gameconfig.h"
+#include "game.h"
+#include "creature.h"
+#include "tile.h"
 #include "map.h"
 #include "framework/core/clock.h"
 #include "framework/core/eventdispatcher.h"
 #include "framework/core/graphicalapplication.h"
 #include "framework/graphics/fontmanager.h"
+#include "framework/graphics/drawpoolmanager.h"
+#include <cmath>
+#include <numbers>
 
 StaticText::StaticText()
 {
@@ -38,14 +44,137 @@ StaticText::StaticText()
 void StaticText::drawText(const Point& dest, const Rect& parentRect)
 {
     const auto& textSize = m_cachedText.getTextSize();
+    // Fade-in/out da mensagem: calcula opacidade com base no tempo decorrido/restante
+    float messageOpacity = 1.f;
+    if (!m_messages.empty()) {
+        const auto& currentText = m_messages.front().first;
+        const int now = g_clock.millis();
+        const int expireTick = m_messages.front().second;
+        const int remaining = std::max<int>(expireTick - now, 0);
 
-    auto rect = Rect(dest - Point(textSize.width() / 2, textSize.height()) + (Point(20, 5) / g_app.getStaticTextScale()), textSize);
+        // Recalcula a duração padrão usando mesma regra do addMessage
+        int total = std::max<int>(g_gameConfig.getStaticDurationPerCharacter() * currentText.length(), g_gameConfig.getMinStatictextDuration());
+        if (isYell()) total *= 2;
+        if (g_app.mustOptimize()) total /= 2;
+
+        const int elapsed = std::clamp(total - remaining, 0, total);
+        const float FADE_MS = 180.f;
+        const float fin = std::min(1.f, elapsed / FADE_MS);
+        const float fout = std::min(1.f, remaining / FADE_MS);
+        messageOpacity = std::min(fin, fout);
+    }
+
+    // calcular deslocamento vertical para ficar sempre acima do nome do jogador
+    int dynamicOffsetY = 21; // fallback padrão
+    if (m_anchorCreature) {
+        const int cropSizeText = g_gameConfig.isAdjustCreatureInformationBasedCropSize()
+            ? m_anchorCreature->getExactSize()
+            : 12;
+        dynamicOffsetY = cropSizeText + 5;
+        // Se houver indicador de interação "F" no NPC, garantir espaço extra acima dele
+        // O ícone é desenhado a ~24px de altura com ~4px de margem acima do nome.
+        // Para que a fala fique acima do "F", somamos um offset fixo.
+        if (m_anchorCreature->isNpc()) {
+            dynamicOffsetY += 28; // 24 (tamanho) + 4 (margem)
+        }
+    } else if (const auto& tile = g_map.getTile(m_position)) {
+        if (const auto& creature = tile->getTopCreature()) {
+            const int cropSizeText = g_gameConfig.isAdjustCreatureInformationBasedCropSize()
+                ? creature->getExactSize()
+                : 12;
+            dynamicOffsetY = cropSizeText + 5;
+            if (creature->isNpc()) {
+                dynamicOffsetY += 28;
+            }
+        }
+    }
+
+    // centraliza horizontalmente e desloca acima do topo do nome
+    auto rect = Rect(dest - Point(textSize.width() / 2, textSize.height()) + (Point(0, -dynamicOffsetY) / g_app.getStaticTextScale()), textSize);
     if (g_app.getStaticTextScale() == DEFAULT_DISPLAY_DENSITY)
         rect.bind(parentRect);
 
+    // draw speech bubble: shadow and body with rounded corners (vector, no images)
+    {
+        const float s = g_app.getStaticTextScale();
+        const int padX = static_cast<int>(8 * s);
+        const int padY = static_cast<int>(6 * s);
+        Rect bgRect(rect.left() - padX, rect.top() - padY, rect.width() + padX * 2, rect.height() + padY * 2);
+
+        // sem sombra/borda: apenas fundo preto
+
+        // corpo da bolha com cantos arredondados (aproximação por triângulos)
+        const Color bubbleColor(0, 0, 0, 200);
+
+        int r = static_cast<int>(8 * s);
+        r = std::min(r, std::min(bgRect.width(), bgRect.height()) / 2 - 1);
+        if (r < 2) r = 2;
+
+        // partes retangulares
+        const Rect center(bgRect.left() + r, bgRect.top() + r, bgRect.width() - 2 * r, bgRect.height() - 2 * r);
+        const Rect leftRect(bgRect.left(), bgRect.top() + r, r, bgRect.height() - 2 * r);
+        const Rect rightRect(bgRect.right() - r + 1, bgRect.top() + r, r, bgRect.height() - 2 * r);
+        const Rect topRect(bgRect.left() + r, bgRect.top(), bgRect.width() - 2 * r, r);
+        const Rect bottomRect(bgRect.left() + r, bgRect.bottom() - r + 1, bgRect.width() - 2 * r, r);
+
+        g_drawPool.setOpacity(messageOpacity);
+        g_drawPool.addFilledRect(center, bubbleColor);
+        g_drawPool.addFilledRect(leftRect, bubbleColor);
+        g_drawPool.addFilledRect(rightRect, bubbleColor);
+        g_drawPool.addFilledRect(topRect, bubbleColor);
+        g_drawPool.addFilledRect(bottomRect, bubbleColor);
+
+        // cantos como arcos por triângulos
+        auto drawQuarter = [&](const Point& c, float a0, float a1) {
+            const int segments = 10; // mais segmentos = arco mais suave
+            std::vector<Point> pts;
+            pts.reserve(segments + 1);
+            for (int i = 0; i <= segments; ++i) {
+                const float t = a0 + (a1 - a0) * (static_cast<float>(i) / segments);
+                const int x = c.x + static_cast<int>(std::round(r * std::cos(t)));
+                const int y = c.y + static_cast<int>(std::round(r * std::sin(t)));
+                pts.emplace_back(x, y);
+            }
+            for (int i = 0; i < segments; ++i)
+                g_drawPool.addFilledTriangle(c, pts[i], pts[i + 1], bubbleColor);
+        };
+
+        // coordenadas dos centros dos cantos
+        const Point tl(bgRect.left() + r, bgRect.top() + r);
+        const Point tr(bgRect.right() - r + 1, bgRect.top() + r);
+        const Point bl(bgRect.left() + r, bgRect.bottom() - r + 1);
+        const Point br(bgRect.right() - r + 1, bgRect.bottom() - r + 1);
+
+        // ângulos (topo-esquerda: 180°..270°, topo-direita: 270°..360°, baixo-direita: 0°..90°, baixo-esquerda: 90°..180°)
+        const float PI = std::numbers::pi_v<float>;
+        drawQuarter(tl, PI, PI * 1.5f);
+        drawQuarter(tr, PI * 1.5f, PI * 2.0f);
+        drawQuarter(br, 0.f, PI * 0.5f);
+        drawQuarter(bl, PI * 0.5f, PI);
+
+        // tail triangle centered at bubble bottom (with shadow + border)
+        const int tailHalf = static_cast<int>(7 * s);
+        int tailHeight = static_cast<int>(4 * s);
+
+        Point baseLeft(bgRect.horizontalCenter() - tailHalf, bgRect.bottom());
+        Point baseRight(bgRect.horizontalCenter() + tailHalf, bgRect.bottom());
+        Point apex(bgRect.horizontalCenter(), bgRect.bottom() + tailHeight);
+
+        if (g_app.getStaticTextScale() == DEFAULT_DISPLAY_DENSITY && apex.y > parentRect.bottom())
+            apex.y = parentRect.bottom();
+        // tail vetorial (sem imagem)
+        g_drawPool.addFilledTriangle(baseLeft.translated(0, static_cast<int>(2 * s)), baseRight.translated(0, static_cast<int>(2 * s)), apex.translated(0, static_cast<int>(2 * s)), Color(0, 0, 0, 60));
+        g_drawPool.addFilledTriangle(baseLeft, baseRight, apex, bubbleColor);
+
+        // reset opacidade após desenhar a bolha
+        g_drawPool.setOpacity(1.f);
+    }
+
     // draw only if the real center is not too far from the parent center, or its a yell
     //if(g_map.isAwareOfPosition(m_position) || isYell()) {
+    g_drawPool.setOpacity(messageOpacity);
     m_cachedText.draw(rect, m_color);
+    g_drawPool.setOpacity(1.f);
     //}
 }
 
@@ -120,23 +249,15 @@ void StaticText::compose()
     std::string text;
 
     if (m_mode == Otc::MessageSay) {
-        text += m_name;
-        text += " says:\n";
         m_color = MESSAGE_COLOR1;
     } else if (m_mode == Otc::MessageWhisper) {
-        text += m_name;
-        text += " whispers:\n";
         m_color = MESSAGE_COLOR1;
     } else if (m_mode == Otc::MessageYell) {
-        text += m_name;
-        text += " yells:\n";
         m_color = MESSAGE_COLOR1;
     } else if (m_mode == Otc::MessageMonsterSay || m_mode == Otc::MessageMonsterYell || m_mode == Otc::MessageSpell
                || m_mode == Otc::MessageBarkLow || m_mode == Otc::MessageBarkLoud) {
         m_color = MESSAGE_COLOR2;
     } else if (m_mode == Otc::MessageNpcFrom || m_mode == Otc::MessageNpcFromStartBlock) {
-        text += m_name;
-        text += " says:\n";
         m_color = MESSAGE_COLOR3;
     } else {
         g_logger.warning("Unknown speak type: {}", static_cast<uint8_t>(m_mode));

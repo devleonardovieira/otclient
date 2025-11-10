@@ -280,6 +280,24 @@ void Game::processTextMessage(const Otc::MessageMode mode, const std::string_vie
 
 void Game::processTalk(const std::string_view name, const uint16_t level, const Otc::MessageMode mode, const std::string_view text, const uint16_t channelId, const Position& pos)
 {
+    // Se focamos um NPC recentemente, filtramos respostas por nome e posição
+    if ((mode == Otc::MessageNpcFrom || mode == Otc::MessageNpcFromStartBlock) && !g_game.m_npcFocusName.empty()) {
+        const bool withinFocus = g_game.m_npcFocusTimer.ticksElapsed() < g_game.m_npcFocusWindowMs;
+        if (withinFocus) {
+            // Nome deve coincidir
+            if (name != g_game.m_npcFocusName)
+                return;
+
+            // Se posição do foco é válida, só aceita mensagens do NPC naquela posição
+            if (g_game.m_npcFocusPos.isValid()) {
+                const bool sameZ = pos.z == g_game.m_npcFocusPos.z;
+                const uint16_t dist = g_game.m_npcFocusPos.manhattanDistance(pos);
+                if (!(sameZ && dist <= 1))
+                    return;
+            }
+        }
+    }
+
     g_lua.callGlobalField("g_game", "onTalk", name, level, mode, text, channelId, pos);
 }
 
@@ -1200,6 +1218,29 @@ void Game::sendTyping(const bool typing)
         return;
 
     m_protocolGame->sendTyping(typing);
+}
+
+void Game::setNpcFocusTarget(const std::string_view name, const uint16_t windowMs)
+{
+    // Mantém compatibilidade: foco apenas por nome (posição inválida)
+    setNpcFocusTarget(name, Position{}, windowMs);
+}
+
+void Game::setNpcFocusTarget(const std::string_view name, const Position& pos, const uint16_t windowMs)
+{
+    // Armazena nome formatado e posição para distinguir NPCs com mesmo nome
+    m_npcFocusName = formatCreatureName(name);
+    m_npcFocusPos = pos;
+    m_npcFocusWindowMs = windowMs;
+    m_npcFocusTimer.restart();
+}
+
+void Game::clearNpcFocusTarget()
+{
+    m_npcFocusName.clear();
+    m_npcFocusPos = {};
+    m_npcFocusWindowMs = 0;
+    m_npcFocusTimer.restart();
 }
 
 void Game::addVip(const std::string_view name)

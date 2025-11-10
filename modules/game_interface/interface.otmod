@@ -52,5 +52,6 @@ Module
     - game_creatureinformation
     - game_rewardwall
     - game_jutsusbar
+    - game_npcdialog
   @onLoad: init()
   @onUnload: terminate()

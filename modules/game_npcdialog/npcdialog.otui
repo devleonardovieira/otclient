@@ -1,0 +1,62 @@
+MainWindow
+  id: npcDialogWindow
+  anchors.centerIn: parent
+  size: 360 220
+  image-source: /images/ui/window_new
+  image-border: 4
+  image-border-top: 16
+  image-border-bottom: 4
+  draggable: true
+
+  Label
+    id: title
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-align: center
+    font: cipsoftFont
+    color: #ffffff
+    !text: tr('Diálogo com NPC')
+    text-offset: 0 2
+
+  UIWidget
+    id: contentArea
+    anchors.top: title.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: optionsPanel.top
+    margin: 8
+
+    UICreature
+      id: portrait
+      size: 96 96
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 4
+      margin-left: 4
+
+    Label
+      id: npcMessage
+      anchors.top: parent.top
+      anchors.left: portrait.right
+      anchors.right: parent.right
+      margin-left: 10
+      margin-top: 8
+      text-wrap: true
+      text-auto-resize: true
+      font: verdana-11px-rounded
+      color: #dfdfdf
+
+  UIWidget
+    id: optionsPanel
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    height: 40
+    image-source: /images/ui/2pixel_up_frame_borderimage
+    image-border: 5
+    margin-top: 8
+    layout:
+      type: horizontalBox
+      spacing: 6
+      align-right: true

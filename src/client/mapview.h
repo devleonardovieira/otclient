@@ -133,6 +133,9 @@ public:
     void addForegroundTile(const TilePtr& tile);
     void removeForegroundTile(const TilePtr& tile);
 
+    // Expor criatura atualmente sob hover/deteção de proximidade (usada para ícone 'F')
+    CreaturePtr getHoveredCreature() const { return m_posInfo.hoveredCreature; }
+
 protected:
     void onGlobalLightChange(const Light& light);
     void onFloorChange(uint8_t floor, uint8_t previousFloor);

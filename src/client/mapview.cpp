@@ -38,7 +38,10 @@
 #include "framework/graphics/painter.h"
 #include "framework/graphics/shadermanager.h"
 #include "framework/graphics/texturemanager.h"
+#include <framework/core/clock.h>
 #include <framework/platform/platformwindow.h>
+// Needed for turning and talking
+#include "game.h"
 
 MapView::MapView() : m_lightView(std::make_unique<LightView>(Size())), m_pool(g_drawPool.get(DrawPoolType::MAP))
 {
@@ -217,6 +220,43 @@ void MapView::drawCreatureInformation() {
     if (m_drawHealthBars) { flags |= Otc::DrawBars; }
     if (m_drawManaBar) { flags |= Otc::DrawManaBar; }
 
+    // Atualiza a criatura sob o mouse para dicas de interação (ícone "F")
+    m_posInfo.hoveredCreature = nullptr;
+    if (m_lastHighlightTile) {
+        m_posInfo.hoveredCreature = m_lastHighlightTile->getTopCreature();
+    }
+    // Fallback quando o highlight está desativado: usa a última posição do mouse
+    // para obter o tile e a criatura do topo, sem selecionar/realçar o tile.
+    if (!m_posInfo.hoveredCreature) {
+        const bool mouseInside = m_posInfo.rect.contains(g_window.getMousePosition() * g_window.getDisplayDensity());
+        if (mouseInside && m_mousePosition.isValid()) {
+            const auto& tile = m_shiftPressed ? getTopTile(m_mousePosition) : g_map.getTile(m_mousePosition);
+            if (tile)
+                m_posInfo.hoveredCreature = tile->getTopCreature();
+        }
+        // Proximidade do jogador: se não houver hover por mouse, mostra o 'F' para o NPC mais próximo
+        // dentro de 1 tile (inclui diagonais, distância de Chebyshev <= 1) no mesmo andar.
+        if (!m_posInfo.hoveredCreature) {
+            if (const auto& localPlayer = g_game.getLocalPlayer()) {
+                const auto lpPos = localPlayer->getPosition();
+                CreaturePtr nearestNpc;
+                int bestChebyshev = std::numeric_limits<int>::max();
+                for (const auto& [uid, creature] : g_map.getCreatures()) {
+                    if (!creature || !creature->isNpc()) continue;
+                    const auto cpos = creature->getPosition();
+                    if (cpos.z != lpPos.z) continue;
+                    const int dx = static_cast<int>(cpos.x) - static_cast<int>(lpPos.x);
+                    const int dy = static_cast<int>(cpos.y) - static_cast<int>(lpPos.y);
+                    const int chebyshev = std::max(std::abs(dx), std::abs(dy));
+                    if (chebyshev < bestChebyshev) { bestChebyshev = chebyshev; nearestNpc = creature; }
+                }
+                // Limite de proximidade: até 1 tile em qualquer direção (inclui diagonais)
+                if (bestChebyshev <= 1)
+                    m_posInfo.hoveredCreature = nearestNpc;
+            }
+        }
+    }
+
     Position _camera = m_posInfo.camera;
     const bool alwaysTransparent = m_floorViewMode == Otc::ALWAYS_WITH_TRANSPARENCY && _camera.coveredUp(m_posInfo.camera.z - m_floorMin);
     for (const auto& [uid, creature] : g_map.getCreatures()) {
@@ -243,15 +283,64 @@ void MapView::drawForeground(const Rect& rect)
         if (staticText->getMessageMode() == Otc::MessageNone)
             continue;
 
-        const auto& pos = staticText->getPosition();
-        if (pos.z != m_posInfo.camera.z && staticText->getMessageMode() == Otc::MessageNone)
-            continue;
+        // Se houver uma criatura com o mesmo nome da mensagem, 
+        // desenhe a bolha ancorada à criatura (segue o movimento).
+        Point p;
+        bool anchoredToCreature = false;
 
-        Point p = transformPositionTo2D(pos) - m_posInfo.drawOffset;
-        p.x *= m_posInfo.horizontalStretchFactor;
-        p.y *= m_posInfo.verticalStretchFactor;
-        p += rect.topLeft();
-        staticText->drawText(p.scale(g_app.getStaticTextScale()), rect);
+        // Tenta encontrar a criatura pelo nome do emissor
+        const std::string speakerName = staticText->getName();
+        if (!speakerName.empty()) {
+            for (const auto& [uid, creature] : g_map.getCreatures()) {
+                if (!creature) continue;
+                if (creature->getName() != speakerName) continue;
+
+                // Garante o mesmo andar da câmera
+                if (creature->getPosition().z != m_posInfo.camera.z)
+                    break;
+
+                // Atualiza a posição do StaticText para o tile atual da criatura
+                staticText->setPosition(creature->getPosition());
+
+                // Reproduz exatamente o cálculo de Creature::drawInformation para ancorar à posição do nome
+                // e evitar pulos tanto ao clicar quanto nas setinhas.
+                p = transformPositionTo2D(creature->getPosition()) - m_posInfo.drawOffset;
+
+                const auto displacementX = g_game.getFeature(Otc::GameNegativeOffset) ? 0 : creature->getDisplacementX();
+                const auto displacementY = g_game.getFeature(Otc::GameNegativeOffset) ? 0 : creature->getDisplacementY();
+                const auto creatureOffset = Point(16 - displacementX, -displacementY - 2) + creature->getDrawOffset();
+                const auto jumpOffset = creature->getJumpOffset() * g_drawPool.getScaleFactor();
+
+                p += (creatureOffset - Point(std::round(jumpOffset.x), std::round(jumpOffset.y))) * m_posInfo.scaleFactor;
+                p.x *= m_posInfo.horizontalStretchFactor;
+                p.y *= m_posInfo.verticalStretchFactor;
+                p += rect.topLeft();
+
+                // Ancorar o StaticText diretamente à criatura para cálculos estáveis do offset
+                staticText->setAnchorCreature(creature);
+                anchoredToCreature = true;
+                break;
+            }
+        }
+
+        if (!anchoredToCreature) {
+            staticText->clearAnchorCreature();
+            // Fallback: desenha pela posição fixa atual do StaticText
+            const auto& pos = staticText->getPosition();
+            if (pos.z != m_posInfo.camera.z)
+                continue;
+
+            p = transformPositionTo2D(pos) - m_posInfo.drawOffset;
+            p.x *= m_posInfo.horizontalStretchFactor;
+            p.y *= m_posInfo.verticalStretchFactor;
+            p += rect.topLeft();
+        }
+
+        // Evita dupla escala: o DrawPool já está escalado.
+        // Também arredonda para evitar jitter por subpixel ao andar nas setinhas.
+        p.x = std::round(p.x);
+        p.y = std::round(p.y);
+        staticText->drawText(p, rect);
     }
 
     g_drawPool.scale(g_app.getAnimatedTextScale());
@@ -569,6 +658,62 @@ void MapView::onKeyRelease(const InputEvent& inputEvent)
     if (shiftPressed != m_shiftPressed) {
         m_shiftPressed = shiftPressed;
         onMouseMove(m_mousePosition);
+    }
+
+    // Auto-talk to focused NPC on 'F' key (private, with cooldown)
+    if (inputEvent.keyCode == Fw::KeyF) {
+        static ticks_t s_lastNpcTalkMs = 0;
+        const ticks_t now = g_clock.millis();
+        const uint16_t COOLDOWN_MS = 600;
+        if (now - s_lastNpcTalkMs < COOLDOWN_MS)
+            return;
+
+        const auto player = g_game.getLocalPlayer();
+        if (!player)
+            return;
+
+        const auto playerPos = player->getPosition();
+
+        // Seleciona NPC focado: raio curto e desempate pela direção do player
+        const uint16_t FOCUS_RANGE = 2;
+        CreaturePtr focusedNpc;
+        uint16_t bestDist = std::numeric_limits<uint16_t>::max();
+        const auto playerDir = player->getDirection();
+
+        for (const auto& [uid, creature] : g_map.getCreatures()) {
+            if (!creature || !creature->isNpc()) continue;
+
+            const auto& cpos = creature->getPosition();
+            if (cpos.z != playerPos.z) continue;
+            if (!m_posInfo.isInRangeEx(cpos)) continue;
+
+            const uint16_t dist = playerPos.manhattanDistance(cpos);
+            if (dist > FOCUS_RANGE) continue;
+
+            if (!focusedNpc || dist < bestDist) {
+                focusedNpc = creature;
+                bestDist = dist;
+            } else if (dist == bestDist) {
+                const auto dirTo = Position::getDirectionFromPositions(playerPos, cpos);
+                const auto dirCurrent = Position::getDirectionFromPositions(playerPos, focusedNpc->getPosition());
+                const bool dirToMatches = (dirTo == playerDir);
+                const bool dirCurrentMatches = (dirCurrent == playerDir);
+                if (dirToMatches && !dirCurrentMatches)
+                    focusedNpc = creature;
+            }
+        }
+
+        if (focusedNpc) {
+            const auto dir = Position::getDirectionFromPositions(playerPos, focusedNpc->getPosition());
+            if (dir != Otc::InvalidDirection)
+                g_game.turn(dir);
+
+            // Inicia conversa em modo privado para o NPC, evitando eco no chat
+            // Define foco de NPC por nome e posição para filtrar respostas de outros NPCs iguais
+            g_game.setNpcFocusTarget(focusedNpc->getName(), focusedNpc->getPosition(), 1500);
+            s_lastNpcTalkMs = now;
+            g_game.talkPrivate(Otc::MessageNpcTo, focusedNpc->getName(), "hi");
+        }
     }
 }
 

@@ -58,6 +58,10 @@ public:
     Position getPosition() const { return m_position; }
     void setPosition(const Position& position) { m_position = position; }
 
+    // Ancorar diretamente à criatura emissora para cálculos estáveis durante o passo-a-passo
+    void setAnchorCreature(const CreaturePtr& creature) { m_anchorCreature = creature; }
+    void clearAnchorCreature() { m_anchorCreature.reset(); }
+
 private:
     void update();
     void scheduleUpdate();
@@ -70,4 +74,5 @@ private:
     CachedText m_cachedText;
     ScheduledEventPtr m_updateEvent;
     Position m_position;
+    CreaturePtr m_anchorCreature;
 };
