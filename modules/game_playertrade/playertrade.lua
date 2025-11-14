@@ -505,6 +505,8 @@ function onTradeItemAdd(playerSide, slot, itemId, count)
     local item = Item.create(itemId)
     item:setCount(count)
     slotWidget:setItem(item)
+    -- Garantir visibilidade do slot do item recebido
+    if slotWidget.setVisible then slotWidget:setVisible(true) end
     ItemsDatabase.setTier(slotWidget, item)
     slotWidget.onClick = function()
         -- Inspect the opposite side for details
