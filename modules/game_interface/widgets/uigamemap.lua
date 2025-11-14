@@ -23,6 +23,8 @@ function UIGameMap:onDragEnter(mousePos)
     end
 
     self.currentDragThing = thing
+    -- Disponibiliza a 'thing' arrastada globalmente como fallback para handlers que não recebem a origem
+    g_ui.draggedThing = thing
 
     g_mouse.pushCursor('target')
     self.allowNextRelease = false
@@ -32,6 +34,9 @@ end
 function UIGameMap:onDragLeave(droppedWidget, mousePos)
     self.currentDragThing = nil
     self.hoveredWho = nil
+    if g_ui.draggedThing == droppedWidget then
+        g_ui.draggedThing = nil
+    end
     g_mouse.popCursor('target')
     return true
 end

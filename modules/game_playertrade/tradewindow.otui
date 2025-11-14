@@ -1,107 +1,229 @@
-TradeWindow < MiniWindow
+TradeWindow < MainWindow
   !text: tr('Trade')
-  height: 150
+  size: 620 380
 
-  Item
-    id: tradeItem
-    virtual: true
-    size: 16 16
+  FlatPanel
+    id: headerPanel
     anchors.top: parent.top
     anchors.left: parent.left
-    margin-top: 4
-    margin-left: 4
-
-  MiniWindowContents
+    anchors.right: parent.right
+    height: 40
     padding: 4
-
-    ScrollableFlatPanel
-      id: ownTradeContainer
-      anchors.top: parent.top
-      anchors.bottom: acceptButton.top
-      anchors.left: parent.left
-      anchors.right: ownTradeScrollBar.left
-      margin-top: 16
-      margin-bottom: 4
-      padding: 2
-      layout:
-        type: grid
-        cell-size: 34 34
-        flow: true
-        cell-spacing: 1
-      vertical-scrollbar: ownTradeScrollBar
-
-    VerticalScrollBar
-      id: ownTradeScrollBar
-      anchors.top: parent.top
-      anchors.bottom: acceptButton.top
-      anchors.right: parent.horizontalCenter
-      margin-top: 16
-      margin-bottom: 4
-      margin-right: 2
-      step: 14
-      pixels-scroll: true
-      $!on:
-        width: 0
-
-    ScrollableFlatPanel
-      id: counterTradeContainer
-      anchors.top: parent.top
-      anchors.bottom: acceptButton.top
-      anchors.left: parent.horizontalCenter
-      anchors.right: counterTradeScrollBar.left
-      margin-top: 16
-      margin-bottom: 4
-      margin-left: 2
-      padding: 2
-      layout:
-        type: grid
-        cell-size: 34 34
-        flow: true
-        cell-spacing: 1
-      vertical-scrollbar: counterTradeScrollBar
-
-    VerticalScrollBar
-      id: counterTradeScrollBar
-      anchors.top: parent.top
-      anchors.bottom: acceptButton.top
-      anchors.right: parent.right
-      margin-top: 16
-      margin-bottom: 4
-      margin-right: 1
-      step: 14
-      pixels-scroll: true
-      $!on:
-        width: 0
 
     Label
       id: ownTradeLabel
-      anchors.bottom: ownTradeContainer.top
-      anchors.left: ownTradeContainer.left
-      anchors.right: parent.horizontalCenter
-      margin-bottom: 2
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      width: 280
+      !text: tr('Você')
 
     Label
       id: counterTradeLabel
-      anchors.bottom: counterTradeContainer.top
-      anchors.left: parent.horizontalCenter
-      anchors.right: counterTradeScrollBar.right
-      margin-bottom: 2
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      width: 280
+      text-align: right
 
-    Button
-      !text: tr('Accept')
-      id: acceptButton
-      anchors.bottom: parent.bottom
-      anchors.left: parent.left
-      anchors.right: parent.horizontalCenter
-      margin-right: 2
-      enabled: false
-      @onClick: g_game.acceptTrade(); self:disable()
+  Label
+    !text: tr('Ofertas:')
+    id: ownOffersText
+    anchors.top: headerPanel.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    margin-left: 6
 
-    Button
-      !text: tr('Reject')
-      id: rejectButton
+  Label
+    !text: tr('Ofertas:')
+    id: counterOffersText
+    anchors.top: headerPanel.bottom
+    anchors.right: parent.right
+    margin-top: 6
+    margin-right: 6
+    text-align: right
+
+  FlatPanel
+    id: ownPanel
+    anchors.top: ownOffersText.bottom
+    anchors.bottom: acceptButton.top
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-top: 4
+    margin-bottom: 6
+    padding: 4
+
+    VerticalScrollBar
+      id: ownScroll
+      anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.right: parent.right
-      anchors.left: parent.horizontalCenter
-      margin-left: 2
-      @onClick: g_game.rejectTrade()
+      step: 34
+      pixels-scroll: true
+
+    ScrollablePanel
+      id: ownTradeContainer
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: ownScroll.left
+      margin-right: 4
+      vertical-scrollbar: ownScroll
+      layout:
+        type: grid
+        cell-size: 34 34
+        flow: true
+        cell-spacing: 2
+
+      Item
+        id: ownSlot1
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot2
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot3
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot4
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot5
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot6
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot7
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot8
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot9
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot10
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot11
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot12
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot13
+        selectable: true
+        size: 34 34
+      Item
+        id: ownSlot14
+        selectable: true
+        size: 34 34
+
+  FlatPanel
+    id: counterPanel
+    anchors.top: counterOffersText.bottom
+    anchors.bottom: acceptButton.top
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    margin-top: 4
+    margin-bottom: 6
+    padding: 4
+
+    VerticalScrollBar
+      id: counterScroll
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      step: 34
+      pixels-scroll: true
+
+    ScrollablePanel
+      id: counterTradeContainer
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: counterScroll.left
+      margin-right: 4
+      vertical-scrollbar: counterScroll
+      layout:
+        type: grid
+        cell-size: 34 34
+        flow: true
+        cell-spacing: 2
+
+      Item
+        id: counterSlot1
+        size: 34 34
+      Item
+        id: counterSlot2
+        size: 34 34
+      Item
+        id: counterSlot3
+        size: 34 34
+      Item
+        id: counterSlot4
+        size: 34 34
+      Item
+        id: counterSlot5
+        size: 34 34
+      Item
+        id: counterSlot6
+        size: 34 34
+      Item
+        id: counterSlot7
+        size: 34 34
+      Item
+        id: counterSlot8
+        size: 34 34
+      Item
+        id: counterSlot9
+        size: 34 34
+      Item
+        id: counterSlot10
+        size: 34 34
+      Item
+        id: counterSlot11
+        size: 34 34
+      Item
+        id: counterSlot12
+        size: 34 34
+      Item
+        id: counterSlot13
+        size: 34 34
+      Item
+        id: counterSlot14
+        size: 34 34
+
+  Button
+    !text: tr('Accept')
+    id: acceptButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-left: 8
+    margin-right: 4
+    margin-bottom: 8
+    enabled: false
+    @onClick: g_game.acceptTrade(); self:disable()
+
+  Button
+    !text: tr('Reject')
+    id: rejectButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    margin-left: 4
+    margin-right: 8
+    margin-bottom: 8
+    @onClick: g_game.rejectTrade()

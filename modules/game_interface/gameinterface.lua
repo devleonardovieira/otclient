@@ -761,6 +761,14 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                 menu:addOption(tr('Message to %s', creatureName), function()
                     g_game.openPrivateChannel(creatureName)
                 end)
+                -- Player trade: solicitar trade ao alvo; janela abrirá ao aceitar
+                menu:addOption(tr('Trade'), function()
+                    local creature = creatureThing
+                    if creature then
+                        print('[interface] Trade request sent to ' .. creature:getName())
+                        g_game.requestPlayerTrade(creature)
+                    end
+                end)
                 if modules.game_console.getOwnPrivateTab() then
                     menu:addOption(tr('Invite to private chat'), function()
                         g_game.inviteToOwnChannel(creatureName)

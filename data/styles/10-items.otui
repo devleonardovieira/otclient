@@ -5,6 +5,7 @@ Item < UIItem
   font: verdana-11px-rounded
   border-color: white
   color: white
+  draggable: true
 
   $disabled:
     color: #646464
@@ -207,6 +208,7 @@ MainInventoryItem < UIWidget
     font: verdana-11px-rounded
     border-color: white
     color: white
+    draggable: true
 	
     Label
       id: duration

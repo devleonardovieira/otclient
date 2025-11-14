@@ -60,9 +60,15 @@ public:
     void sendSellItem(uint16_t itemId, uint8_t subType, uint16_t amount, bool ignoreEquipped);
     void sendCloseNpcTrade();
     void sendRequestTrade(const Position& pos, uint16_t thingId, uint8_t stackpos, uint32_t creatureId);
+    void sendRequestPlayerTrade(uint32_t creatureId);
     void sendInspectTrade(bool counterOffer, uint8_t index);
     void sendAcceptTrade();
     void sendRejectTrade();
+    // custom player trade window (MMO-style) - client actions
+    void sendTradeActionAddItem(uint8_t slot, uint16_t itemId, uint8_t count);
+    void sendTradeActionRemoveItem(uint8_t slot);
+    void sendTradeActionAccept(bool accepted);
+    void sendTradeActionCancel();
     void sendUseItem(const Position& position, uint16_t itemId, uint8_t stackpos, uint8_t index);
     void sendUseItemWith(const Position& fromPos, uint16_t itemId, uint8_t fromStackPos, const Position& toPos, uint16_t toThingId, uint8_t toStackPos);
     void sendUseOnCreature(const Position& pos, uint16_t thingId, uint8_t stackpos, uint32_t creatureId);
@@ -281,6 +287,13 @@ private:
     void parseOwnTrade(const InputMessagePtr& msg);
     void parseCounterTrade(const InputMessagePtr& msg);
     void parseCloseTrade(const InputMessagePtr&);
+
+    // custom player trade window (MMO-style)
+    void parseTradeWindowOpen(const InputMessagePtr& msg);
+    void parseTradeWindowItemAdd(const InputMessagePtr& msg);
+    void parseTradeWindowItemRemove(const InputMessagePtr& msg);
+    void parseTradeWindowAcceptUpdate(const InputMessagePtr& msg);
+    void parseTradeWindowClose(const InputMessagePtr& msg);
     void parseTextMessage(const InputMessagePtr& msg);
     void parseCancelWalk(const InputMessagePtr& msg);
     void parseWalkWait(const InputMessagePtr& msg) const;

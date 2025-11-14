@@ -10,6 +10,8 @@ function UIItem:onDragEnter(mousePos)
 
     self:setBorderWidth(1)
     self.currentDragThing = item
+    -- Disponibiliza o item arrastado globalmente como fallback para handlers que não recebem a origem
+    g_ui.draggedThing = item
     g_mouse.pushCursor('target')
     return true
 end
@@ -19,6 +21,10 @@ function UIItem:onDragLeave(droppedWidget, mousePos)
         return false
     end
     self.currentDragThing = nil
+    -- Limpa fallback global
+    if g_ui.draggedThing == self:getItem() then
+        g_ui.draggedThing = nil
+    end
     g_mouse.popCursor('target')
     self:setBorderWidth(0)
     self.hoveredWho = nil
@@ -42,6 +48,11 @@ function UIItem:onDrop(widget, mousePos)
     local toPos = self.position
     if not (toPos) and self:getParent() and self:getParent().slotPosition then
         toPos = self:getParent().slotPosition
+    end
+    -- Safeguard: drop targets without a destination position (e.g., trade slots)
+    -- should not attempt to move items on the map/inventory.
+    if not toPos then
+        return false
     end
     if modules.game_actionbar and modules.game_actionbar.tryAssignActionButtonFromDrop(mousePos, widget, item:getId()) then
         return true

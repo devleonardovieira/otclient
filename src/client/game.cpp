@@ -496,6 +496,32 @@ void Game::processCloseTrade()
     g_lua.callGlobalField("g_game", "onCloseTrade");
 }
 
+// custom player trade window (MMO-style)
+void Game::processOpenTradeWindow(const std::string_view otherName, const uint8_t slotCount)
+{
+    g_lua.callGlobalField("g_game", "onOpenTradeWindow", otherName, slotCount);
+}
+
+void Game::processTradeItemAdd(const bool playerSide, const uint8_t slot, const uint16_t itemId, const uint8_t count)
+{
+    g_lua.callGlobalField("g_game", "onTradeItemAdd", playerSide, slot, itemId, count);
+}
+
+void Game::processTradeItemRemove(const bool playerSide, const uint8_t slot)
+{
+    g_lua.callGlobalField("g_game", "onTradeItemRemove", playerSide, slot);
+}
+
+void Game::processTradeAcceptChange(const bool playerSide, const bool accepted)
+{
+    g_lua.callGlobalField("g_game", "onTradeAcceptChange", playerSide, accepted);
+}
+
+void Game::processTradeWindowClose()
+{
+    g_lua.callGlobalField("g_game", "onCloseTradeWindow");
+}
+
 void Game::processEditText(const uint32_t id, const uint32_t itemId, const uint16_t maxLength, const std::string_view text, const std::string_view writer, const std::string_view date)
 {
     g_lua.callGlobalField("g_game", "onEditText", id, itemId, maxLength, text, writer, date);
@@ -1417,6 +1443,14 @@ void Game::requestTrade(const ItemPtr& item, const CreaturePtr& creature)
     m_protocolGame->sendRequestTrade(item->getPosition(), item->getId(), item->getStackPos(), creature->getId());
 }
 
+void Game::requestPlayerTrade(const CreaturePtr& creature)
+{
+    if (!canPerformGameAction() || !creature)
+        return;
+
+    m_protocolGame->sendRequestPlayerTrade(creature->getId());
+}
+
 void Game::inspectTrade(const bool counterOffer, const uint8_t index)
 {
     if (!canPerformGameAction())
@@ -1429,7 +1463,8 @@ void Game::acceptTrade()
 {
     if (!canPerformGameAction())
         return;
-
+    // Send new MMO-style accept and fallback to classic accept for compatibility
+    m_protocolGame->sendTradeActionAccept(true);
     m_protocolGame->sendAcceptTrade();
 }
 
@@ -1437,8 +1472,43 @@ void Game::rejectTrade()
 {
     if (!canPerformGameAction())
         return;
-
+    // Send new MMO-style cancel and fallback to classic reject for compatibility
+    m_protocolGame->sendTradeActionCancel();
     m_protocolGame->sendRejectTrade();
+}
+
+void Game::tradeWindowAddItem(const uint8_t slot, const uint16_t itemId, const uint8_t count)
+{
+    const bool canAct = canPerformGameAction();
+    g_logger.error("[trade] ui AddItem trigger: slot0={} itemId={} count={} canAct={}", static_cast<int>(slot), itemId, static_cast<int>(count), canAct ? 1 : 0);
+    if (!canAct) {
+        g_logger.error("[trade] blocked by guards: online={} localPlayer={} dead={} protocolGame={} connected={}",
+                       isOnline() ? 1 : 0,
+                       m_localPlayer ? 1 : 0,
+                       m_dead ? 1 : 0,
+                       m_protocolGame ? 1 : 0,
+                       (m_protocolGame && m_protocolGame->isConnected()) ? 1 : 0);
+        return;
+    }
+
+    m_protocolGame->sendTradeActionAddItem(slot, itemId, count);
+}
+
+void Game::tradeWindowRemoveItem(const uint8_t slot)
+{
+    const bool canAct = canPerformGameAction();
+    g_logger.error("[trade] ui RemoveItem trigger: slot0={} canAct={}", static_cast<int>(slot), canAct ? 1 : 0);
+    if (!canAct) {
+        g_logger.error("[trade] blocked by guards: online={} localPlayer={} dead={} protocolGame={} connected={}",
+                       isOnline() ? 1 : 0,
+                       m_localPlayer ? 1 : 0,
+                       m_dead ? 1 : 0,
+                       m_protocolGame ? 1 : 0,
+                       (m_protocolGame && m_protocolGame->isConnected()) ? 1 : 0);
+        return;
+    }
+
+    m_protocolGame->sendTradeActionRemoveItem(slot);
 }
 
 void Game::editText(const uint32_t id, const std::string_view text)

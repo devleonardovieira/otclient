@@ -80,6 +80,13 @@ namespace Proto
         GameServerFeatures = 67,
         GameServerFloorDescription = 75,
 
+        // Custom player trade window (MMO-style)
+        GameServerTradeWindowOpen = 80,
+        GameServerTradeWindowItemAdd = 81,
+        GameServerTradeWindowItemRemove = 82,
+        GameServerTradeWindowAcceptUpdate = 83,
+        GameServerTradeWindowClose = 84,
+
         // original tibia ONLY
         GameServerImbuementDurations = 93,
         GameServerPassiveCooldown = 94,
@@ -248,6 +255,13 @@ namespace Proto
 
         // NOTE: add any custom opcodes in this range
         // 51 - 99
+
+        // Custom player trade window (MMO-style)
+        ClientTradeActionAddItem = 85,
+        ClientTradeActionRemoveItem = 86,
+        ClientTradeActionAccept = 87,
+        ClientTradeActionCancel = 88,
+        ClientRequestPlayerTrade = 89,
 
         // original tibia ONLY
         ClientImbuementDurations = 96,

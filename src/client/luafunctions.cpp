@@ -297,9 +297,14 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "sellItem", &Game::sellItem, &g_game);
     g_lua.bindSingletonFunction("g_game", "closeNpcTrade", &Game::closeNpcTrade, &g_game);
     g_lua.bindSingletonFunction("g_game", "requestTrade", &Game::requestTrade, &g_game);
+    // Solicitação de trade por jogador (MMO-style handshake)
+    g_lua.bindSingletonFunction("g_game", "requestPlayerTrade", &Game::requestPlayerTrade, &g_game);
     g_lua.bindSingletonFunction("g_game", "inspectTrade", &Game::inspectTrade, &g_game);
     g_lua.bindSingletonFunction("g_game", "acceptTrade", &Game::acceptTrade, &g_game);
     g_lua.bindSingletonFunction("g_game", "rejectTrade", &Game::rejectTrade, &g_game);
+    // MMO-style trade window actions
+    g_lua.bindSingletonFunction("g_game", "tradeWindowAddItem", &Game::tradeWindowAddItem, &g_game);
+    g_lua.bindSingletonFunction("g_game", "tradeWindowRemoveItem", &Game::tradeWindowRemoveItem, &g_game);
     g_lua.bindSingletonFunction("g_game", "openRuleViolation", &Game::openRuleViolation, &g_game);
     g_lua.bindSingletonFunction("g_game", "closeRuleViolation", &Game::closeRuleViolation, &g_game);
     g_lua.bindSingletonFunction("g_game", "cancelRuleViolation", &Game::cancelRuleViolation, &g_game);

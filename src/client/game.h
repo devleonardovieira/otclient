@@ -118,6 +118,13 @@ protected:
     static void processCounterTrade(std::string_view name, const std::vector<ItemPtr>& items);
     static void processCloseTrade();
 
+    // custom player trade window (MMO-style)
+    static void processOpenTradeWindow(std::string_view otherName, uint8_t slotCount);
+    static void processTradeItemAdd(bool playerSide, uint8_t slot, uint16_t itemId, uint8_t count);
+    static void processTradeItemRemove(bool playerSide, uint8_t slot);
+    static void processTradeAcceptChange(bool playerSide, bool accepted);
+    static void processTradeWindowClose();
+
     // edit text/list
     static void processEditText(uint32_t id, uint32_t itemId, uint16_t maxLength, std::string_view text, std::string_view writer, std::string_view date);
     static void processEditList(uint32_t id, uint8_t doorId, std::string_view text);
@@ -265,9 +272,14 @@ public:
 
     // player trade related
     void requestTrade(const ItemPtr& item, const CreaturePtr& creature);
+    void requestPlayerTrade(const CreaturePtr& creature);
     void inspectTrade(bool counterOffer, uint8_t index);
     void acceptTrade();
     void rejectTrade();
+
+    // MMO-style trade window actions
+    void tradeWindowAddItem(uint8_t slot, uint16_t itemId, uint8_t count);
+    void tradeWindowRemoveItem(uint8_t slot);
 
     // house window and editable items related
     void editText(uint32_t id, std::string_view text);
