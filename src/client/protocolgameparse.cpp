@@ -663,8 +663,7 @@ void ProtocolGame::parseTradeWindowOpen(const InputMessagePtr& msg)
 {
     const std::string otherName = msg->getString();
     const uint8_t slotCount = msg->getU8();
-    g_logger.info("[trade] recv OpenWindow: other=\"{}\" slots={}", otherName, static_cast<int>(slotCount));
-    g_game.processOpenTradeWindow(otherName, slotCount);
+  g_game.processOpenTradeWindow(otherName, slotCount);
 }
 
 void ProtocolGame::parseTradeWindowItemAdd(const InputMessagePtr& msg)
@@ -673,31 +672,27 @@ void ProtocolGame::parseTradeWindowItemAdd(const InputMessagePtr& msg)
     const uint8_t slot = msg->getU8();
     const uint16_t itemId = msg->getU16();
     const uint8_t count = msg->getU8();
-    g_logger.info("[trade] recv ItemAdd: side={} slot={} itemId={} count={}", static_cast<int>(playerSide), static_cast<int>(slot), itemId, static_cast<int>(count));
-    g_game.processTradeItemAdd(playerSide, slot, itemId, count);
+  g_game.processTradeItemAdd(playerSide, slot, itemId, count);
 }
 
 void ProtocolGame::parseTradeWindowItemRemove(const InputMessagePtr& msg)
 {
     const uint8_t playerSide = msg->getU8(); // 0 = own, 1 = other
     const uint8_t slot = msg->getU8();
-    g_logger.info("[trade] recv ItemRemove: side={} slot={}", static_cast<int>(playerSide), static_cast<int>(slot));
-    g_game.processTradeItemRemove(playerSide, slot);
+  g_game.processTradeItemRemove(playerSide, slot);
 }
 
 void ProtocolGame::parseTradeWindowAcceptUpdate(const InputMessagePtr& msg)
 {
     const uint8_t playerSide = msg->getU8(); // 0 = own, 1 = other
     const uint8_t accepted = msg->getU8();
-    g_logger.info("[trade] recv AcceptUpdate: side={} accepted={}", static_cast<int>(playerSide), static_cast<int>(accepted));
-    g_game.processTradeAcceptChange(playerSide, accepted != 0);
+   g_game.processTradeAcceptChange(playerSide, accepted != 0);
 }
 
 void ProtocolGame::parseTradeWindowClose(const InputMessagePtr& msg)
 {
     // optional: reason code can be sent by server; ignore for now
-    g_logger.info("[trade] recv CloseWindow");
-    g_game.processTradeWindowClose();
+  g_game.processTradeWindowClose();
 }
 
 void ProtocolGame::parseLogin(const InputMessagePtr& msg) const

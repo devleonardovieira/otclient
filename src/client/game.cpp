@@ -1480,14 +1480,7 @@ void Game::rejectTrade()
 void Game::tradeWindowAddItem(const uint8_t slot, const uint16_t itemId, const uint8_t count)
 {
     const bool canAct = canPerformGameAction();
-    g_logger.error("[trade] ui AddItem trigger: slot0={} itemId={} count={} canAct={}", static_cast<int>(slot), itemId, static_cast<int>(count), canAct ? 1 : 0);
     if (!canAct) {
-        g_logger.error("[trade] blocked by guards: online={} localPlayer={} dead={} protocolGame={} connected={}",
-                       isOnline() ? 1 : 0,
-                       m_localPlayer ? 1 : 0,
-                       m_dead ? 1 : 0,
-                       m_protocolGame ? 1 : 0,
-                       (m_protocolGame && m_protocolGame->isConnected()) ? 1 : 0);
         return;
     }
 
@@ -1497,14 +1490,7 @@ void Game::tradeWindowAddItem(const uint8_t slot, const uint16_t itemId, const u
 void Game::tradeWindowRemoveItem(const uint8_t slot)
 {
     const bool canAct = canPerformGameAction();
-    g_logger.error("[trade] ui RemoveItem trigger: slot0={} canAct={}", static_cast<int>(slot), canAct ? 1 : 0);
     if (!canAct) {
-        g_logger.error("[trade] blocked by guards: online={} localPlayer={} dead={} protocolGame={} connected={}",
-                       isOnline() ? 1 : 0,
-                       m_localPlayer ? 1 : 0,
-                       m_dead ? 1 : 0,
-                       m_protocolGame ? 1 : 0,
-                       (m_protocolGame && m_protocolGame->isConnected()) ? 1 : 0);
         return;
     }
 

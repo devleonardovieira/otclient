@@ -765,7 +765,6 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                 menu:addOption(tr('Trade'), function()
                     local creature = creatureThing
                     if creature then
-                        print('[interface] Trade request sent to ' .. creature:getName())
                         g_game.requestPlayerTrade(creature)
                     end
                 end)

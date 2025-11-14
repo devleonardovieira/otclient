@@ -41,7 +41,7 @@ function init()
         -- Fallback: close window when game ends
         onGameEnd = onCloseTradeWindow
     })
-    print('[playertrade] init: connected game events for trade window')
+    
 end
 
 function terminate()
@@ -72,7 +72,7 @@ local function ensureWindow()
         tradeWindow:show()
         tradeWindow:raise()
         tradeWindow:focus()
-        print('[playertrade] ensureWindow: created TradeWindow UI')
+        
     end
 end
 
@@ -115,7 +115,7 @@ local function ensureSlot(container, prefix, i, isOwn)
             if thing and thing.isItem and thing:isItem() then
                 slot:setBorderWidth(1)
                 local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                print(string.format('[playertrade] onDragEnter(dyn): slot=%d class=%s itemId=%s', i, cls, tostring(thing:getId())))
+                
                 return true
             end
             return false
@@ -130,30 +130,30 @@ local function ensureSlot(container, prefix, i, isOwn)
             end
             if not item or not item.isItem or not item:isItem() then
                 local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                print(string.format('[playertrade] onDrop(dyn): slot=%d rejected (no item) class=%s', i, cls))
+                
                 return false
             end
             local itemId = item:getId()
             local count = (item.getCount and item:getCount()) or 1
             if not count or count <= 0 then
-                print(string.format('[playertrade] onDrop(dyn): slot=%d itemId=%d count=%d (adjust -> 1)', i, itemId, count or -1))
+                
                 count = 1
             end
-            print(string.format('[playertrade] onDrop(dyn): slot=%d itemId=%d count=%d', i, itemId, count))
+            
             local virtualItem = Item.create(itemId)
             virtualItem:setCount(count)
             slot:setItem(virtualItem)
             ItemsDatabase.setTier(slot, virtualItem)
             -- Não crescer automaticamente aqui; criação de novos slots acontece em drop do container
             local sendSlot = (i or 1) - 1
-            print(string.format('[playertrade] send AddItem (drop/dyn): slot0=%d itemId=%d count=%d', sendSlot, itemId, count))
+            
             g_game.tradeWindowAddItem(sendSlot, itemId, count)
             return true
         end
         slot.onMouseRelease = function(mousePos, mouseButton)
             if mouseButton == MouseRightButton then
                 local sendSlot = (i or 1) - 1
-                print(string.format('[playertrade] onMouseRelease(dyn): right-click remove slot=%d (slot0=%d)', i, sendSlot))
+                
                 g_game.tradeWindowRemoveItem(sendSlot)
                 return true
             end
@@ -180,12 +180,12 @@ local function promptCountAndAdd(slotIndex, item)
     -- Keyboard shortcuts behavior aligned with moveStackableItem
     if g_keyboard.isShiftPressed() then
         local sendSlot = (slotIndex or 1) - 1
-        print(string.format('[playertrade] send AddItem (shift): slot0=%d itemId=%d count=%d', sendSlot, item:getId(), 1))
+        
         g_game.tradeWindowAddItem(sendSlot, item:getId(), 1)
         return
     elseif g_keyboard.isCtrlPressed() ~= modules.client_options.getOption('moveStack') then
         local sendSlot = (slotIndex or 1) - 1
-        print(string.format('[playertrade] send AddItem (ctrl/moveStack): slot0=%d itemId=%d count=%d', sendSlot, item:getId(), total))
+        
         g_game.tradeWindowAddItem(sendSlot, item:getId(), total)
         return
     end
@@ -271,7 +271,7 @@ local function promptCountAndAdd(slotIndex, item)
             end
         end
         local sendSlot = (slotIndex or 1) - 1
-        print(string.format('[playertrade] send AddItem (prompt): slot0=%d itemId=%d count=%d', sendSlot, item:getId(), chosen))
+        
         g_game.tradeWindowAddItem(sendSlot, item:getId(), chosen)
         okButton:getParent():destroy()
         countWindow = nil
@@ -325,15 +325,15 @@ function onOpenTradeWindow(otherName, slotCount)
                 if thing and thing.isItem and thing:isItem() then
                     ownSlot:setBorderWidth(1)
                     local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                    print(string.format('[playertrade] onDragEnter: slot=%d class=%s itemId=%s', i, cls, tostring(thing:getId())))
+                    
                     return true
                 end
-                print(string.format('[playertrade] onDragEnter: slot=%d rejected (no valid item)', i))
+                
                 return false
             end
             ownSlot.onDragLeave = function(droppedWidget, mousePos)
                 ownSlot:setBorderWidth(0)
-                print(string.format('[playertrade] onDragLeave: slot=%d', i))
+                
                 return true
             end
             ownSlot.onDrop = function(_, mousePos)
@@ -347,16 +347,16 @@ function onOpenTradeWindow(otherName, slotCount)
                 end
                 if not item or not item.isItem or not item:isItem() then
                     local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                    print(string.format('[playertrade] onDrop: slot=%d rejected (no item) class=%s', i, cls))
+                    
                     return false
                 end
                 local itemId = item:getId()
                 local count = (item.getCount and item:getCount()) or 1
                 if not count or count <= 0 then
-                    print(string.format('[playertrade] onDrop: slot=%d itemId=%d count=%d (adjust -> 1)', i, itemId, count or -1))
+                    
                     count = 1
                 end
-            print(string.format('[playertrade] onDrop: slot=%d itemId=%d count=%d', i, itemId, count))
+            
             -- Criar item virtual com mesmo id e quantidade do arraste (como no stash)
             local virtualItem = Item.create(itemId)
             virtualItem:setCount(count)
@@ -364,14 +364,14 @@ function onOpenTradeWindow(otherName, slotCount)
             ItemsDatabase.setTier(ownSlot, virtualItem)
             -- Não crescer automaticamente aqui; criação de novos slots acontece em drop do container
             local sendSlot = (i or 1) - 1
-            print(string.format('[playertrade] send AddItem (drop): slot0=%d itemId=%d count=%d', sendSlot, itemId, count))
+            
             g_game.tradeWindowAddItem(sendSlot, itemId, count)
             return true
         end
             ownSlot.onMouseRelease = function(mousePos, mouseButton)
                 if mouseButton == MouseRightButton then
                     local sendSlot = (i or 1) - 1
-                    print(string.format('[playertrade] onMouseRelease: right-click remove slot=%d (slot0=%d)', i, sendSlot))
+                    
                     g_game.tradeWindowRemoveItem(sendSlot)
                     return true
                 end
@@ -432,7 +432,7 @@ function onOpenTradeWindow(otherName, slotCount)
             end
             if not item or not item.isItem or not item:isItem() then
                 local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                print(string.format('[playertrade] onDrop(container): rejected (no item) class=%s', cls))
+                
                 return false
             end
             local itemId = item:getId()
@@ -464,7 +464,7 @@ function onOpenTradeWindow(otherName, slotCount)
             slotWidget:setItem(virtualItem)
             ItemsDatabase.setTier(slotWidget, virtualItem)
             local sendSlot = (targetIndex or 1) - 1
-            print(string.format('[playertrade] send AddItem (container drop): slot0=%d itemId=%d count=%d', sendSlot, itemId, count))
+            
             g_game.tradeWindowAddItem(sendSlot, itemId, count)
             return true
         end
@@ -474,7 +474,7 @@ function onOpenTradeWindow(otherName, slotCount)
     local counterLabel = tradeWindow:recursiveGetChildById('counterTradeLabel')
     ownLabel:setText(tr('You'))
     counterLabel:setText(otherName)
-    print(string.format('[playertrade] onOpenTradeWindow: other="%s" slots=%d', otherName, initialCount))
+    
 
     -- Clear accept state
     local acceptButton = tradeWindow:recursiveGetChildById('acceptButton')
@@ -498,7 +498,7 @@ function onTradeItemAdd(playerSide, slot, itemId, count)
     end
     local resolvedUiIndex = slotWidget and tonumber(slotWidget:getId():match('%d+')) or uiIndex1
     if not slotWidget then
-        print(string.format('[playertrade] onTradeItemAdd: missing widget for side=%s slot=%d (try ui=%d or %d)', isOther and 'counter' or 'own', slot or -1, uiIndex1, uiIndex0))
+        
         return
     end
 
@@ -512,7 +512,7 @@ function onTradeItemAdd(playerSide, slot, itemId, count)
         -- Inspect the opposite side for details
         g_game.inspectTrade(not isOther, slot)
     end
-    print(string.format('[playertrade] onTradeItemAdd: side=%s slot=%d (ui=%d) itemId=%d count=%d', isOther and 'counter' or 'own', slot, resolvedUiIndex, itemId, count))
+    
     -- Não criar slots extras além do item adicionado; apenas garantir o slot do item
     updateAcceptEnabled()
 end
@@ -528,10 +528,10 @@ function onTradeItemRemove(playerSide, slot)
     if slotWidget then
         slotWidget:setItem(nil)
     else
-        print(string.format('[playertrade] onTradeItemRemove: missing widget for side=%s slot=%d (try ui=%d or %d)', isOther and 'counter' or 'own', slot or -1, uiIndex1, uiIndex0))
+        
     end
     local resolvedUiIndex = slotWidget and tonumber(slotWidget:getId():match('%d+')) or uiIndex1
-    print(string.format('[playertrade] onTradeItemRemove: side=%s slot=%d (ui=%d)', isOther and 'counter' or 'own', slot, resolvedUiIndex))
+    
     updateAcceptEnabled()
 end
 
@@ -544,7 +544,7 @@ function onTradeAcceptChange(playerSide, accepted)
         ownAccepted = accepted and true or false
         updateAcceptEnabled()
     end
-    print(string.format('[playertrade] onTradeAcceptChange: side=%s accepted=%s', isOwn and 'own' or 'counter', tostring(accepted)))
+    
 end
 
 function onCloseTradeWindow()
@@ -552,7 +552,7 @@ function onCloseTradeWindow()
         tradeWindow:destroy()
         tradeWindow = nil
     end
-    print('[playertrade] onCloseTradeWindow: window destroyed')
+    
 end
 
 -- Expose manual opening to interface: open an empty trade window for a player

@@ -423,8 +423,7 @@ void ProtocolGame::sendRequestPlayerTrade(const uint32_t creatureId)
     const auto& msg = std::make_shared<OutputMessage>();
     msg->addU8(Proto::ClientRequestPlayerTrade);
     msg->addU32(creatureId);
-    g_logger.info("[trade] send RequestPlayerTrade: creatureId={}", creatureId);
-    send(msg);
+  send(msg);
 }
 
 // custom player trade window (MMO-style) - client actions
@@ -435,8 +434,7 @@ void ProtocolGame::sendTradeActionAddItem(const uint8_t slot, const uint16_t ite
     msg->addU8(slot);
     msg->addU16(itemId);
     msg->addU8(count);
-    g_logger.info("[trade] send AddItem: slot0={} itemId={} count={}", static_cast<int>(slot), itemId, static_cast<int>(count));
-    send(msg);
+  send(msg);
 }
 
 void ProtocolGame::sendTradeActionRemoveItem(const uint8_t slot)
@@ -444,8 +442,7 @@ void ProtocolGame::sendTradeActionRemoveItem(const uint8_t slot)
     const auto& msg = std::make_shared<OutputMessage>();
     msg->addU8(Proto::ClientTradeActionRemoveItem);
     msg->addU8(slot);
-    g_logger.info("[trade] send RemoveItem: slot0={}", static_cast<int>(slot));
-    send(msg);
+   send(msg);
 }
 
 void ProtocolGame::sendTradeActionAccept(const bool accepted)
@@ -453,7 +450,6 @@ void ProtocolGame::sendTradeActionAccept(const bool accepted)
     const auto& msg = std::make_shared<OutputMessage>();
     msg->addU8(Proto::ClientTradeActionAccept);
     msg->addU8(static_cast<uint8_t>(accepted));
-    g_logger.info("[trade] send Accept: accepted={}", accepted ? 1 : 0);
     send(msg);
 }
 
@@ -461,8 +457,7 @@ void ProtocolGame::sendTradeActionCancel()
 {
     const auto& msg = std::make_shared<OutputMessage>();
     msg->addU8(Proto::ClientTradeActionCancel);
-    g_logger.info("[trade] send Cancel");
-    send(msg);
+  send(msg);
 }
 
 void ProtocolGame::sendUseItem(const Position& position, const uint16_t itemId, const uint8_t stackpos, const uint8_t index)
