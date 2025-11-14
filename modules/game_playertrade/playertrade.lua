@@ -144,18 +144,7 @@ local function ensureSlot(container, prefix, i, isOwn)
             virtualItem:setCount(count)
             slot:setItem(virtualItem)
             ItemsDatabase.setTier(slot, virtualItem)
-            -- Crescer imediatamente se for o último slot próprio visível
-            local ownContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
-            local currentOwn = getVisibleSlotCount(ownContainer, 'ownSlot')
-            if i >= currentOwn then
-                local nextIndex = currentOwn + 1
-                local newOwn = ensureSlot(ownContainer, 'ownSlot', nextIndex, true)
-                if newOwn then
-                    newOwn:setItem(nil)
-                    newOwn:setVisible(true)
-                end
-                print(string.format('[playertrade] grow slots (drop/dyn, own only): now visible=%d (added index=%d)', currentOwn + 1, nextIndex))
-            end
+            -- Não crescer automaticamente aqui; criação de novos slots acontece em drop do container
             local sendSlot = (i or 1) - 1
             print(string.format('[playertrade] send AddItem (drop/dyn): slot0=%d itemId=%d count=%d', sendSlot, itemId, count))
             g_game.tradeWindowAddItem(sendSlot, itemId, count)
@@ -304,8 +293,8 @@ function onOpenTradeWindow(otherName, slotCount)
     -- Reset slots visibility and items
     local ownContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
     local counterContainer = tradeWindow:recursiveGetChildById('counterTradeContainer')
-    -- Evita interceptação de drop pelos containers: deixa o slot ser o alvo
-    if ownContainer then ownContainer:setPhantom(true) end
+    -- Permitir drop no container próprio para criar slot somente ao soltar
+    if ownContainer then ownContainer:setPhantom(false) end
     if counterContainer then counterContainer:setPhantom(true) end
 
     local initialCount = slotCount or INITIAL_TRADE_SLOTS
@@ -367,29 +356,18 @@ function onOpenTradeWindow(otherName, slotCount)
                     print(string.format('[playertrade] onDrop: slot=%d itemId=%d count=%d (adjust -> 1)', i, itemId, count or -1))
                     count = 1
                 end
-                print(string.format('[playertrade] onDrop: slot=%d itemId=%d count=%d', i, itemId, count))
-                -- Criar item virtual com mesmo id e quantidade do arraste (como no stash)
-                local virtualItem = Item.create(itemId)
-                virtualItem:setCount(count)
-                ownSlot:setItem(virtualItem)
-                ItemsDatabase.setTier(ownSlot, virtualItem)
-                -- Crescer imediatamente se for o último slot próprio visível
-                local ownContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
-                local currentOwn = getVisibleSlotCount(ownContainer, 'ownSlot')
-                if i >= currentOwn then
-                    local nextIndex = currentOwn + 1
-                    local newOwn = ensureSlot(ownContainer, 'ownSlot', nextIndex, true)
-                    if newOwn then
-                        newOwn:setItem(nil)
-                        newOwn:setVisible(true)
-                    end
-                    print(string.format('[playertrade] grow slots (drop, own only): now visible=%d (added index=%d)', currentOwn + 1, nextIndex))
-                end
-                local sendSlot = (i or 1) - 1
-                print(string.format('[playertrade] send AddItem (drop): slot0=%d itemId=%d count=%d', sendSlot, itemId, count))
-                g_game.tradeWindowAddItem(sendSlot, itemId, count)
-                return true
-            end
+            print(string.format('[playertrade] onDrop: slot=%d itemId=%d count=%d', i, itemId, count))
+            -- Criar item virtual com mesmo id e quantidade do arraste (como no stash)
+            local virtualItem = Item.create(itemId)
+            virtualItem:setCount(count)
+            ownSlot:setItem(virtualItem)
+            ItemsDatabase.setTier(ownSlot, virtualItem)
+            -- Não crescer automaticamente aqui; criação de novos slots acontece em drop do container
+            local sendSlot = (i or 1) - 1
+            print(string.format('[playertrade] send AddItem (drop): slot0=%d itemId=%d count=%d', sendSlot, itemId, count))
+            g_game.tradeWindowAddItem(sendSlot, itemId, count)
+            return true
+        end
             ownSlot.onMouseRelease = function(mousePos, mouseButton)
                 if mouseButton == MouseRightButton then
                     local sendSlot = (i or 1) - 1
@@ -436,6 +414,62 @@ function onOpenTradeWindow(otherName, slotCount)
     hideExtra(ownContainer, 'ownSlot')
     hideExtra(counterContainer, 'counterSlot')
 
+    -- Drop direto no container próprio: cria apenas o slot necessário no momento do drop
+    if ownContainer then
+        ownContainer.onDragEnter = function()
+            local dragging = g_ui.getDraggingWidget()
+            local thing = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
+            if not thing and g_ui.draggedThing then
+                thing = g_ui.draggedThing
+            end
+            return thing and thing.isItem and thing:isItem() or false
+        end
+        ownContainer.onDrop = function(_, mousePos)
+            local dragging = g_ui.getDraggingWidget()
+            local item = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
+            if not item and g_ui.draggedThing then
+                item = g_ui.draggedThing
+            end
+            if not item or not item.isItem or not item:isItem() then
+                local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
+                print(string.format('[playertrade] onDrop(container): rejected (no item) class=%s', cls))
+                return false
+            end
+            local itemId = item:getId()
+            local count = (item.getCount and item:getCount()) or 1
+            if not count or count <= 0 then count = 1 end
+
+            local currentOwn = getVisibleSlotCount(ownContainer, 'ownSlot')
+            -- Primeiro tenta preencher slot vazio visível
+            local targetIndex
+            for idx = 1, currentOwn do
+                local s = ownContainer:recursiveGetChildById('ownSlot' .. idx)
+                if s and (not s:getItem()) then
+                    targetIndex = idx
+                    break
+                end
+            end
+            -- Se não houver vazio, cria exatamente o próximo necessário
+            if not targetIndex then
+                targetIndex = currentOwn + 1
+                local newOwn = ensureSlot(ownContainer, 'ownSlot', targetIndex, true)
+                if newOwn then
+                    newOwn:setItem(nil)
+                    newOwn:setVisible(true)
+                end
+            end
+            local slotWidget = ownContainer:recursiveGetChildById('ownSlot' .. targetIndex)
+            local virtualItem = Item.create(itemId)
+            virtualItem:setCount(count)
+            slotWidget:setItem(virtualItem)
+            ItemsDatabase.setTier(slotWidget, virtualItem)
+            local sendSlot = (targetIndex or 1) - 1
+            print(string.format('[playertrade] send AddItem (container drop): slot0=%d itemId=%d count=%d', sendSlot, itemId, count))
+            g_game.tradeWindowAddItem(sendSlot, itemId, count)
+            return true
+        end
+    end
+
     local ownLabel = tradeWindow:recursiveGetChildById('ownTradeLabel')
     local counterLabel = tradeWindow:recursiveGetChildById('counterTradeLabel')
     ownLabel:setText(tr('You'))
@@ -477,21 +511,7 @@ function onTradeItemAdd(playerSide, slot, itemId, count)
         g_game.inspectTrade(not isOther, slot)
     end
     print(string.format('[playertrade] onTradeItemAdd: side=%s slot=%d (ui=%d) itemId=%d count=%d', isOther and 'counter' or 'own', slot, resolvedUiIndex, itemId, count))
-    -- Crescer slots visíveis ao receber item do servidor, para ambos os lados
-    do
-        local growContainer = container
-        local growPrefix = prefix
-        local currentVisible = getVisibleSlotCount(growContainer, growPrefix)
-        if uiIndex1 >= currentVisible then
-            local nextIndex = currentVisible + 1
-            local newSlot = ensureSlot(growContainer, growPrefix, nextIndex, not isOther)
-            if newSlot then
-                newSlot:setItem(nil)
-                newSlot:setVisible(true)
-            end
-            print(string.format('[playertrade] grow slots (server, %s): now visible=%d (added index=%d)', isOther and 'counter' or 'own', currentVisible + 1, nextIndex))
-        end
-    end
+    -- Não criar slots extras além do item adicionado; apenas garantir o slot do item
     updateAcceptEnabled()
 end
 
