@@ -2,12 +2,41 @@ tradeWindow = nil
 local INITIAL_TRADE_SLOTS = 1
 local countWindow = nil
 local ownAccepted = false
+local ui = {
+    acceptButton = nil,
+    ownContainer = nil,
+    counterContainer = nil,
+}
+
+local function getDraggedItem()
+    local dragging = g_ui.getDraggingWidget()
+    if dragging and dragging.currentDragThing then
+        local thing = dragging.currentDragThing
+        if thing and thing.isItem and thing:isItem() then
+            return thing
+        end
+    end
+    if dragging and dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem then
+        local item = dragging:getItem()
+        if item and item.isItem and item:isItem() then
+            return item
+        end
+    end
+    if g_ui.draggedThing and g_ui.draggedThing.isItem and g_ui.draggedThing:isItem() then
+        return g_ui.draggedThing
+    end
+    return nil
+end
 
 local function updateAcceptEnabled()
     if not tradeWindow then return end
-    local acceptButton = tradeWindow:recursiveGetChildById('acceptButton')
-    local ownContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
-    local counterContainer = tradeWindow:recursiveGetChildById('counterTradeContainer')
+    if not ui.acceptButton then
+        ui.acceptButton = tradeWindow:recursiveGetChildById('acceptButton')
+    end
+    if not ui.ownContainer or not ui.counterContainer then
+        ui.ownContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
+        ui.counterContainer = tradeWindow:recursiveGetChildById('counterTradeContainer')
+    end
     local function hasItems(container, prefix)
         if not container then return false end
         local children = container:recursiveGetChildren()
@@ -19,12 +48,12 @@ local function updateAcceptEnabled()
         end
         return false
     end
-    local ownHas = hasItems(ownContainer, 'ownSlot')
-    local otherHas = hasItems(counterContainer, 'counterSlot')
+    local ownHas = hasItems(ui.ownContainer, 'ownSlot')
+    local otherHas = hasItems(ui.counterContainer, 'counterSlot')
     if ownAccepted then
-        acceptButton:disable()
+        ui.acceptButton:disable()
     else
-        acceptButton:setEnabled(ownHas and otherHas)
+        ui.acceptButton:setEnabled(ownHas and otherHas)
     end
 end
 
@@ -61,8 +90,6 @@ end
 
 local function ensureWindow()
     if not tradeWindow then
-        -- Garantir que o estilo da janela esteja importado antes de criar o widget
-        g_ui.importStyle('tradewindow')
         tradeWindow = g_ui.createWidget('TradeWindow', rootWidget)
         tradeWindow.onClose = function()
             g_game.rejectTrade()
@@ -72,6 +99,9 @@ local function ensureWindow()
         tradeWindow:show()
         tradeWindow:raise()
         tradeWindow:focus()
+        ui.acceptButton = tradeWindow:recursiveGetChildById('acceptButton')
+        ui.ownContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
+        ui.counterContainer = tradeWindow:recursiveGetChildById('counterTradeContainer')
         
     end
 end
@@ -107,15 +137,9 @@ local function ensureSlot(container, prefix, i, isOwn)
             g_game.inspectTrade(false, i)
         end
         slot.onDragEnter = function(mousePos)
-            local dragging = g_ui.getDraggingWidget()
-            local thing = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
-            if not thing and g_ui.draggedThing then
-                thing = g_ui.draggedThing
-            end
-            if thing and thing.isItem and thing:isItem() then
+            local thing = getDraggedItem()
+            if thing then
                 slot:setBorderWidth(1)
-                local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                
                 return true
             end
             return false
@@ -123,14 +147,8 @@ local function ensureSlot(container, prefix, i, isOwn)
         slot.onDragLeave = function() slot:setBorderWidth(0) end
         slot.onDrop = function(_, mousePos)
             slot:setBorderWidth(0)
-            local dragging = g_ui.getDraggingWidget()
-            local item = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
-            if not item and g_ui.draggedThing then
-                item = g_ui.draggedThing
-            end
+            local item = getDraggedItem()
             if not item or not item.isItem or not item:isItem() then
-                local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                
                 return false
             end
             local itemId = item:getId()
@@ -293,6 +311,9 @@ function onOpenTradeWindow(otherName, slotCount)
     -- Reset slots visibility and items
     local ownContainer = tradeWindow:recursiveGetChildById('ownTradeContainer')
     local counterContainer = tradeWindow:recursiveGetChildById('counterTradeContainer')
+    ui.ownContainer = ownContainer
+    ui.counterContainer = counterContainer
+    ui.acceptButton = tradeWindow:recursiveGetChildById('acceptButton')
     -- Permitir drop no container próprio para criar slot somente ao soltar
     if ownContainer then ownContainer:setPhantom(false) end
     if counterContainer then counterContainer:setPhantom(true) end
@@ -317,18 +338,11 @@ function onOpenTradeWindow(otherName, slotCount)
             end
             -- Accept drop from inventory/container items to add à nossa oferta
             ownSlot.onDragEnter = function(mousePos)
-                local dragging = g_ui.getDraggingWidget()
-                local thing = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
-                if not thing and g_ui.draggedThing then
-                    thing = g_ui.draggedThing
-                end
-                if thing and thing.isItem and thing:isItem() then
+                local thing = getDraggedItem()
+                if thing then
                     ownSlot:setBorderWidth(1)
-                    local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                    
                     return true
                 end
-                
                 return false
             end
             ownSlot.onDragLeave = function(droppedWidget, mousePos)
@@ -338,16 +352,8 @@ function onOpenTradeWindow(otherName, slotCount)
             end
             ownSlot.onDrop = function(_, mousePos)
                 ownSlot:setBorderWidth(0)
-                -- Em algumas versões, o primeiro parâmetro pode não ser o widget arrastado; use fallback
-                local dragging = g_ui.getDraggingWidget()
-                local item = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
-                -- Fallback absoluto: usar g_ui.draggedThing exposto por UIItem/UIGameMap
-                if not item and g_ui.draggedThing then
-                    item = g_ui.draggedThing
-                end
+                local item = getDraggedItem()
                 if not item or not item.isItem or not item:isItem() then
-                    local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                    
                     return false
                 end
                 local itemId = item:getId()
@@ -417,22 +423,12 @@ function onOpenTradeWindow(otherName, slotCount)
     -- Drop direto no container próprio: cria apenas o slot necessário no momento do drop
     if ownContainer then
         ownContainer.onDragEnter = function()
-            local dragging = g_ui.getDraggingWidget()
-            local thing = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
-            if not thing and g_ui.draggedThing then
-                thing = g_ui.draggedThing
-            end
+            local thing = getDraggedItem()
             return thing and thing.isItem and thing:isItem() or false
         end
         ownContainer.onDrop = function(_, mousePos)
-            local dragging = g_ui.getDraggingWidget()
-            local item = dragging and (dragging.currentDragThing or (dragging.getClassName and dragging:getClassName() == 'UIItem' and dragging.getItem and dragging:getItem()))
-            if not item and g_ui.draggedThing then
-                item = g_ui.draggedThing
-            end
+            local item = getDraggedItem()
             if not item or not item.isItem or not item:isItem() then
-                local cls = dragging and dragging.getClassName and dragging:getClassName() or 'unknown'
-                
                 return false
             end
             local itemId = item:getId()
@@ -537,7 +533,6 @@ end
 
 function onTradeAcceptChange(playerSide, accepted)
     if not tradeWindow then return end
-    local acceptButton = tradeWindow:recursiveGetChildById('acceptButton')
     local isOwn = (type(playerSide) == 'boolean') and playerSide or (playerSide == 0)
     -- Quando nós aceitamos, desabilitar o botão; quando não, manter habilitado para permitir aceitar
     if isOwn then
@@ -552,13 +547,19 @@ function onCloseTradeWindow()
         tradeWindow:destroy()
         tradeWindow = nil
     end
+    if countWindow then
+        countWindow:destroy()
+        countWindow = nil
+    end
+    ui.acceptButton = nil
+    ui.ownContainer = nil
+    ui.counterContainer = nil
     
 end
 
 -- Expose manual opening to interface: open an empty trade window for a player
 function openEmptyTradeWindow(otherName, slotCount)
     -- Garantir estilo e janela antes de abrir
-    g_ui.importStyle('tradewindow')
     onOpenTradeWindow(otherName, slotCount or INITIAL_TRADE_SLOTS)
     if tradeWindow then
         tradeWindow:show()
