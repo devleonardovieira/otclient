@@ -134,7 +134,10 @@ local function ensureSlot(container, prefix, i, isOwn)
         if slot.setDraggable then slot:setDraggable(false) end
         if slot.setFocusable then slot:setFocusable(true) end
         slot.onClick = function()
-            g_game.inspectTrade(false, i)
+            if slot:getItem() then
+                local sendSlot = (i or 1) - 1
+                g_game.tradeWindowRemoveItem(sendSlot)
+            end
         end
         slot.onDragEnter = function(mousePos)
             local thing = getDraggedItem()
@@ -334,7 +337,10 @@ function onOpenTradeWindow(otherName, slotCount)
             -- Some themes require focusable to receive hover/drag visuals consistently
             if ownSlot.setFocusable then ownSlot:setFocusable(true) end
             ownSlot.onClick = function()
-                g_game.inspectTrade(false, i)
+                if ownSlot:getItem() then
+                    local sendSlot = (i or 1) - 1
+                    g_game.tradeWindowRemoveItem(sendSlot)
+                end
             end
             -- Accept drop from inventory/container items to add à nossa oferta
             ownSlot.onDragEnter = function(mousePos)

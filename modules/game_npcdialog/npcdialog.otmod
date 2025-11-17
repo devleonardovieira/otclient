@@ -1,8 +1,8 @@
 Module
   name: game_npcdialog
   description: UI de diálogo clicável para NPCs
-  author: Trae AI
-  website: https://example.com
+  author: Deadpool/L.V
+  website: https://shinonline.com/
   sandboxed: true
   dependencies: [ game_interface, gamelib ]
   scripts: [ npcdialog ]

@@ -1,0 +1,11 @@
+Module
+  name: game_notifications
+  description: UI de notificações tipo toast (título, mensagem, ícone)
+  author: Deadpool/Leonardo Vieira.
+  website: https://shinonline.com/
+  sandboxed: true
+  dependencies: [ game_interface, gamelib ]
+  scripts: [ notifications ]
+  styles: [ notifications ]
+  @onLoad: init()
+  @onUnload: terminate()

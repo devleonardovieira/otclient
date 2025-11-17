@@ -53,5 +53,6 @@ Module
     - game_rewardwall
     - game_jutsusbar
     - game_npcdialog
+    - game_notifications
   @onLoad: init()
   @onUnload: terminate()
