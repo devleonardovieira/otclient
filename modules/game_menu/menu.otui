@@ -1,0 +1,112 @@
+MenuTooltip < UIWidget
+  font: verdana-11px-rounded
+  text-horizontal-auto-resize: true
+  image-source: /images/ui/windows/tooltip/background
+  image-border: 15
+  text-align: center
+  height: 30
+  padding: 6
+  visible: false
+  focusable: false
+  phantom: true
+
+MenuIcon < UIWidget
+  id: menuIcon
+  image-source: /images/ui/windows/menu/BaseLogoSelected
+  image-auto-resize: true
+  anchors.right: parent.right
+  anchors.bottom: parent.bottom
+  margin: 15
+  focusable: false
+  $!on:
+    image-source: /images/ui/windows/menu/BaseLogo
+  @onClick: |
+    self:setOn(not self:isOn())
+    if self:isOn() then
+      Menu.expand()
+    else
+      Menu.collapse()
+    end
+  @onStateChange: |
+    if not self:isOn() then
+      Menu.collapse()
+    else
+      Menu.expand()
+    end
+
+  UIWidget
+    id: logo
+    anchors.centerIn: parent
+    image-source: /images/ui/windows/menu/RavendawnOnlineLogo
+    image-auto-resize: true
+    phantom: true
+
+MenuMinimizeButton < UIWidget
+  id: menuMinimizeButton
+  image-source: /images/ui/windows/menu/BtnArrowDown-1
+  image-auto-resize: true
+  anchors.right: menuWidget.left
+  anchors.verticalCenter: menuWidget.verticalCenter
+  margin-right: -12
+  focusable: false
+  @onSetup: |
+    self:setVisible(Menu.window:isVisible())
+  @onClick: |
+    Menu.icon:setOn(false)
+    Menu.collapse()
+  $hover:
+    image-source: /images/ui/windows/menu/BtnArrowDownActive-1
+
+MenuDivisorBar < UIWidget
+  image-source: /images/ui/windows/menu/DivisorBar
+  image-auto-resize: true
+  focusable: false
+
+MenuWidgetIcon < UIWidget
+  focusable: true
+  UIWidget
+    id: icon
+    anchors.centerIn: parent
+    image-source: /images/ui/windows/menu/IconAchviement
+    image-auto-resize: true
+    phantom: false
+
+MenuWidget < UIWidget
+  id: menuWidget
+  width: 380
+  image-source: /images/ui/windows/menu/BackgroundMainMenu
+  image-auto-resize: true
+  anchors.right: menuIcon.right
+  anchors.verticalCenter: menuIcon.verticalCenter
+  margin-right: 48
+  focusable: false
+  visible: false
+  dont-raise-on-expand: true
+  @onVisibilityChange: |
+    if Menu.minimizeButton then
+      Menu.minimizeButton:setVisible(self:isVisible())
+    end
+
+  MenuDivisorBar
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+  MenuDivisorBar
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+
+  Panel
+    id: iconList
+    layout:
+      type: horizontalBox
+      fit-children: false
+      fit-parent: false
+      spacing: 11
+    anchors.fill: parent
+    margin: 10
+    margin-left: 20
+    margin-right: 30
+    @onSetup: |
+      addEvent(Menu.setup)

@@ -53,6 +53,6 @@ Module
     - game_jutsusbar
     - game_npcdialog
     - game_notifications
-    - game_profile
+    - game_menu
   @onLoad: init()
   @onUnload: terminate()

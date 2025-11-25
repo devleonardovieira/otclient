@@ -41,5 +41,4 @@ font
   widget: verdana-11px-antialised
   static-text: verdana-11px-rounded
   animated-text: verdana-11px-rounded
-  creature-text: Chicago Athletic Slab Serif 2
-[vb         ]
+  creature-text: montserrat boldRounded 24

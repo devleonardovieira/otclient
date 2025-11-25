@@ -1,0 +1,6 @@
+Module
+  name: game_menu
+  sandboxed: true
+  scripts: [ menu ]
+  @onLoad: Menu.init()
+  @onUnload: Menu.terminate()

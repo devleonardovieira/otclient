@@ -1,0 +1,9 @@
+Module
+  name: game_damage_numbers
+  description: Damage Numbers
+  author: Archlight Team
+  website: www.archlightonline.com
+  sandboxed: false
+  scripts: [ damage_numbers ]
+  @onLoad: g_damageNumbers.init()
+  @onUnload: g_damageNumbers.terminate()
