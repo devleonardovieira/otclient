@@ -316,3 +316,5 @@ android/app/src/main/assets
 *.md
 OTCLIENT_DEVELOPMENT_RULES.md
 guia_criar_mods.md
+.otui_editor_state.json
+modules/game_market.zip

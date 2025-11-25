@@ -23,6 +23,7 @@ NotificationToast < Panel
 
   Panel
     id: row
+    height: 56
     layout:
       type: horizontalBox
       spacing: 6
@@ -37,26 +38,38 @@ NotificationToast < Panel
         type: verticalBox
       size: 312 56
 
-      UILabel
+      Label
         id: title
         text: ""
         color: #ffffff
-        font: "verdana-11px-rounded"
+        font: "verdana-11px-antialised"
         width: 312
+        text-align: left
         text-wrap: true
         text-auto-resize: true
+        text-vertical-auto-resize: true
+        height: 18
+        text-offset: 2 0
 
-      UILabel
+      Label
         id: message
         text: ""
         color: #dfdfdf
-        font: "verdana-11px-rounded"
+        font: "verdana-11px-antialised"
         width: 312
+        text-align: left
         text-wrap: true
         text-auto-resize: true
+        text-vertical-auto-resize: true
+        height: 22
+        margin-top: 2
+        text-offset: 2 0
 
   ProgressBar
     id: timebar
     height: 4
     background-color: #44AD25
     background-border: 0
+    width: 312
+    margin-left: 30
+    margin-top: 6

@@ -43,6 +43,10 @@ function showNotification(title, message, options)
         removeEvent(oldest._dismissEvent)
         oldest._dismissEvent = nil
       end
+      if oldest._progressEvent then
+        removeEvent(oldest._progressEvent)
+        oldest._progressEvent = nil
+      end
       if not oldest:isDestroyed() then oldest:destroy() end
     end
   end
@@ -67,8 +71,37 @@ function showNotification(title, message, options)
   local titleLabel = content and content:getChildById('title') or toast:getChildById('title')
   local messageLabel = content and content:getChildById('message') or toast:getChildById('message')
   local iconImage = row and row:getChildById('icon') or toast:getChildById('icon') or toast:getChildById('iconHolder')
-  if titleLabel then titleLabel:setText(title or '') end
-  if messageLabel then messageLabel:setText(message or '') end
+  if titleLabel then
+    titleLabel:setVisible(true)
+    titleLabel:setColor('#ffffff')
+    titleLabel:setWidth(312)
+    titleLabel:setTextAutoResize(true)
+    titleLabel:setTextWrap(true)
+    titleLabel:setTextAlign(AlignTopLeft)
+    titleLabel:setOpacity(1)
+    titleLabel:setText(title or '')
+    if titleLabel.resizeToText then titleLabel:resizeToText() end
+  end
+  if messageLabel then
+    messageLabel:setVisible(true)
+    messageLabel:setColor('#dfdfdf')
+    messageLabel:setWidth(312)
+    messageLabel:setTextAutoResize(true)
+    messageLabel:setTextWrap(true)
+    messageLabel:setTextAlign(AlignTopLeft)
+    messageLabel:setOpacity(1)
+    messageLabel:setText(message or '')
+    if messageLabel.resizeToText then messageLabel:resizeToText() end
+  end
+  if content then
+    local th = titleLabel and titleLabel:getHeight() or 0
+    local mh = messageLabel and messageLabel:getHeight() or 0
+    local spacing = 6
+    local newH = math.max(24, th + mh + spacing)
+    content:setVisible(true)
+    content:setHeight(newH)
+    pwarning(string.format('[Notifications] content sized: th=%d mh=%d h=%d', th, mh, newH))
+  end
   pwarning(string.format('[Notifications] set text: title="%s" message="%s"', tostring(title or ''), tostring(message or '')))
   if iconImage and options.icon and g_resources.fileExists(options.icon) then
     if iconImage.setImageSource then iconImage:setImageSource(options.icon) end
@@ -129,6 +162,11 @@ function showNotification(title, message, options)
       removeEvent(toast._dismissEvent)
       toast._dismissEvent = nil
     end
+    if toast and toast._progressEvent then
+      removeEvent(toast._progressEvent)
+      toast._progressEvent = nil
+    end
+    toast.onMouseMove = nil
   end
 
   -- Auto-dismiss with progress bar and hover pause
@@ -144,16 +182,19 @@ function showNotification(title, message, options)
       local tr = toast:getRect()
       if tr and tr.contains and tr:contains(mousePos) then return true end
     end
-    if row and row.getRect then
-      local rr = row:getRect()
+    local rowW = toast:getChildById('row')
+    if rowW and rowW.getRect then
+      local rr = rowW:getRect()
       if rr and rr.contains and rr:contains(mousePos) then return true end
     end
-    if content and content.getRect then
-      local cr = content:getRect()
+    local contentW = rowW and rowW:getChildById('content') or toast:getChildById('content')
+    if contentW and contentW.getRect then
+      local cr = contentW:getRect()
       if cr and cr.contains and cr:contains(mousePos) then return true end
     end
-    if timebar and timebar.getRect then
-      local tr = timebar:getRect()
+    local timebarW = toast:getChildById('timebar')
+    if timebarW and timebarW.getRect then
+      local tr = timebarW:getRect()
       if tr and tr.contains and tr:contains(mousePos) then return true end
     end
     local hovered = rootWidget and rootWidget:recursiveGetChildByPos(mousePos, false) or nil
@@ -216,4 +257,5 @@ end
 modules = modules or {}
 modules.game_notifications = {
   show = showNotification,
+  showNotification = showNotification,
 }

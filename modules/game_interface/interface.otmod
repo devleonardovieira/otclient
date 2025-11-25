@@ -42,7 +42,6 @@ Module
     - game_attachedeffects
     - game_stash
     - game_healthcircle
-    - game_shop
     - game_screenshot
     - game_highscore
     - game_blessing
@@ -54,5 +53,6 @@ Module
     - game_jutsusbar
     - game_npcdialog
     - game_notifications
+    - game_profile
   @onLoad: init()
   @onUnload: terminate()
