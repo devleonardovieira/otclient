@@ -1,5 +1,6 @@
 EnterGameWindow < MainWindow
   !text: tr('Enter Game')
+  font: montserrat thinItalicRounded 20
   size: 236 316
 
 

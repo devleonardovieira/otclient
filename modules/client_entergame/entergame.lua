@@ -207,7 +207,7 @@ function EnterGame.init()
         EnterGame.toggleStayLoggedBox(clientVersion, true)
     end
 
-    updateLabelText()
+
 
     enterGame:hide()
 

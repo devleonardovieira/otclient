@@ -1,0 +1,158 @@
+FontFamily
+  type: ttf
+  family: montserrat
+  default: true
+  default-style: regular
+  styles
+    thin
+      file: Montserrat-Thin
+    thinRounded
+      file: Montserrat-Thin
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    thinItalic
+      file: Montserrat-ThinItalic
+    thinItalicRounded
+      file: Montserrat-ThinItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    extralight
+      file: Montserrat-ExtraLight
+    extralightRounded
+      file: Montserrat-ExtraLight
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    extralightItalic
+      file: Montserrat-ExtraLightItalic
+    extralightItalicRounded
+      file: Montserrat-ExtraLightItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    light
+      file: Montserrat-Light
+    lightRounded
+      file: Montserrat-Light
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    lightItalic
+      file: Montserrat-LightItalic
+    lightItalicRounded
+      file: Montserrat-LightItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    regular
+      file: Montserrat-Regular
+    regularRounded
+      file: Montserrat-Regular
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    italic
+      file: Montserrat-Italic
+    italicRounded
+      file: Montserrat-Italic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    medium
+      file: Montserrat-Medium
+    mediumRounded
+      file: Montserrat-Medium
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    mediumItalic
+      file: Montserrat-MediumItalic
+    mediumItalicRounded
+      file: Montserrat-MediumItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    semibold
+      file: Montserrat-SemiBold
+    semiboldRounded
+      file: Montserrat-SemiBold
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    semiboldItalic
+      file: Montserrat-SemiBoldItalic
+    semiboldItalicRounded
+      file: Montserrat-SemiBoldItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    bold
+      file: Montserrat-Bold
+    boldRounded
+      file: Montserrat-Bold
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    boldItalic
+      file: Montserrat-BoldItalic
+    boldItalicRounded
+      file: Montserrat-BoldItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    extrabold
+      file: Montserrat-ExtraBold
+    extraboldRounded
+      file: Montserrat-ExtraBold
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    extraboldItalic
+      file: Montserrat-ExtraBoldItalic
+    extraboldItalicRounded
+      file: Montserrat-ExtraBoldItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+
+    black
+      file: Montserrat-Black
+    blackRounded
+      file: Montserrat-Black
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    blackItalic
+      file: Montserrat-BlackItalic
+    blackItalicRounded
+      file: Montserrat-BlackItalic
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0

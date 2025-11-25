@@ -1,0 +1,46 @@
+FontFamily
+  type: ttf
+  family: sono
+  default: true
+  default-style: regular
+  styles
+    regular
+      file: Sono-Regular
+    regularRounded
+      file: Sono-Regular
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    medium
+      file: Sono-Medium
+    mediumRounded
+      file: Sono-Medium
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    light
+      file: Sono-Light
+    lightRounded
+      file: Sono-Light
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    extralight
+      file: Sono-ExtraLight
+    extralightRounded
+      file: Sono-ExtraLight
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
+    bold
+      file: Sono-Bold
+    boldRounded
+      file: Sono-Bold
+      outline-width: 1
+      space-width: 6
+      extra-spacing: -1
+      extra-spacing-y: 0
