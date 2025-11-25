@@ -206,3 +206,75 @@ MiniPremiumButton < UIButton
   $pressed:
     image-clip: 0 22 26 22
 
+ButtonBase < UIButton
+  image-source: /images/ui/button_base
+  image-border: 10
+  change-cursor-image: true
+  cursor: pointer
+  icon-color: #FFFFFF
+  color: #FFFFFF
+
+  $disabled:
+    image-color: #C4C4C4
+    icon-color: #545353
+    color: #888888
+    change-cursor-image: false
+
+
+ButtonClose < ButtonBase
+  size: 24 24
+  image-color: #E12F2F
+  icon: /images/game/icons/button-close
+
+  $hover:
+    image-color: #F2374D
+
+  $pressed:
+    image-color: #EE2C43
+  
+ButtonEye < UIButton
+  size: 24 24
+  image-source: /images/game/icons/eyes_on_off
+  image-clip: 0 0 24 24
+  change-cursor-image: true
+  cursor: pointer
+
+  $on:
+    image-clip: 0 24 24 24
+
+ButtonBlueBase < ButtonBase
+  image-color: #0466C8
+
+  $hover:
+    image-color: #057FFA
+
+  $pressed:
+    image-color: #69B2FC
+
+ButtonBlueSmall < ButtonBlueBase
+  size: 115 40
+  font: montserrat regularRounded 16
+
+ButtonBlueMedium < ButtonBlueBase
+  size: 206 50
+  font: montserrat regularRounded 18
+
+ButtonBlueLarge < ButtonBlueBase
+  size: 265 50
+  font: montserrat regularRounded 18
+
+ButtonLabel < UIButton
+  color: #0466C8
+  cursor: pointer
+  text-auto-resize: true
+  change-cursor-image: true
+
+  $hover:
+    color: #057FFA
+
+  $pressed:
+    color: #69B2FC
+
+  $disabled:
+    change-cursor-image: false
+    color: #555555

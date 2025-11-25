@@ -117,3 +117,35 @@ AccTextEdit < TextEdit
   $disabled:
     color: #27272788
     opacity: 0.5
+
+ShinTextEdit < UITextEdit
+  size: 280 40
+  opacity: 1
+  text-offset: 0 6
+  color: #FFFFFF
+  border: 2 #444444
+  cursor-color: #FFFFFF
+  background-color: #242424
+  font: montserrat mediumRounded 16
+  padding: 10 5 4 8
+  selection-color: #3C3C3C
+  selection-background-color: #dfdfdf
+  change-cursor-image: true
+
+  $disabled:
+    background-color: #7D7D7D
+    change-cursor-image: false
+
+  Label
+    id: placeholderLabel
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: true
+    margin-top: -2
+    color: #595959
+
+TextEditPassword < TextEdit
+  text-hidden: true
+
+MultilineTextEdit < TextEdit
+  multiline: true

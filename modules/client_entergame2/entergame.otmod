@@ -1,0 +1,16 @@
+Module
+  name: client_entergame2
+  description: Basic EnterGame placeholder module
+  author: Deadpool/Leonardo Vieira
+  website: ShinOnline.com
+  scripts: [ entergame ]
+
+  dependencies:
+    - game_features
+    - game_things
+
+  @onLoad: |
+    dofile 'entergame'
+    controller:init()
+  @onUnload: |
+    controller:terminate()

@@ -78,8 +78,8 @@ FontFamily
       file: Montserrat-Medium
       outline-width: 1
       space-width: 6
-      extra-spacing: -1
-      extra-spacing-y: 0
+      extra-spacing: 2
+      extra-spacing-y: 3
     mediumItalic
       file: Montserrat-MediumItalic
     mediumItalicRounded

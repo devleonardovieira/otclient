@@ -1,0 +1,126 @@
+UIWindow
+  width: 430
+  anchors.top: parent.top
+  anchors.bottom: parent.bottom
+  anchors.left: parent.left
+  image-source: /images/ui/panel
+  image-border: 12
+  draggable: false
+  border: 3 #3A3939
+
+  UIWidget
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-source: /images/ui/shin_logo
+    margin-top: -40
+    size: 351 502
+  
+  Panel
+    id: panel
+    size: 340 258
+    anchors.centerIn: parent
+    margin-bottom: 50
+
+    Label
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 15
+      margin-bottom: 1
+      !text: tr('Email : ')
+      font: montserrat regularRounded 20
+      text-auto-resize: true
+
+    ShinTextEdit
+      id: accountNameTextEdit
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 7
+      font: montserrat regularRounded 23
+
+      ButtonEye
+        id: viewEmail
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin: 0 10 3 0
+        @onClick: |
+          local isOn = not self:isOn()
+
+          self:setOn(isOn)
+          self:getParent():setTextHidden(isOn)
+          g_settings.set('viewEmail', isOn)
+    
+    Label
+      anchors.top: prev.top
+      anchors.left: parent.left
+      margin-top: 65
+      margin-bottom: 1
+      !text: tr('Password : ')
+      font: montserrat regularRounded 20
+      text-auto-resize: true
+
+    ShinTextEdit
+      id: accountNameTextEdit
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 7
+      font: montserrat regularRounded 23
+
+      ButtonEye
+        id: viewPassword
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin: 0 10 3 0
+        @onClick: |
+          local isOn = not self:isOn()
+
+          self:setOn(isOn)
+          self:getParent():setTextHidden(isOn)
+          g_settings.set('viewPassword', isOn)
+    
+    CheckBox
+      id: rememberPasswordBox
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 20     
+      text-auto-resize: true
+      !text: tr('Remember password')
+      !tooltip: tr('Remember account and password when starts client')
+  
+  ButtonBlueLarge
+    anchors.top: prev.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 50
+    !text: tr('Login')
+    @onClick: EnterGame.doLogin()
+
+  Panel
+    size: 234 50
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 80
+    margin-left: -45
+
+    Label
+      anchors.top: parent.top
+      anchors.left: parent.left
+      text-auto-resize: true
+      !text: tr("Don't have an account?")
+      font: montserrat regularRounded 23
+      
+
+    ButtonLabel
+      anchors.top: parent.top
+      anchors.left: prev.right
+      font: montserrat regularRounded 23
+      margin-left: 6
+      !text: tr('Create account')
+      @onClick: modules.game_accounts.showAccountPanel()
+
+    ButtonLabel
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      !text: tr('Forgot your password?')
+      @onClick: modules.game_accounts.showRecoverPanel()
+      font: montserrat regularRounded 23

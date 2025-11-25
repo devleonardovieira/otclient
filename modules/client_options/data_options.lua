@@ -202,7 +202,7 @@ return {
     showOutfitsOnList                 = {
         value = true,
         action = function(value, options, controller, panels, extraWidgets)
-            CharacterList.updateCharactersAppearances(value)
+           -- CharacterList.updateCharactersAppearances(value)
         end
     },
     openMaximized                     = false,

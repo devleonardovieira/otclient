@@ -19,6 +19,20 @@ Window < UIWindow
   $dragging:
     opacity: 0.8
 
+ShinWindow < UIWindow
+  size: 624 488
+  image-source: /images/ui/window
+  image-border: 20
+  padding: 14 16 14 16
+  text-offset: 0 14
+  text-align: top
+  color: #FFFFFF
+
+  ButtonClose
+    id: closeButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+
 HeadlessWindow < UIWindow
   image-source: /images/ui/window_headless
   image-border: 5
