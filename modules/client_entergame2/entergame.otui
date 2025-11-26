@@ -7,6 +7,7 @@ UIWindow
   image-border: 12
   draggable: false
   border: 3 #3A3939
+  &animation: true
 
   UIWidget
     anchors.top: parent.top

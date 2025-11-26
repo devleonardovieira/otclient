@@ -22,9 +22,6 @@ TopButton < UIButton
 
 TopToggleButton < UIButton
   size: 26 26
-  image-source: /images/ui/button_topgame
-  image-clip: 26 0 26 26
-  image-border: 3
   icon-offset: 0 0
 
   $pressed:
@@ -68,8 +65,6 @@ TopMenuButtonsPanel < Panel
 
 TopMenuPanel < Panel
   height: 36
-  image-source: /images/ui/panel_top
-  image-repeated: true
   focusable: false
 
 TopMenuFrameCounterLabel < Label

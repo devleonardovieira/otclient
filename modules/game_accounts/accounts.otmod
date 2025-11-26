@@ -4,5 +4,7 @@ Module
   author: Union
   scripts: [ termsandrules, accounts ]
   sandboxed: true
+  dependencies:
+    - game_api
   @onLoad: init()
   @onUnload: terminate()

@@ -3,14 +3,22 @@ Module
   description: Basic EnterGame placeholder module
   author: Deadpool/Leonardo Vieira
   website: ShinOnline.com
-  scripts: [ entergame ]
+  scripts: [ entergame, characterlist ]
 
   dependencies:
     - game_features
     - game_things
+    - game_accounts
 
   @onLoad: |
     dofile 'entergame'
+    dofile 'characterlist'
     controller:init()
+    if CharacterList and CharacterList.init then
+      CharacterList.init()
+    end
   @onUnload: |
     controller:terminate()
+    if CharacterList and CharacterList.terminate then
+      CharacterList.terminate()
+    end

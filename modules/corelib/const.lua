@@ -19,6 +19,11 @@ AnchorRight                  = 4
 AnchorVerticalCenter         = 5
 AnchorHorizontalCenter       = 6
 
+MarginTop                    = 1
+MarginBottom                 = 2
+MarginLeft                   = 3
+MarginRight                  = 4
+
 LogFine                      = 0
 LogDebug                     = 1
 LogInfo                      = 2

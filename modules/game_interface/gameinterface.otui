@@ -57,7 +57,7 @@ UIWidget
     anchors.bottom: bottomSplitter.bottom
     focusable: false
 
-    Button
+    ButtonBlueSmall
       id: showTopMenuButton
       anchors.top: parent.top
       anchors.left: parent.left
@@ -94,7 +94,7 @@ UIWidget
     border-width-right: 1
     border-color-right: #292929
     image-source: /images/ui/actionbar/actionbar_background-light
-    Button
+    ButtonBlueSmall
       id: leftLock
       size: 34 16
       anchors.top: parent.top
@@ -134,7 +134,7 @@ UIWidget
     border-color-left: #747474
     image-source: /images/ui/actionbar/actionbar_background-light
 
-    Button
+    ButtonBlueSmall
       id: rightLock
       size: 34 16
       anchors.top: parent.top
@@ -167,7 +167,7 @@ UIWidget
     border-color-top: #292929
     image-source: /images/ui/actionbar/background-dark
 
-    Button
+    ButtonBlueSmall
       id: bottomLock
       width: 12
       anchors.top: parent.top
@@ -289,9 +289,8 @@ UIWidget
     @canUpdateMargin: |
       function(self, newMargin)
         local dontStretch = modules.client_options.getOption('dontStretchShrink')
-        local actionBars = modules.game_actionbar.getActiveBottomBars()
-        local maxHeight = 118 + (35 * actionBars)
-        local result = math.max(math.min(newMargin, self:getParent():getHeight() - 150), maxHeight)
+        local minMargin = modules.game_interface.getMinBottomMargin()
+        local result = math.max(math.min(newMargin, self:getParent():getHeight() - 150), minMargin)
         if dontStretch then
           result = result > 650 and 650 or (result > 450 and 450 or 200)
         end
@@ -299,10 +298,12 @@ UIWidget
       end
     @onGeometryChange: |
       function(self)
-        local actionBars = modules.game_actionbar.getActiveBottomBars()
-        local maxHeight = 118 + (35 * actionBars)
         local parentHeight = self:getParent():getHeight()
-        self:setMarginBottom(math.min(math.max(parentHeight - 150, maxHeight), self:getMarginBottom()))
+        local minMargin = modules.game_interface.getMinBottomMargin()
+        local current = self:getMarginBottom()
+        local clamped = math.max(current, minMargin)
+        clamped = math.min(clamped, parentHeight - 150)
+        self:setMarginBottom(clamped)
       end
 
   UIWidget
@@ -310,23 +311,7 @@ UIWidget
     focusable: false
     visible: false
 
-  TopStatsBar
-    id: gameTopPanel
-    anchors.left: gameLeftExtraPanel.right
-    anchors.right: gameRightExtraPanel.left
-    anchors.top: parent.top
-    focusable: false
-
-  TopStatsBar
-    id: gameBottomStatsBarPanel
-    anchors.left: gameLeftExtraPanel.right
-    anchors.right: gameRightExtraPanel.left
-    anchors.top: bottomSplitter.bottom
-    margin-left: 1
-    margin-right: 1
-    focusable: false
-
-  Button
+  ButtonBlueSmall
     id: leftIncreaseSidePanels
     anchors.left: gameLeftExtraPanel.right
     anchors.top: parent.top
@@ -341,7 +326,7 @@ UIWidget
     $disabled:
       image-clip: 45 0 9 27
 
-  Button
+  ButtonBlueSmall
     id: leftDecreaseSidePanels
     anchors.left: leftIncreaseSidePanels.left
     anchors.top: leftIncreaseSidePanels.bottom
@@ -356,7 +341,7 @@ UIWidget
     $disabled:
       image-clip: 18 0 9 27
 
-  Button
+  ButtonBlueSmall
     id: rightIncreaseSidePanels
     anchors.right: gameRightExtraPanel.left
     anchors.top: parent.top
@@ -371,7 +356,7 @@ UIWidget
     $disabled:
       image-clip: 45 27 9 27
 
-  Button
+  ButtonBlueSmall
     id: rightDecreaseSidePanels
     anchors.right: rightIncreaseSidePanels.right
     anchors.top: rightIncreaseSidePanels.bottom

@@ -68,7 +68,7 @@ StashWindow < MainWindow
       width: 113
       @onTextChange: renderItems()
 
-  Button
+  ButtonBlueSmall
     id: closeButton
     !text: tr('Close')
     anchors.top: mainTabContent.bottom
@@ -127,7 +127,7 @@ StashSelectAmount < MainWindow
     margin-top: -2
     focusable: false
 
-  Button
+  ButtonBlueSmall
     id: buttonCancel
     !text: tr('Cancel')
     height: 20
@@ -137,7 +137,7 @@ StashSelectAmount < MainWindow
     margin-top: 7
     focusable: false
 
-  Button
+  ButtonBlueSmall
     id: buttonOk
     !text: tr('Ok')
     height: 20

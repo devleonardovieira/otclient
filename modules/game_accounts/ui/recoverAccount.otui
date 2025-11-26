@@ -37,7 +37,7 @@ RecoverAccountWindow < MainHeadlessWindow
     anchors.right: parent.right
     text-auto-resize: true
     margin-top: 8
-    !text: tr("Código de recuperação")
+    !text: tr("Cï¿½digo de recuperaï¿½ï¿½o")
 
   TextEdit
     id: codeInput
@@ -52,8 +52,8 @@ RecoverAccountWindow < MainHeadlessWindow
     anchors.right: parent.right
     text-auto-resize: true
     margin-top: 2
-    font: DMSans-13px-regular
-    !text: tr('Enviar código por e-mail')
+    font: montserrat regular 14
+    !text: tr('Enviar cï¿½digo por e-mail')
     color: #0466C8
     @onClick: modules.game_accounts.onRecoverCodeEmail()
 
@@ -132,7 +132,7 @@ RecoverAccountWindow < MainHeadlessWindow
     
 
 RecoverAccountEmailWindow < AccountChangeEmailWindow
-  !text: tr('Recuperação de senha')
+  !text: tr('Recuperaï¿½ï¿½o de senha')
   @onSetup: |
     self.label:setText('E-mail')
     self.cancelButton.onClick  = modules.game_accounts.hideRecoverPanel

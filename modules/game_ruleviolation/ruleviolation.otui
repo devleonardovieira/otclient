@@ -104,14 +104,14 @@ MainWindow
   RVTextEdit
     id: commentText
 
-  Button
+  ButtonBlueSmall
     !text: tr('Cancel')
     width: 64
     anchors.right: parent.right
     anchors.bottom: parent.bottom
     @onClick: hide()
 
-  Button
+  ButtonBlueSmall
     !text: tr('Ok')
     width: 64
     margin-right: 5

@@ -8,7 +8,7 @@ TextEditVerification < UITextEdit
   border: 0 alpha
   color: #FFFFFF
   cursor-color: #FFFFFF
-  font: DMSans-20px-bold
+  font: montserrat bold 20
   padding: 15 0 4 21
   selection-color: #3C3C3C
   selection-background-color: #dfdfdf
@@ -38,7 +38,7 @@ AccountValidationWindow < MainHeadlessWindow
     text-auto-resize: true
     text-align: center
     text-wrap: true
-    !text: tr('O código foi enviado para o seu e-mail')
+    !text: tr('O cï¿½digo foi enviado para o seu e-mail')
     color: #A4A4A4
 
   UIWidget
@@ -75,8 +75,8 @@ AccountValidationWindow < MainHeadlessWindow
     anchors.bottom: next.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-bottom: 10
-    font: DMSans-14px-medium
-    !text: tr('Reenviar código')
+    font: montserrat medium 14
+    !text: tr('Reenviar cï¿½digo')
     @onClick: modules.game_accounts.onCodeEmail()
 
   HorizontalSeparator
@@ -87,7 +87,7 @@ AccountValidationWindow < MainHeadlessWindow
   ButtonLabel
     anchors.bottom: parent.bottom
     anchors.left: parent.horizontalCenter
-    font: DMSans-13px-regular
+    font: montserrat regular 14
     margin-left: 3
     !text: tr('Entre em contato')
 

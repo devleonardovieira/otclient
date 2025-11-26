@@ -49,6 +49,57 @@ $action = $request->type ?? '';
 /** @var array $config */
 
 switch ($action) {
+    case 'register':
+        // Create account via client JSON request
+        $email = isset($request->email) ? trim($request->email) : '';
+        $password = isset($request->password) ? (string)$request->password : '';
+
+        // Basic validations
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            die(json_encode(['errors' => ['email' => ['E-mail inválido.']]]));
+        }
+        if (strlen($password) < 6) {
+            die(json_encode(['errors' => ['password' => ['Senha deve ter pelo menos 6 caracteres.']]]));
+        }
+
+        // Email uniqueness
+        $exists = Account::where('email', $email)->first();
+        if ($exists) {
+            die(json_encode(['errors' => ['email' => ['Este e-mail já está em uso.']]]));
+        }
+
+        // Generate unique account name from email local part
+        $local = preg_replace('/[^a-zA-Z0-9]/', '', explode('@', $email)[0]);
+        $nameBase = $local !== '' ? $local : 'user';
+        $name = $nameBase;
+        $suffix = 0;
+        while (Account::where('name', $name)->first()) {
+            $suffix++;
+            $name = $nameBase . $suffix;
+        }
+
+        // Handle salt if schema supports it
+        $salt = '';
+        if (function_exists('fieldExist') && fieldExist('salt', 'accounts')) {
+            $salt = substr(sha1(random_bytes(16)), 0, 10);
+        }
+
+        // Hash password using MyAAC encrypt helper
+        $passHash = encrypt(($salt ? $salt : '') . $password);
+
+        // Create account
+        $acc = new Account();
+        $acc->email = $email;
+        $acc->name = $name;
+        $acc->password = $passHash;
+        if ($salt) { $acc->salt = $salt; }
+        // Optional defaults
+        if (property_exists($acc, 'premdays')) { $acc->premdays = 0; }
+        if (property_exists($acc, 'email_verified')) { $acc->email_verified = 0; }
+        $acc->save();
+
+        die(json_encode(['message' => 'Conta criada com sucesso!', 'status' => true]));
+
 	case 'cacheinfo':
 		$playersonline = PlayerOnline::count();
 		die(json_encode([
@@ -293,6 +344,212 @@ switch ($action) {
 			'emailcoderequest' => false
 		];
 		die(json_encode(compact('session', 'playdata')));
+
+	case 'validateRegister':
+		// Server-side validation for account registration fields (real-time)
+		$errors = [];
+		// Terms accepted
+		if (isset($request->termsAccepted)) {
+			$accepted = (bool)$request->termsAccepted;
+			if (!$accepted) {
+				$errors['termsAccepted'][] = 'Primeiro Você precisa aceitar o termos e regras.';
+			}
+		}
+
+		// Email validation + uniqueness
+		if (isset($request->email)) {
+			$email = trim((string)$request->email);
+			if ($email === '') {
+				$errors['email'][] = 'Preencha este campo.';
+			} else if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+				$errors['email'][] = 'E-mail não é válido.';
+			} else {
+				$exists = Account::where('email', $email)->first();
+				if ($exists) {
+					$errors['email'][] = 'Este e-mail já está em uso.';
+				}
+			}
+		}
+
+		// Confirm email validation
+		if (isset($request->confirmEmail)) {
+			$confirm = trim((string)$request->confirmEmail);
+			if ($confirm === '') {
+				$errors['confirmEmail'][] = 'Preencha este campo.';
+			} else if (isset($request->email)) {
+				$email = trim((string)$request->email);
+				if ($email !== $confirm) {
+					$errors['confirmEmail'][] = 'O e-mail não é o mesmo.';
+				}
+			}
+		}
+
+		// Password rules (mirror client isValidPassword)
+		if (isset($request->password)) {
+			$password = (string)$request->password;
+			if (trim($password) === '') {
+				$errors['password'][] = 'Preencha este campo.';
+			} else {
+				if (!preg_match('/[a-z]/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 letra minúscula.'; }
+				if (!preg_match('/[A-Z]/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 letra maiúscula.'; }
+				if (strlen($password) <= 8) { $errors['password'][] = 'A senha deve conter ao menos 8 caracteres.'; }
+				if (!preg_match('/[\p{P}\p{S}]/u', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 caracter especial.'; }
+				if (!preg_match('/\d/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 numero.'; }
+			}
+		}
+
+		// Confirm password validation
+		if (isset($request->confirmPassword)) {
+			$confirm = (string)$request->confirmPassword;
+			if (trim($confirm) === '') {
+				$errors['confirmPassword'][] = 'Preencha este campo.';
+			} else if (isset($request->password)) {
+				$password = (string)$request->password;
+				if ($password !== $confirm) {
+					$errors['confirmPassword'][] = 'Essa senha não é a mesma.';
+				}
+			}
+		}
+
+		if (!empty($errors)) {
+			// return only errors map for real-time feedback
+			die(json_encode(['errors' => $errors]));
+		}
+
+		// No errors for provided fields
+		$successMessage = 'Dados válidos.';
+		die(json_encode(['status' => true, 'message' => $successMessage]));
+		break;
+
+	case 'validateCharacter':
+		// Server-side validation for character name (real-time)
+		$name = isset($request->name) ? trim((string)$request->name) : '';
+		$errors = [];
+		if ($name === '') {
+			$errors['name'][] = 'Preencha este campo.';
+		} else {
+			$minLength = 5; $maxLength = 14;
+			if (mb_strlen($name) < $minLength || mb_strlen($name) > $maxLength) {
+				$errors['name'][] = sprintf('O comprimento do nome deve estar entre %d e %d caracteres.', $minLength, $maxLength);
+			}
+			if (preg_match('/\s{2,}/u', $name)) {
+				$errors['name'][] = 'O nome não pode conter mais de um espaço em branco consecutivo.';
+			}
+			if ($name === mb_strtoupper($name)) {
+				$errors['name'][] = 'O nome não pode estar todo em letras maiúsculas.';
+			}
+			if (preg_match('/^\s|\s$/u', $name)) {
+				$errors['name'][] = 'O nome não pode ter espaços em branco no início ou no final.';
+			}
+			// Invalid chars (including digits and common punctuation)
+			if (preg_match('/[{}\|_\*\+\-\=<>0-9@#%\^&\(\)\/\\\.,:;~!\"\$]/u', $name)) {
+				$errors['name'][] = 'O nome contém caracteres inválidos.';
+			}
+			// Only letters and spaces allowed (no accents/specials beyond letters)
+			if (!preg_match('/^[\p{L}\s]+$/u', $name)) {
+				$errors['name'][] = 'O nome não pode conter acentuações ou caracteres especiais.';
+			}
+			// Each word must start with uppercase letter
+			$parts = preg_split('/\s+/', $name);
+			foreach ($parts as $part) {
+				if ($part === '') continue;
+				if (!preg_match('/^\p{Lu}/u', $part)) {
+					$errors['name'][] = 'Cada parte do nome deve começar com uma letra maiúscula.';
+					break;
+				}
+			}
+			// Uniqueness
+			if (empty($errors['name'])) {
+				$exists = Player::where('name', $name)->first();
+				if ($exists) {
+					$errors['name'][] = 'Nome de personagem já está em uso.';
+				}
+			}
+		}
+
+		if (!empty($errors)) {
+			die(json_encode(['errors' => $errors]));
+		}
+
+		die(json_encode(['status' => true, 'message' => 'Nome válido.']));
+		break;
+
+	case 'createCharacter':
+		// Create a new character for the authenticated account
+		try {
+			$email = isset($request->email) ? trim($request->email) : '';
+			$password = isset($request->password) ? (string)$request->password : '';
+			$name = isset($request->name) ? trim($request->name) : '';
+			$genderRaw = isset($request->sex) ? (string)$request->sex : 'male';
+			$worldId = isset($request->worldId) ? (int)$request->worldId : 0;
+
+			if ($email === '' || $password === '') {
+				die(json_encode(['status' => 'error', 'message' => 'Credenciais ausentes.']));
+			}
+
+			$account = Account::where('email', $email)->first();
+			if (!$account) {
+				die(json_encode(['status' => 'error', 'message' => 'Conta não encontrada.']));
+			}
+
+			$current_password = encrypt((USE_ACCOUNT_SALT ? $account->salt : '') . $password);
+			if ($account->password != $current_password) {
+				die(json_encode(['status' => 'error', 'message' => 'Senha inválida.']));
+			}
+
+			// Validate character name
+			if ($name === '' || strlen($name) < 2 || strlen($name) > 30) {
+				die(json_encode(['status' => 'error', 'message' => 'Nome inválido (2-30 caracteres).']));
+			}
+			if (!preg_match('/^[A-Za-z ]+$/', $name)) {
+				die(json_encode(['status' => 'error', 'message' => 'Nome contém caracteres inválidos.']));
+			}
+			if (preg_match('/^ |  | $/', $name)) {
+				die(json_encode(['status' => 'error', 'message' => 'Nome não pode começar/terminar com espaço ou ter duplo espaço.']));
+			}
+
+			// Uniqueness
+			if (Player::where('name', $name)->first()) {
+				die(json_encode(['status' => 'error', 'message' => 'Nome de personagem já está em uso.']));
+			}
+
+			// Gender mapping
+			$genderStr = strtolower($genderRaw);
+			if (is_numeric($genderStr)) {
+				$sex = ((int)$genderStr) === 1 ? 1 : 0;
+			} else {
+				$sex = $genderStr === 'male' ? 1 : 0;
+			}
+
+			// World validation (single-world default)
+			if ($worldId !== 0) {
+				die(json_encode(['status' => 'error', 'message' => 'World inválido.']));
+			}
+
+			$player = new Player();
+			$player->account_id = $account->id;
+			$player->name = $name;
+			$player->sex = $sex; // 0 female, 1 male
+			// Safe defaults
+			if (!isset($player->level)) { $player->level = 1; }
+			if (!isset($player->vocation)) { $player->vocation = 0; }
+			if (!isset($player->looktype)) { $player->looktype = ($sex === 1 ? 128 : 136); }
+			if (!isset($player->lookhead)) { $player->lookhead = 0; }
+			if (!isset($player->lookbody)) { $player->lookbody = 0; }
+			if (!isset($player->looklegs)) { $player->looklegs = 0; }
+			if (!isset($player->lookfeet)) { $player->lookfeet = 0; }
+			if (!isset($player->lookaddons)) { $player->lookaddons = 0; }
+			if (!isset($player->town_id)) { $player->town_id = 1; }
+
+			if (!$player->save()) {
+				die(json_encode(['status' => 'error', 'message' => 'Falha ao criar o personagem.']));
+			}
+
+			die(json_encode(['status' => 'success', 'message' => 'Personagem criado com sucesso.']));
+		} catch (\Throwable $e) {
+			die(json_encode(['status' => 'error', 'message' => 'Erro interno ao criar personagem.']));
+		}
+		break;
 
 	default:
 		sendError("Unrecognized event {$action}.");

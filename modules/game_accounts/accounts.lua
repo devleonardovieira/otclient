@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_accounts/accounts.lua
+-- chunkname: @/modules/game_accounts/accounts.lua
 
 local accountPanel, activePanel, emailPanel, charPanel, waitPanel, deletePanel, cancelDeletePanel, changePasswordPanel, recoverPanel, termsPanel, accounts
 
@@ -29,6 +29,35 @@ local function onHTTPResult(data, err)
 	end
 
 	return "", false
+end
+
+-- Validação remota: infraestrutura de debounce e helpers
+local validationEvents = {
+    email = nil,
+    confirmEmail = nil,
+    password = nil,
+    confirmPassword = nil,
+    charName = nil
+}
+
+local function debounceField(fieldKey, fnc, delay)
+    delay = delay or 250
+    if validationEvents[fieldKey] then
+        removeEvent(validationEvents[fieldKey])
+        validationEvents[fieldKey] = nil
+    end
+    validationEvents[fieldKey] = scheduleEvent(fnc, delay)
+end
+
+local function updateHelperFromErrors(helperWidget, fieldKey, data, okText, errDefault)
+    if not helperWidget then return end
+    if not data then
+        return setHelperFeedback(helperWidget, false, nil, errDefault or tr("Ocorreu um erro. Tente novamente."))
+    end
+    if data.errors and data.errors[fieldKey] and #data.errors[fieldKey] > 0 then
+        return setHelperFeedback(helperWidget, false, nil, table.concat(data.errors[fieldKey], ",\n"))
+    end
+    return setHelperFeedback(helperWidget, true, okText or "", nil)
 end
 
 local function onHTTPActive(data, err)
@@ -397,7 +426,7 @@ function showWaitPanel()
 end
 
 function showCharPanel()
-	charPanel = show("CreateCharacterWindow", charPanel)
+    charPanel = show("CreateCharacterWindow", charPanel)
 
 	hide(genderGroup)
 
@@ -407,14 +436,21 @@ function showCharPanel()
 		genderGroup:addWidget(panel)
 	end
 
-	charPanel.worlds:clear()
+    charPanel.worlds:clear()
 
-	for i, world in pairs(G.worlds) do
-		charPanel.worlds:addOption(world.name, world.id, nil, world.new and "/images/game/icons/newserv")
-	end
+    if G.worlds and table.size(G.worlds) > 0 then
+        for i, world in pairs(G.worlds) do
+            charPanel.worlds:addOption(world.name, world.id, nil, world.new and "/images/game/icons/newserv")
+        end
+    else
+        -- Evita falha se mundos ainda no foram carregados
+        charPanel.worlds:addOption(tr("Default"), 0)
+    end
 
-	modules.client_entergame.CharacterList.hide()
-	genderGroup:selectWidget(genderGroup:getFirstWidget())
+    if CharacterList and CharacterList.hide then
+        CharacterList.hide()
+    end
+    genderGroup:selectWidget(genderGroup:getFirstWidget())
 end
 
 function showDeletePanel(name)
@@ -492,9 +528,21 @@ function hideWaitPanel()
 end
 
 function hideCharPanel()
+    -- Cancela valida es pendentes para evitar referencias de widgets destrudos
+    if validationEvents then
+        for k, ev in pairs(validationEvents) do
+            if ev then
+                removeEvent(ev)
+                validationEvents[k] = nil
+            end
+        end
+    end
+
     hide(charPanel)
     charPanel = nil
-    modules.client_entergame.CharacterList.show()
+    if CharacterList and CharacterList.show then
+        CharacterList.show()
+    end
 end
 
 function hideDeletePanel()
@@ -600,47 +648,24 @@ end
 
 function onCreate()
     if not accountPanel or not accountPanel.window then return end
-
-    -- Atualiza todas as mensagens dos helpers no momento do submit
-    onEmailTyping(accountPanel.window.emailInput)
-    onConfirmEmailTyping(accountPanel.window.confirmEmailInput)
-    onPasswordTyping(accountPanel.window.passwordInput)
-    onConfirmPasswordTyping(accountPanel.window.confirmPasswordInput)
-
-    -- Respeita termos e regras
     if not accountPanel.window.acceptTerm:isChecked() then
         return displayInfoBox(tr("Warning"), tr("Primeiro Voc\xEA precisa aceitar o termos e regras."))
     end
 
-    -- Verifica validade final sem abrir caixas para erros de campo
     local email = accountPanel.window.emailInput:getText()
-    local confirmEmail = accountPanel.window.confirmEmailInput:getText()
     local password = accountPanel.window.passwordInput:getText()
-    local confirmPassword = accountPanel.window.confirmPasswordInput:getText()
-
-    local validEmail = isRequired(email) and isValidEmail(email)
-    local validConfirmEmail = isRequired(confirmEmail) and (email == confirmEmail)
-    local passwordErrors = isValidPassword(password)
-    local validPassword = isRequired(password) and passwordErrors:len() == 0
-    local validConfirmPassword = isRequired(confirmPassword) and (password == confirmPassword)
-
-    local canCreate = validEmail and validConfirmEmail and validPassword and validConfirmPassword
-    if not canCreate then
-        -- Apenas aborta; helpers já exibem mensagens detalhadas
-        return
-    end
-
     showWaitPanel()
     accountPanel.window:hide()
+    -- A API realizará toda a validação e devolverá erros detalhados
     sendCreate(email, password)
 end
 
 function onCreateCharacter()
-	if onInputName(charPanel.nameInput) then
-		showWaitPanel()
-		charPanel:hide()
-		sendCreateCharacter(charPanel.nameInput:getText(), genderGroup:getSelectedWidget():getId(), charPanel.worlds:getCurrentOption().data)
-	end
+    local name = charPanel.nameInput:getText()
+    showWaitPanel()
+    charPanel:hide()
+    -- Validação final na API
+    sendCreateCharacter(name, genderGroup:getSelectedWidget():getId(), charPanel.worlds:getCurrentOption().data)
 end
 
 function onChangePassword()
@@ -732,7 +757,7 @@ function onConfirmRecoverAccount()
 	end
 end
 -- Atualiza helper label com cor conforme validade
-local function setHelperFeedback(labelWidget, isValid, successText, errorText)
+function setHelperFeedback(labelWidget, isValid, successText, errorText)
     if not labelWidget then return end
     if isValid then
         labelWidget:setText(successText or "")
@@ -747,13 +772,12 @@ end
 function onEmailTyping(input)
     local txt = input:getText()
     local helper = accountPanel and accountPanel.window and accountPanel.window.helperEmail
-
-    if not isRequired(txt) then
-        return setHelperFeedback(helper, false, nil, tr("Preencha este campo."))
-    end
-
-    local ok = isValidEmail(txt)
-    return setHelperFeedback(helper, ok, tr("E-mail v\xE1lido"), tr("E-mail n\xE3o \xE9 v\xE1lido."))
+    debounceField('email', function()
+        local payload = { email = txt }
+        accounts:validateRegister(payload, function(data, err)
+            updateHelperFromErrors(helper, 'email', data, tr("E-mail v\xE1lido"))
+        end)
+    end)
 end
 
 -- Handlers de digitação: confirmar e-mail
@@ -761,30 +785,29 @@ function onConfirmEmailTyping(confirmInput)
     local emailInput = accountPanel and accountPanel.window and accountPanel.window.emailInput
     local helper = accountPanel and accountPanel.window and accountPanel.window.helperConfirmEmail
     if not emailInput then return end
-
     local email = emailInput:getText()
     local confirm = confirmInput:getText()
-
-    if not isRequired(confirm) then
-        return setHelperFeedback(helper, false, nil, tr("Preencha este campo."))
-    end
-
-    local ok = email == confirm
-    return setHelperFeedback(helper, ok, tr("E-mails coincidem"), tr("O e-mail n\xE3o \xE9 o mesmo."))
+    debounceField('confirmEmail', function()
+        local payload = { email = email, confirmEmail = confirm }
+        accounts:validateRegister(payload, function(data, err)
+            updateHelperFromErrors(helper, 'confirmEmail', data, tr("E-mails coincidem"))
+        end)
+    end)
 end
 
 -- Handlers de digitação: senha
 function onPasswordTyping(input)
     local txt = input:getText()
     local helper = accountPanel and accountPanel.window and accountPanel.window.helperPassword
-
-    if not isRequired(txt) then
-        return setHelperFeedback(helper, false, nil, tr("Preencha este campo."))
-    end
-
-    local strValidPassword = isValidPassword(txt)
-    local ok = strValidPassword:len() == 0
-    return setHelperFeedback(helper, ok, tr("Senha v\xE1lida"), strValidPassword)
+    debounceField('password', function()
+        local payload = { password = txt }
+        accounts:validateRegister(payload, function(data, err)
+            if data and data.errors and data.errors.password and #data.errors.password > 0 then
+                return setHelperFeedback(helper, false, nil, table.concat(data.errors.password, ",\n"))
+            end
+            return setHelperFeedback(helper, true, tr("Senha v\xE1lida"))
+        end)
+    end)
 end
 
 -- Handlers de digitação: confirmar senha
@@ -792,14 +815,23 @@ function onConfirmPasswordTyping(confirmInput)
     local passwordInput = accountPanel and accountPanel.window and accountPanel.window.passwordInput
     local helper = accountPanel and accountPanel.window and accountPanel.window.helperConfirmPassword
     if not passwordInput then return end
-
     local password = passwordInput:getText()
     local confirm = confirmInput:getText()
+    debounceField('confirmPassword', function()
+        local payload = { password = password, confirmPassword = confirm }
+        accounts:validateRegister(payload, function(data, err)
+            updateHelperFromErrors(helper, 'confirmPassword', data, tr("Senhas coincidem"))
+        end)
+    end)
+end
 
-    if not isRequired(confirm) then
-        return setHelperFeedback(helper, false, nil, tr("Preencha este campo."))
-    end
-
-    local ok = password == confirm
-    return setHelperFeedback(helper, ok, tr("Senhas coincidem"), tr("Essa senha n\xE3o \xE9 a mesma."))
+-- Validação remota do nome do personagem
+function onNameTyping(input)
+    local txt = input:getText()
+    local helper = charPanel and charPanel.helperNameInput
+    debounceField('charName', function()
+        accounts:validateCharacter(txt, function(data, err)
+            updateHelperFromErrors(helper, 'name', data, tr("Nome v\xE1lido"))
+        end)
+    end)
 end

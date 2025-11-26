@@ -21,7 +21,7 @@ BugReportWindow < MainWindow
     margin-top: 4
     margin-bottom: 8
 
-  Button
+  ButtonBlueSmall
     id: sendButton
     !text: tr('Send')
     anchors.bottom: cancelButton.bottom
@@ -30,7 +30,7 @@ BugReportWindow < MainWindow
     width: 80
     &onClick: doReport
 
-  Button
+  ButtonBlueSmall
     id: cancelButton
     !text: tr('Cancel')
     anchors.bottom: parent.bottom

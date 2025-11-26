@@ -1,0 +1,433 @@
+CityLabel < Panel
+  size: 200 22
+
+  Label-16px-Bold
+    id: city
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: true
+    stroke: 1 #000000
+    phantom: false
+    text: teste
+
+    $hover:
+      color: #057FFA
+
+    $on:
+      color: #057FFA
+
+  UIButton
+    id: icon
+    size: 22 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    image-source: /images/game/contracts/pin_map
+    image-clip: 0 0 37 37
+    margin-top: -2
+    image-color: #FFFFFF
+    change-cursor-image: true
+    cursor: pointer
+    @onHoverChange: |
+      function(self, hovered)
+        self:getParent().city:setOn(hovered)
+      end
+
+    $hover:
+      image-color: #D1D1D1
+
+MinimapFlag < UIWidget
+  size: 11 11
+  focusable: false
+
+MinimapCross < UIWidget
+  focusable: false
+  phantom: true
+  image: /images/game/minimap/cross
+  size: 16 16
+
+IconColorButton < UICheckBox
+  size: 30 30
+  border: 2 #3d3d3d
+  anchors.left: prev.right
+  anchors.top: prev.top
+  margin-left: 6
+
+  $!checked:
+    border: 2 #3d3d3d
+
+  $hover !checked:
+    border: 2 white
+
+  $checked:
+    border: 2 white
+
+MinimapButton < UIButton
+  size: 24 24
+  image-source: /images/game/icons/icons_map
+  change-cursor-image: true
+  cursor: pointer
+  opacity: 0.7
+  @onClick: addEvent(function() modules.game_minimap.setupControlPanels(self:getId()) end)
+
+  $hover:
+    opacity: 1
+
+  $disabled:
+    change-cursor-image: false
+
+MinimapCloseButton < MinimapButton
+  id: close
+  icon-clip: 223 0 14 12
+  !tooltip: tr('Close')
+
+MinimapResetButton < MinimapButton
+  id: reset
+  image-clip: 0 72 24 24
+  !tooltip: tr('Center')
+
+MinimapFloorUpButton < MinimapButton
+  id: floorUp
+  image-clip: 0 0 24 24
+  !tooltip: tr('Floor Up')
+
+MinimapFloorDownButton < MinimapButton
+  id: floorDown
+  image-clip: 0 24 24 24
+  !tooltip: tr('Floor Down')
+
+MinimapZoomInButton < MinimapButton
+  id: zoomIn
+  image-clip: 0 48 24 24
+  !tooltip: tr('Zoon In')
+
+MinimapZoomOutButton < MinimapButton
+  id: zoomOut
+  image-clip: 0 96 24 24
+  !tooltip: tr('Zoon Out')
+
+MinimapFullButton < MinimapButton
+  id: close
+  image-clip: 0 120 24 24
+  !tooltip: tr('Full map')
+
+Minimap < UIMinimap
+  draggable: true
+  focusable: false
+  cross: true
+
+  Panel
+    id: panelControls
+    anchors.fill: parent
+    padding: 8
+    visible: false
+    border: 1 #444444
+
+    ButtonClose
+      anchors.top: parent.top
+      anchors.right: parent.right
+      @onClick: modules.game_minimap.toggleFullMap()
+
+
+    MinimapFloorUpButton
+      anchors.bottom: next.top
+      anchors.left: next.left
+      margin-bottom: 8
+
+    MinimapFloorDownButton
+      anchors.bottom: next.top
+      anchors.left: next.left
+      margin-bottom: 8
+
+    MinimapZoomInButton
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+
+    MinimapResetButton
+      anchors.top: prev.bottom
+      anchors.left: prev.left
+      margin-top: 8
+
+    MinimapZoomOutButton
+      anchors.top: prev.bottom
+      anchors.left: prev.left
+      margin-top: 8
+
+// Minimap Flag Create Window
+
+
+MinimapFlagCheckBox < UICheckBox
+  size: 34 34
+  margin-left: 6
+  icon-source: /images/game/minimap/mapflags
+  border: 1 #3d3d3d
+  anchors.left: prev.right
+  anchors.top: prev.top
+
+  $!checked:
+    border: 1 #3d3d3d
+
+  $hover !checked:
+    border: 1 #c7c7c7
+
+  $checked:
+    border: 1 #c7c7c7
+
+MinimapFlagWindow < MainHeadlessWindow
+  !text: tr('Create Map Mark')
+  size: 302 415
+
+  Label-16px-Bold
+    !text: tr('Position') .. ':'
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+
+  Label-16px-Bold
+    id: position
+    text-auto-resize: true
+    anchors.left: prev.right
+    anchors.verticalCenter: prev.verticalCenter
+    margin-left: 4
+
+  ButtonCopyPast
+    id: copyButton
+    size: 24 24
+    anchors.left: prev.right
+    anchors.verticalCenter: prev.verticalCenter
+    margin-left: 8
+    !tooltip: tr('Copy')
+
+  Label-16px-Bold
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    !text: tr('Marcação')
+    text-auto-resize: true
+    margin-top: 10
+
+  MinimapFlagCheckBox
+    id: flag0
+    icon-source: /images/game/minimap/flag0
+    anchors.left: prev.left
+    anchors.top: prev.bottom
+    margin: 6 0 0 0  
+    icon-color: #4cff4c
+
+  MinimapFlagCheckBox
+    id: flag1
+    icon-source: /images/game/minimap/flag1
+    icon-color: #389bff
+
+  MinimapFlagCheckBox
+    id: flag2
+    icon-source: /images/game/minimap/flag2
+    icon-color: #ff4000
+
+  MinimapFlagCheckBox
+    id: flag3
+    icon-source: /images/game/minimap/flag3
+    icon-color: #ffff18
+
+  MinimapFlagCheckBox
+    id: flag4
+    icon-source: /images/game/minimap/flag4
+    icon-color: #ff4000
+
+  MinimapFlagCheckBox
+    id: flag5
+    icon-source: /images/game/minimap/flag5
+    icon-color: #ff4000
+
+  MinimapFlagCheckBox
+    id: flag6
+    icon-source: /images/game/minimap/flag6
+    icon-color: #4cff4c
+
+  MinimapFlagCheckBox
+    id: flag7
+    icon-source: /images/game/minimap/flag7
+    anchors.top: flag0.bottom
+    anchors.left: flag0.left
+    margin: 7 0 0 0
+    icon-color: #ff4000
+
+  MinimapFlagCheckBox
+    id: flag8
+    icon-source: /images/game/minimap/flag8
+    icon-color: #c0835c
+
+  MinimapFlagCheckBox
+    id: flag9
+    icon-source: /images/game/minimap/flag9
+    icon-color: #c0835c
+
+  MinimapFlagCheckBox
+    id: flag10
+    icon-source: /images/game/minimap/flag10
+    icon-color: #389bff
+
+  MinimapFlagCheckBox
+    id: flag11
+    icon-source: /images/game/minimap/flag11
+    icon-color: #ffff18
+
+  MinimapFlagCheckBox
+    id: flag12
+    icon-source: /images/game/minimap/flag12
+    icon-color: #ff4000
+
+  MinimapFlagCheckBox
+    id: flag13
+    icon-source: /images/game/minimap/flag13
+    icon-color: #ff4000
+
+  MinimapFlagCheckBox
+    id: flag14
+    icon-source: /images/game/minimap/flag14
+    anchors.top: flag7.bottom
+    anchors.left: flag7.left
+    margin: 7 0 0 0
+    icon-color: #4cff4c
+
+  MinimapFlagCheckBox
+    id: flag15
+    icon-source: /images/game/minimap/flag15
+    icon-color: #4cff4c
+
+  MinimapFlagCheckBox
+    id: flag16
+    icon-source: /images/game/minimap/flag16
+    icon-color: #4cff4c
+
+  MinimapFlagCheckBox
+    id: flag17
+    icon-source: /images/game/minimap/flag17
+    icon-color: #4cff4c
+
+  MinimapFlagCheckBox
+    id: flag18
+    icon-source: /images/game/minimap/flag18
+    icon-color: #389bff
+
+  MinimapFlagCheckBox
+    id: flag19
+    icon-source: /images/game/minimap/flag19
+    icon-color: #ff38b6
+
+  MinimapFlagCheckBox
+    id: flag20
+    icon-source: /images/game/minimap/flag20
+    icon-color: #ff38b6
+
+  Label-16px-Bold
+    anchors.top: flag14.bottom
+    anchors.left: flag14.left
+    !text: tr('Cores') .. ':'
+    text-auto-resize: true
+    margin-top: 12
+
+  IconColorButton
+    id: flagColor0
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    margin: 4 0 0 0
+    background-color: #ffffff
+
+  IconColorButton
+    id: flagColor1
+    background-color: #4cff4c
+
+  IconColorButton
+    id: flagColor2
+    background-color: #ffff18
+
+  IconColorButton
+    id: flagColor3
+    background-color: #ff4000
+
+  IconColorButton
+    id: flagColor4
+    background-color: #ff38b6
+
+  IconColorButton
+    id: flagColor5
+    background-color: #389bff
+
+  IconColorButton
+    id: flagColor6
+    background-color: #c0835c
+
+  TextEdit
+    id: description
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 18
+    !placeholder: tr('Description') .. '...'
+
+  ButtonBlueSmall
+    id: okButton
+    !text: tr('Ok')
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+
+  ButtonRedSmall
+    id: cancelButton
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 5
+    !text: tr('Cancel')
+
+MinimapWindow < MiniWindow
+  height: 150
+  image-source: /images/ui/panel
+  border: 1 #3A3939
+
+  MiniWindowContents
+    margin: 2
+    margin-right: 0
+
+    Minimap
+      id: minimap
+      anchors.fill: parent
+      color: #111111cc
+      margin: 4
+
+  MinimapFullButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin: 8
+
+  MinimapFloorUpButton
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin: 0 0 16 5
+
+  MinimapFloorDownButton
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin: 16 0 0 5
+
+  MinimapZoomInButton
+    anchors.bottom: next.bottom
+    anchors.right: next.left
+    margin-right: 8
+
+  MinimapResetButton
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 8
+
+  MinimapZoomOutButton
+    anchors.bottom: prev.bottom
+    anchors.left: prev.right
+    margin-left: 8
+
+  ResizeBorder
+    anchors.right: parent.right
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    enabled: true
+    &minimum: 164

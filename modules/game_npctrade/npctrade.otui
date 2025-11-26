@@ -243,7 +243,7 @@ MainWindow
       checked: true
       @onCheckChange: modules.game_npctrade.onShowAllItemsChange()
 
-  Button
+  ButtonBlueSmall
     id: sellAllButton
     !text: tr('Sell All')
     width: 64
@@ -253,7 +253,7 @@ MainWindow
     visible: false
     @onClick: modules.game_npctrade.sellAll()
 
-  Button
+  ButtonBlueSmall
     id: tradeButton
     !text: tr('Buy')
     width: 64
@@ -262,7 +262,7 @@ MainWindow
     margin-right: 10
     @onClick: modules.game_npctrade.onTradeClick()
 
-  Button
+  ButtonBlueSmall
     !text: tr('Close')
     width: 64
     anchors.right: parent.right

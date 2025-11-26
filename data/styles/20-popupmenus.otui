@@ -1,89 +1,66 @@
 PopupMenuButton < UIButton
-  height: 18
-  size: 0 21
-  text-offset: 4 0
+  height: 26
+  text-offset: 10 0
   text-align: left
-  font: verdana-11px-rounded
-  color: white
   background-color: alpha
+  font: DMSans-14px-regular
+  padding: 4 6 4 6
 
   $hover !disabled:
-    background-color: #ffffff36
-    image-clip: 0 40 20 20
+    background-color: #69B2FC
 
-  $disabled:
-    color: #c0c0c0ff
-
-PopupMenuShortcutLabel < Label
-  font: verdana-11px-antialised
+PopupMenuShortcutLabel < Label-12px-Regular
   text-align: right
   anchors.fill: parent
-  margin-right: 2
-  margin-left: 5
+  margin: 1 3 0 5
+
+PopupMenuIcon < UIWidget
+  anchors.verticalCenter: parent.verticalCenter
+  anchors.right: parent.right
+  icon-align: right
+  phantom: true
 
 PopupMenuSeparator < UIWidget
-  margin-left: 3
-  margin-right: 3
-  margin-bottom: 1
-  image-source: /images/ui/horizontal_line_bright
   height: 1
+  border: 1 #444444
   phantom: true
 
 PopupMenu < UIPopupMenu
-  width: 80
-  image-source: /images/ui/3pixel_frame_borderimage
-  image-border: 4
-  padding: 3
+  width: 89
+  padding: 2
+  border: 2 #444444
+  background-color: #242424
 
 PopupScrollMenuButton < UIButton
-  height: 18
-  size: 0 21
-  text-offset: 4 0
+  height: 26
+  text-offset: 10 0
   text-align: left
-  font: verdana-11px-antialised
-
-  color: #aaaaaa
   background-color: alpha
+  font: DMSans-14px-regular
+  padding: 4 6 4 6
 
   $hover !disabled:
-    color: #ffffff
-    background-color: #ffffff44
-    image-clip: 0 40 20 20
+    background-color: #69B2FC
 
-  $disabled:
-    color: #555555
-
-PopupScrollMenuShortcutLabel < Label
-  font: verdana-11px-antialised
+PopupScrollMenuShortcutLabel < Label-12px-Regular
   text-align: right
   anchors.fill: parent
-  margin-right: 2
-  margin-left: 5
+  margin: 1 3 0 5
+
+PopupScrollMenuIcon < UIWidget
+  anchors.verticalCenter: parent.verticalCenter
+  anchors.right: parent.right
+  icon-align: right
+  phantom: true
 
 PopupScrollMenuSeparator < UIWidget
-  margin-left: 3
-  margin-right: 3
-  margin-bottom: 1
-  image-source: /images/ui/horizontal_line_bright
   height: 1
+  border: 1 #444444
   phantom: true
 
 PopupScrollMenu < UIPopupScrollMenu
   width: 50
-  image-source: /images/ui/3pixel_frame_borderimage
-  image-border: 4
+  image-source: /images/ui/menubox
+  image-border: 3
   padding: 3
-
-PopupMenuCheckBox < ThickCheckBox
-  text-offset: 18 1
-  text-align: left
-  color: white
-  background-color: alpha
-  font: verdana-11px-rounded
-  padding: 3 6
-
-  $hover:
-    background-color: #ffffff1a
-
-  $disabled:
-    color: #c0c0c0ff
+  background: #00000059

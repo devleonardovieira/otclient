@@ -63,11 +63,11 @@ function JutsusBar:onGameStart()
     end
   end
 
-  if not g_modules.getModule('game_mainpanel'):isLoaded() then
+--[[   if not g_modules.getModule('game_mainpanel'):isLoaded() then
     scheduleEvent(createBtn, 100)
   else
     createBtn()
-  end
+  end ]]
 end
 
 function JutsusBar:open()

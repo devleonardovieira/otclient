@@ -20,7 +20,7 @@ logoutWindow = nil
 exitWindow = nil
 bottomSplitter = nil
 limitedZoom = false
-currentViewMode = 0
+currentViewMode = 1
 leftIncreaseSidePanels = nil
 leftDecreaseSidePanels = nil
 rightIncreaseSidePanels = nil
@@ -138,9 +138,9 @@ function init()
     end
     panelsRadioGroup:selectWidget(panelsList[1].checkbox)
 
-    logoutButton = modules.client_topmenu.addTopRightToggleButton('logoutButton', tr('Exit'), '/images/topbuttons/logout',
+    --[[ logoutButton = modules.client_topmenu.addTopRightToggleButton('logoutButton', tr('Exit'), '/images/topbuttons/logout',
         tryLogout, true)
-
+ ]]
     gameMapPanel.onClick = toggleInternalFocus
     gameRightPanel.onClick = toggleInternalFocus
     gameRightExtraPanel.onClick = toggleInternalFocus
@@ -237,7 +237,7 @@ function terminate()
         })
     end
 
-    logoutButton:destroy()
+    --[[ logoutButton:destroy() ]]
     gameRootPanel:destroy()
     Keybind.delete("Movement", "Stop All Actions")
     Keybind.delete("Misc", "Logout")
@@ -246,6 +246,9 @@ end
 
 function onGameStart()
     show()
+
+    -- Hide panels and normalize geometry at game start to avoid overlays
+    applyCleanGeometryStart()
 
     leftIncreaseSidePanels:setEnabled(not modules.client_options.getOption('showLeftExtraPanel'))
     if g_platform.isMobile() then
@@ -276,9 +279,9 @@ function show()
     gameMapPanel:followCreature(g_game.getLocalPlayer())
 
     updateStretchShrink()
-    logoutButton:setTooltip(tr('Logout'))
+  --[[   logoutButton:setTooltip(tr('Logout')) ]]
 
-    setupViewMode(0)
+    setupViewMode(2)
     if g_platform.isMobile() then
         mobileConfig.mobileWidthJoystick = modules.game_joystick.getPanel():getWidth()
         mobileConfig.mobileWidthShortcuts = modules.game_shortcuts.getPanel():getWidth()
@@ -305,7 +308,7 @@ function hide()
     disconnect(g_app, {
         onClose = tryExit
     })
-    logoutButton:setTooltip(tr('Exit'))
+  --[[   logoutButton:setTooltip(tr('Exit')) ]]
 
     if logoutWindow then
         logoutWindow:destroy()
@@ -333,7 +336,11 @@ function load()
     local settings = g_settings.getNode('game_interface')
     if settings then
         if settings.splitterMarginBottom then
-            bottomSplitter:setMarginBottom(settings.splitterMarginBottom)
+            local minMargin = getMinBottomMargin()
+            local parentHeight = bottomSplitter:getParent():getHeight()
+            local clamped = math.max(settings.splitterMarginBottom, minMargin)
+            clamped = math.min(clamped, parentHeight - 150)
+            bottomSplitter:setMarginBottom(clamped)
         end
     end
 end
@@ -1528,6 +1535,49 @@ function getBottomActionPanel()
   function getRightActionPanel()
     return gameRightActionPanel
   end
+
+-- Computes the minimum bottom margin for the splitter based on UI state.
+-- If the action bar module is missing or hidden, this gracefully falls back.
+function getMinBottomMargin()
+    local base = 118 -- baseline space (e.g., stats bar + bottom panels)
+    local actionBars = 0
+    if modules.game_actionbar and modules.game_actionbar.getVisibleBarsCount then
+        local ok, count = pcall(modules.game_actionbar.getVisibleBarsCount)
+        if ok and type(count) == 'number' then
+            actionBars = math.max(0, count)
+        end
+    end
+    return base + (35 * actionBars)
+end
+
+-- Hide panels and normalize geometry at game start
+function applyCleanGeometryStart()
+    if not gameRootPanel or not gameMapPanel then return end
+
+    -- Hide side panels and extras
+    if gameLeftPanel then gameLeftPanel:setOn(false); gameLeftPanel:setVisible(false) end
+    if gameRightPanel then gameRightPanel:setOn(false); gameRightPanel:setVisible(false) end
+    if gameLeftExtraPanel then gameLeftExtraPanel:setOn(false); gameLeftExtraPanel:setVisible(false) end
+    if gameRightExtraPanel then gameRightExtraPanel:setOn(false); gameRightExtraPanel:setVisible(false) end
+
+    -- Hide top/bottom content panels to avoid overlays
+    if gameTopPanel then gameTopPanel:setVisible(false) end
+    if gameBottomActionPanel then gameBottomActionPanel:setVisible(false) end
+    if gameBottomStatsBarPanel then gameBottomStatsBarPanel:setVisible(false) end
+    if gameBottomPanel then gameBottomPanel:setVisible(false) end
+
+    -- Maximize map area and clamp splitter
+    gameMapPanel:fill('parent')
+    local parentHeight = bottomSplitter and bottomSplitter:getParent():getHeight() or gameRootPanel:getHeight()
+    local minMargin = getMinBottomMargin()
+    if bottomSplitter then
+        -- Oculta o splitter inferior para evitar a alça visível quando não há painel inferior
+        bottomSplitter:setVisible(false)
+        local clamped = math.max(bottomSplitter:getMarginBottom(), minMargin)
+        clamped = math.min(clamped, parentHeight - 150)
+        bottomSplitter:setMarginBottom(clamped)
+    end
+end
   
   function getBottomLockPanel()
     return gameBottomLockPanel
@@ -1609,10 +1659,10 @@ function setupViewMode(mode)
     if mode == 0 then
         gameMapPanel:setKeepAspectRatio(true)
         gameMapPanel:setLimitVisibleRange(false)
-        gameMapPanel:setZoom(11)
+        gameMapPanel:setZoom(15)
         gameMapPanel:setVisibleDimension({
-            width = 15,
-            height = 11
+            width = 34,
+            height = 18
         })
         if g_platform.isMobile() then
             gameRightPanel:setMarginBottom(mobileConfig.mobileHeightShortcuts)
@@ -1621,10 +1671,10 @@ function setupViewMode(mode)
     elseif mode == 1 then
         gameMapPanel:setKeepAspectRatio(false)
         gameMapPanel:setLimitVisibleRange(true)
-        gameMapPanel:setZoom(11)
+        gameMapPanel:setZoom(15)
         gameMapPanel:setVisibleDimension({
-            width = 15,
-            height = 11
+            width = 34,
+            height = 18
         })
         if g_platform.isMobile() then
             gameRightPanel:setMarginBottom(mobileConfig.mobileHeightShortcuts)
@@ -1633,10 +1683,10 @@ function setupViewMode(mode)
     elseif mode == 2 then
         local limit = limitedZoom and not g_game.isGM()
         gameMapPanel:setLimitVisibleRange(limit)
-        gameMapPanel:setZoom(11)
+        gameMapPanel:setZoom(15)
         gameMapPanel:setVisibleDimension({
-            width = 15,
-            height = 11
+            width = 34,
+            height = 18
         })
         gameMapPanel:fill('parent')
         gameRootPanel:fill('parent')

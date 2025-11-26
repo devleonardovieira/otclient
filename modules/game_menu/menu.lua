@@ -44,18 +44,21 @@ Menu.terminate = function ()
 end
 Menu.setup = function ()
 	Menu.modules = {
-		{
+		--[[ {
 			name = "Character (%s)",
 			shortCut = "X",
 			icon = "IconCharacter",
 			callback = modules.game_highscore.show,
 			window = modules.game_highscore.ui
-		},{
+		}, ]]
+		{
 			name = "Inventory (%s)",
 			shortCut = "I",
 			icon = "IconInventory",
-			callback = modules.game_inventory.toggle,
-			window = modules.game_inventory.ui
+			callback = nil,
+			window = nil
+			--[[ callback = modules.game_inventory.toggle,
+			window = modules.game_inventory.ui ]]
 		},
 	
 		--[[ {

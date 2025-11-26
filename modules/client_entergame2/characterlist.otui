@@ -1,0 +1,223 @@
+InfoCharacterPanel < Panel
+  size: 230 42
+  margin: 12
+  visible: false
+
+  PanelRoundedSolid
+    id: accountStatus
+    size: 180 42
+    anchors.top: parent.top
+    anchors.left: parent.left
+    image-color: #505050
+
+    UIWidget
+      id: image
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      image-source: /images/game/icons/icon_default_32px
+      margin-left: 12
+
+    Label-14px-Medium
+      id: status
+      anchors.left: prev.right
+      anchors.right: parent.right
+      anchors.verticalCenter: prev.verticalCenter
+      text-auto-resize: true
+      text-wrap: true
+      margin-left: 10
+
+  ButtonWarningBase
+    id: warning
+    size: 42 42
+    anchors.top: parent.top
+    anchors.right: parent.right
+    icon: /images/game/icons/icon_warning_32px
+    icon-color: #3C3C3C
+
+CharacterBoxBase < UIWidget
+  height: 164
+  padding: 10
+  image-clip: 0 0 467 164
+
+  $!first:
+    margin-top: 10
+
+  $hover:
+    image-clip: 0 164 467 164
+
+  $focus:
+    image-clip: 0 164 467 164
+
+  Label-20px-Bold
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+
+  Label-16px-Bold
+    id: level
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    text-auto-resize: true
+    margin-top: 4
+
+  Label-13px-Regular
+    id: world
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    text-auto-resize: true
+    margin-top: 4
+
+  UIWidget
+    id: clan
+    size: 40 20
+    anchors.left: name.right
+    anchors.verticalCenter: name.verticalCenter
+    margin-left: 4
+    phantom: true
+
+  ButtonBlueBase
+    id: favorite
+    size: 24 24
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    icon: /images/game/icons/icon_favorite
+    !tooltip: tr('Favorite')
+
+    $hover:
+      icon-color: #FFE159
+
+    $on:
+      icon-color: #FFDE00
+      !tooltip: tr('Unfavorite')
+
+  ButtonBlueBase
+    id: changeAvatar
+    size: 24 24
+    anchors.bottom: parent.bottom
+    anchors.left: prev.right
+    margin-left: 6
+    icon: /images/game/icons/icon_change_avatar
+    enabled: false
+
+  ButtonRedBase
+    id: delete
+    size: 24 24
+    anchors.bottom: parent.bottom
+    anchors.left: prev.right
+    margin-left: 6
+    icon: /images/game/icons/icon_trash_16px
+    !tooltip: tr('Delete')
+
+  ButtonWarningBase
+    id: cancel
+    size: 24 24
+    anchors.bottom: parent.bottom
+    anchors.left: prev.left
+    icon: /images/game/icons/icon_warning_16px
+    icon-color: #3C3C3C
+
+CharacterBoxCreate < CharacterBoxBase
+  &createCharacter: true
+  image-clip: 0 0 467 164
+  image-source: /images/game/characters/create
+  @onClick: modules.game_accounts.showCharPanel()
+
+  $hover:
+    image-clip: 0 164 467 164
+
+  $focus:
+    image-clip: 0 164 467 164
+
+  @onSetup: |
+    self.name:setText(tr('Create character'))
+    self.cancel:hide()
+    self.delete:hide()
+    self.favorite:hide()
+    self.changeAvatar:hide()
+
+CharacterBox < CharacterBoxBase
+
+CharacterList < HeadlessWindow
+  width: 527
+  anchors.top: parent.top
+  anchors.left: parent.left
+  anchors.bottom: parent.bottom
+  padding: 120 30 45 30
+  font: montserrat bold 20
+  text-align: top
+  text-offset: 0 40
+  draggable: false
+  &animation: false
+  !text: tr('Select character')
+  @onSetup: |
+    g_keyboard.bindKeyPress('Up',   function() self.characters:focusPreviousChild(KeyboardFocusReason) end, self)
+    g_keyboard.bindKeyPress('Down', function() self.characters:focusNextChild(KeyboardFocusReason)     end, self)
+
+  PanelRoundedSolid
+    id: accountStatus
+    size: 180 50
+    anchors.top: parent.top
+    anchors.left: parent.right
+    margin-left: 60
+    image-color: #505050
+    //visible: false
+
+    UIWidget
+      id: image
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      image-source: /images/game/icons/icon_default_32px
+      margin-left: 12
+
+    Label-14px-Medium
+      id: status
+      anchors.left: prev.right
+      anchors.right: parent.right
+      anchors.verticalCenter: prev.verticalCenter
+      text-auto-resize: true
+      text-wrap: true
+      margin-left: 10
+
+  TextList
+    id: characters
+    anchors.top: next.top
+    anchors.bottom: next.bottom
+    anchors.left: parent.left
+    anchors.right: next.left
+    vertical-scrollbar: scroll
+    auto-focus: first
+    margin-right: 4
+
+  VerticalScrollBar
+    id: scroll
+    anchors.bottom: next.top
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin: 0 0 20 0
+    step: 42
+    pixels-scroll: true
+
+  ButtonBlueMedium
+    id: playButton
+    anchors.right: parent.horizontalCenter
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-right: 5
+    !text: tr('Play')
+    @onClick: CharacterList.doLogin()
+
+  ButtonBlueMedium
+    id: createButton
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.bottom: prev.bottom
+    margin-left: 5
+    !text: tr('Create character')
+    @onClick: modules.game_accounts.showCharPanel()
+
+CharacterList
+  id: charactersWindow
+  visible: false
+  @onEnter: CharacterList.doLogin()
+  @onEscape: CharacterList.hide(true)

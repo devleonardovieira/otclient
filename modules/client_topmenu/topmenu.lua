@@ -86,23 +86,22 @@ end
 -- public functions
 function init()
     connect(g_game, {
-        onGameStart = online,
-        onGameEnd = offline,
-        onPingBack = updatePing
+       
     })
     connect(g_app, {
-        onFps = updateFps
+      
     })
 
     topMenu = g_ui.displayUI('topmenu')
+    topMenu:destroy()
 
     topLeftButtonsPanel = topMenu:getChildById('topLeftButtonsPanel')
     topLeftTogglesPanel = topMenu:getChildById('topLeftTogglesPanel')
     rightButtonsPanel = topMenu:getChildById('rightButtonsPanel')
     leftButtonsPanel = topMenu:getChildById('leftButtonsPanel')
     rightGameButtonsPanel = topMenu:getChildById('rightGameButtonsPanel')
-    pingLabel = topMenu:getChildById('pingLabel')
-    fpsLabel = topMenu:getChildById('fpsLabel')
+    --[[ pingLabel = topMenu:getChildById('pingLabel')
+    fpsLabel = topMenu:getChildById('fpsLabel') ]]
 
     topLeftOnlinePlayersLabel = topMenu:recursiveGetChildById('topLeftOnlinePlayersLabel')
 
@@ -143,12 +142,10 @@ end
 
 function terminate()
     disconnect(g_game, {
-        onGameStart = online,
-        onGameEnd = offline,
-        onPingBack = updatePing
+       
     })
     disconnect(g_app, {
-        onFps = updateFps
+     
     })
 
     topMenu:destroy()
@@ -211,7 +208,7 @@ function online()
             fpsPanel2 = mainFpsPanel:getChildByIndex(2)
         end
 
-        if showPing and pingFeatureAvailable then
+       --[[  if showPing and pingFeatureAvailable then
             pingLabel:show()
             if pingPanel then
                 pingPanel:show()
@@ -223,7 +220,7 @@ function online()
                 pingPanel:hide()
                 pingImg:hide()
             end
-        end
+        end ]]
 
         pingImg:setVisible(showPing)
         pingPanel:setVisible(showPing)
@@ -235,11 +232,11 @@ end
 
 function offline()
     hideGameButtons()
-    pingLabel:hide()
+    --[[ pingLabel:hide()
     if pingPanel then
         pingPanel:hide()
         pingImg:hide()
-    end
+    end ]]
     fpsMin = -1
 end
 
@@ -287,7 +284,7 @@ function updateFps(fps)
 end
 
 function updatePing(ping)
-    if pingLabel:isVisible() then -- for the time being retained for the extended view
+  --[[   if pingLabel:isVisible() then -- for the time being retained for the extended view
 
         local text = 'Ping: '
         local color
@@ -306,8 +303,8 @@ function updatePing(ping)
         end
         pingLabel:setColor(color)
         pingLabel:setText(text)
-    end
-    if pingPanel and pingPanel:isVisible() then
+    end ]]
+    --[[ if pingPanel and pingPanel:isVisible() then
 
         local text
         local imagen
@@ -327,22 +324,22 @@ function updatePing(ping)
 
         pingImg:setImageSource(imagen)
         pingPanel:setText(text)
-    end
+    end ]]
 end
 
 function setPingVisible(enable)
-    pingLabel:setVisible(enable)
+   --[[  pingLabel:setVisible(enable)
     if pingPanel then
         pingPanel:setVisible(enable)
         pingImg:setVisible(enable)
-    end
+    end ]]
 end
 
 function setFpsVisible(enable)
-    fpsLabel:setVisible(enable)
+    --[[ fpsLabel:setVisible(enable)
     if fpsPanel2 then
         fpsPanel2:setVisible(enable)
-    end
+    end ]]
 end
 
 function setPlayersOnline(value)
@@ -434,7 +431,7 @@ function addRightGameButton(id, description, icon, callback, front, index)
 end
 
 function addRightGameToggleButton(id, description, icon, callback, front, index)
-    if not g_modules.getModule("game_mainpanel"):isLoaded() then
+   --[[  if not g_modules.getModule("game_mainpanel"):isLoaded() then
         -- Temp fix. game_mainpanel is not loaded if called from a client_XXX.
         scheduleEvent(function()
             return modules.game_mainpanel.addToggleButton(id, description, icon, callback, front, index)
@@ -442,7 +439,7 @@ function addRightGameToggleButton(id, description, icon, callback, front, index)
     else
         return modules.game_mainpanel.addToggleButton(id, description, icon, callback, front, index)
 
-    end
+    end ]]
 
 end
 
@@ -505,8 +502,8 @@ function extendedView(extendedView)
         topMenu:addAnchor(AnchorLeft, 'parent', AnchorLeft)
         topMenu:addAnchor(AnchorRight, 'parent', AnchorRight)
         modules.game_interface.getRootPanel():addAnchor(AnchorTop, 'topMenu', AnchorBottom)
-        pingLabel:setVisible(false)
-        fpsLabel:setVisible(false)
+        --[[ pingLabel:setVisible(false)
+        fpsLabel:setVisible(false) ]]
         topMenu.topLeftOnlinePlayers:hide()
         topMenu.topLeftDiscord:setWidth(0)
         topMenu.topLeftYoutube:setWidth(0)

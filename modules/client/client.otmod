@@ -16,6 +16,3 @@ Module
     - client_background
     - client_options
     - client_entergame2
-    - client_terminal
-    - client_debug_info
-    - client_serverlist

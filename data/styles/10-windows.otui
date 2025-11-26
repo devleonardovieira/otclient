@@ -26,9 +26,15 @@ ShinWindow < UIWindow
     anchors.right: parent.right
 
 HeadlessWindow < UIWindow
-  image-source: /images/ui/window_headless
-  image-border: 5
-  padding: 5
+  size: 624 488
+  image-source: /images/ui/window
+  image-border: 20
+  padding: 54 16 16 16
+  font: montserrat bold 20
+  text-offset: 0 14
+  text-align: top
+  color: #FFFFFF
+  &animation: true
 
 MainWindow < Window
   anchors.centerIn: parent

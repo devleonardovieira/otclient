@@ -9,7 +9,7 @@ InputBoxCheckBox < CheckBox
 InputBoxComboBox < ComboBox
 InputBoxComboBoxPopupMenu < ComboBoxPopupMenu
 InputBoxComboBoxPopupMenuButton < ComboBoxPopupMenuButton
-InputBoxButton < Button
+InputBoxButton < UIButton
   margin-left: 10
   fixed-size: true
 

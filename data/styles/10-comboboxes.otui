@@ -1,174 +1,125 @@
 ComboBoxPopupScrollMenuButton < UIButton
-  height: 17
-  font: Verdana Bold-11px
+  height: 40
+  background-color: #242424
+  border: 1 #444444
   text-align: left
-  text-offset: 4 0
-  color: #c0c0c0
-  background-color: alpha
-  margin: 1
+  text-offset: 10 0
+  color: #FFFFFF
+  font: montserrat bold 13
 
   $hover !disabled:
-    color: #f4f4f4
-    background-color: #86868750
-
-  $disabled:
-    color: #dfdfdf88
+    background-color: #69B2FC
+    border: 0 #444444
 
 ComboBoxPopupScrollMenu < UIPopupScrollMenu
-  image-source: /images/ui/combobox_square
-  image-clip: 0 60 98 20
-  image-border: 1
-
-ComboBoxPopupMenuButton < UIButton
-  height: 17
-  font: Verdana Bold-11px
-  text-align: left
-  text-offset: 4 0
-  color: #c0c0c0
-  background-color: alpha
-  margin: 1
-
-  $hover !disabled:
-    color: #f4f4f4
-    background-color: #86868750
-
-  $disabled:
-    color: #dfdfdf88
-
-ComboBoxPopupMenu < UIPopupMenu
-  image-source: /images/ui/combobox_square
-  image-clip: 0 60 98 20
-  image-border: 1
+  height: 40
 
 ComboBox < UIComboBox
-  font: Verdana Bold-11px
-  color: #c0c0c0
-  text-offset: -15 2
-  size: 91 20
-  image-source: /images/ui/combobox_square
-  image-border: 3
-  image-border-right: 21
-  image-clip: 0 0 91 20
+  size: 200 40
+  image-source:  /images/ui/combobox
+  image-clip: 0 0 400 40
+  image-border: 40
+  text-align: left
+  text-offset: 10 0
+  font: montserrat bold 13
 
   $hover !disabled:
-    image-clip: 0 0 91 20
+    image-clip: 0 40 400 40
 
   $on:
-    image-clip: 0 40 91 20
+    image-clip: 0 80 400 40
 
-  $disabled:
-    color: #dfdfdf88
-    opacity: 0.8
-  
-  $checked:
-    image-clip: 0 20 91 20
+  $on hover:
+    image-clip: 0 120 400 40
 
-ComboBoxRoundedPopupScrollMenuButton < UIButton
-  height: 23
-  font: verdana-11px-antialised
+ComboBoxPopupMenu < UIPopupMenu
+  height: 40
+
+ComboBoxPopupMenuButton < UIButton
+  height: 40
+  background-color: #242424
+  border: 1 #444444
   text-align: left
-  text-offset: 4 0
-  color: #dfdfdf
-  background-color: alpha
+  text-offset: 10 0
+  color: #FFFFFF
+  font: montserrat regular 13
+
+  $hover:
+    background-color: #69B2FC
+    border: 0 #444444
+    color: #FFFFFF
+
+ComboBoxPopupMenuIcon < UIWidget
+  anchors.verticalCenter: parent.verticalCenter
+  anchors.right: parent.right
+  icon-align: right
+  phantom: true
+  margin-right: 4
+
+ComboBoxPopupMenuShortcutLabel < UILabel
+  font: montserrat regular 12
+  color: #FFFFFF
+  text-align: right
+  anchors.fill: parent
+  margin: 1 8 0 5
+
+ComboBoxPopupScrollMenuShortcutLabel < UILabel
+  font: montserrat regular 12
+  color: #FFFFFF
+  text-align: right
+  anchors.fill: parent
+  margin: 1 8 0 5
+
+ComboBoxPopupScrollMenuIcon < UIWidget
+  anchors.verticalCenter: parent.verticalCenter
+  anchors.right: parent.right
+  icon-align: right
+  phantom: true
+  margin-right: 4
+
+ComboBoxGamePopupScrollMenuButton < UIButton
+  height: 40
+  background-color: #0466C8
+  text-align: left
+  text-offset: 10 0
+  color: #FFFFFF
+  font: montserrat bold 13
 
   $hover !disabled:
-    color: #ffffff
-    background-color: #355d89
+    background-color: #69B2FC
 
-  $disabled:
-    color: #dfdfdf88
+ComboBoxGamePopupScrollMenu < UIPopupScrollMenu
+  height: 40
 
-ComboBoxRoundedPopupScrollMenu < UIPopupScrollMenu
-  image-source: /images/ui/combobox_rounded
-  image-clip: 0 69 91 23
-  image-border: 3
-
-ComboBoxRoundedPopupMenuButton < UIButton
-  height: 23
-  font: verdana-11px-antialised
+ComboBoxGame < UIComboBox
+  size: 200 40
+  image-source:  /images/ui/combobox_game
+  image-clip: 0 0 400 40
+  image-border: 40
   text-align: left
-  text-offset: 4 0
-  color: #dfdfdf
-  background-color: alpha
+  text-offset: 10 0
+  font: montserrat bold 13
+  &isGame: true
 
   $hover !disabled:
-    color: #ffffff
-    background-color: #355d89
-
-  $disabled:
-    color: #dfdfdf88
-
-ComboBoxRoundedPopupMenu < UIPopupMenu
-  image-source: /images/ui/combobox_rounded
-  image-clip: 0 69 91 23
-  image-border: 3
-
-ComboBoxRounded < ComboBox
-  image-source: /images/ui/combobox_rounded
-  image-border: 3
-
-QtComboBoxPopupScrollMenuButton < UIButton
-  height: 23
-  font: verdana-11px-antialised
-  text-align: left
-  text-offset: 4 0
-  color: #dfdfdf
-  background-color: alpha
-  margin: 1
-
-  $hover !disabled:
-    color: #dfdfdf
-    background-color: #355d89
-
-  $disabled:
-    color: #dfdfdf88
-
-QtComboBoxPopupScrollMenu < UIPopupScrollMenu
-  image-source: /images/ui/combobox_square
-  image-clip: 0 69 91 23
-  image-border: 1
-
-QtComboBoxPopupMenuButton < UIButton
-  height: 20
-  text-align: left
-  text-offset: 5 0
-  color: #c0c0c0ff
-  background-color: #ffffff00
-
-  $hover !disabled:
-    color: #f4f4f4ff
-    background-color: #ffffff1b
-
-  $!hover !disabled:
-    color: #c0c0c0ff
-    background-color: #ffffff00
-
-  $disabled:
-    color: #888888ff
-    background-color: #ffffff00
-
-QtComboBoxPopupMenu < UIPopupMenu
-  image-source: /images/ui/combobox_new
-  image-clip: 0 60 91 20
-  image-border: 2
-
-QtComboBox < UIComboBox
-  color: #c0c0c0ff
-  size: 91 20
-  text-offset: -11 0
-  text-align: center
-  image-source: /images/ui/combobox_new
-  image-border: 2
-  image-border-right: 22
-  image-clip: 0 0 91 20
-
-  $pressed !disabled:
-    image-clip: 0 20 91 20
-    text-offset: -10 1
+    image-clip: 0 40 400 40
 
   $on:
-    image-clip: 0 20 91 20
-    text-offset: -10 1
+    image-clip: 0 80 400 40
 
-  $disabled:
-    image-clip: 0 40 91 20
+  $on hover:
+    image-clip: 0 120 400 40
+
+ComboBoxGamePopupMenu < UIPopupMenu
+  height: 40
+
+ComboBoxGamePopupMenuButton < UIButton
+  height: 40
+  background-color: #0466C8
+  text-align: left
+  text-offset: 10 0
+  color: #FFFFFF
+  font: montserrat bold 13
+
+  $hover !disabled:
+    background-color: #69B2FC

@@ -1,0 +1,186 @@
+HorizontalScrollBarValueLabel < Label
+  id: valueLabel
+  size: 46 34
+  anchors.horizontalCenter: prev.horizontalCenter
+  anchors.bottom: prev.top
+  image-source: /images/ui/slide_value
+  text-align: center
+  text-offset: 0 -6
+  visible: false
+  font: montserrat regular 13
+  color: #FFFFFFFF
+
+ScrollBarSlider < UIButton
+  id: sliderButton
+  size: 9 13
+  anchors.centerIn: parent
+  image-source: /images/ui/scrollbar
+  image-clip: 4 0 9 13
+  image-border: 6
+  image-color: #0466C8
+
+  $hover:
+    image-color: #69B2FC
+
+  $pressed:
+    image-color: #0466C8
+
+  $disabled:
+    image-color: #6E6E6E
+
+HorizontalScrollBarSlider < UIButton
+  id: sliderButton
+  anchors.centerIn: parent
+  size: 35 13
+  image-source: /images/ui/scrollbar
+  image-clip: 16 0 25 13
+  image-border: 12
+  image-color: #0466C8
+
+  $hover:
+    image-color: #69B2FC
+
+  $pressed:
+    image-color: #0466C8
+
+  $disabled:
+    image-color: #6E6E6E
+
+ScrollBarValueLabel < Label
+  id: valueLabel
+  anchors.fill: parent
+  color: white
+  text-align: center
+
+VerticalScrollBar < UIScrollBar
+  orientation: vertical
+  size: 13 39
+  pixels-scroll: true
+
+  UIButton
+    id: decrementButton
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-source: /images/ui/scroll_arrow
+    image-clip: 0 38 19 19
+    image-color: #FFFFFFFF
+    visible: false
+    size: 19 19
+    change-cursor-image: true
+    cursor: pointer
+
+    $hover:
+      image-color: #DDDDDD
+
+    $pressed:
+      image-color: #CCCCCC
+
+    $disabled:
+      image-color: #FFFFFF66
+      change-cursor-image: false
+
+  UIWidget
+    id: sliderBackground
+    width: 13
+    image-source: /images/ui/scrollbar
+    image-clip: 41 0 13 69
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-border: 13
+    image-color: #9BCCFD
+
+  UIButton
+    id: incrementButton
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-source: /images/ui/scroll_arrow
+    image-clip: 0 57 19 19
+    image-color: #FFFFFFFF
+    visible: false
+    size: 19 19
+    change-cursor-image: true
+    cursor: pointer
+
+    $hover:
+      image-color: #DDDDDD
+
+    $pressed:
+      image-color: #CCCCCC
+
+    $disabled:
+      image-color: #FFFFFF66
+      change-cursor-image: false
+
+  ScrollBarSlider
+
+  ScrollBarValueLabel
+
+HorizontalScrollBar < UIScrollBar
+  orientation: horizontal
+  size: 69 13
+  show-value: true
+
+  $disabled:
+    color: #bbbbbb88
+
+  UIButton
+    id: decrementButton
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    image-source: /images/ui/scroll_arrow
+    image-clip: 0 19 19 19
+    image-color: #ffffffff
+    size: 19 19
+    visible: false
+    change-cursor-image: true
+    cursor: pointer
+
+    $hover:
+      image-color: #DDDDDD
+
+    $pressed:
+      image-color: #CCCCCC
+
+    $disabled:
+      image-color: #FFFFFF66
+      change-cursor-image: false
+
+  UIWidget
+    id: sliderBackground
+    height: 13
+    anchors.right: parent.right
+    anchors.left: parent.left
+    anchors.centerIn: parent
+    image-source: /images/ui/scrollbar
+    image-clip: 0 67 53 13
+    image-border: 8
+    image-color: #9BCCFD
+
+  UIButton
+    id: incrementButton
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.right: parent.right
+    image-source: /images/ui/scroll_arrow
+    image-clip: 0 0 19 19
+    image-color: #ffffffff
+    size: 19 19
+    visible: false
+    change-cursor-image: true
+    cursor: pointer
+
+    $hover:
+      image-color: #DDDDDD
+
+    $pressed:
+      image-color: #CCCCCC
+
+    $disabled:
+      image-color: #FFFFFF66
+      change-cursor-image: false
+
+  HorizontalScrollBarSlider
+    @onGeometryChange: self:getParent().valueLabel:setPosition(self:getPosition())
+
+  HorizontalScrollBarValueLabel
+    visible: false

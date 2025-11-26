@@ -1,7 +1,7 @@
 WaitPanel < PanelRounded
   size: 354 61
   anchors.centerIn: parent
-  font: DMSans-16px-regular
+  font: montserrat regular 16
   !text: tr('Wait') .. '...'
 
 AccountCreateWindow < ShinMainWindow

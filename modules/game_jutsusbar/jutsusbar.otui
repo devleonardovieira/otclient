@@ -24,8 +24,6 @@ UIWidget
   focusable: false
   phantom: false
   anchors.centerIn: parent
-  image-source: /images/ui/3pixel_frame_borderimage
-  image-border: 4
   padding: 5
   layout:
     type: horizontalBox
