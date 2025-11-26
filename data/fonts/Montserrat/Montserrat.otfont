@@ -59,7 +59,7 @@ FontFamily
       file: Montserrat-Regular
     regularRounded
       file: Montserrat-Regular
-      outline-width: 1
+      outline-width: 10
       space-width: 6
       extra-spacing: -1
       extra-spacing-y: 0

@@ -19,7 +19,7 @@ Panel
     width: 120
     padding: 2
     color: #ffffff
-    font: montserrat lightItalicRounded 30
+    font: montserrat regularRounded 30
 
   UILabel
     id: alphaId
