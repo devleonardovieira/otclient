@@ -1,0 +1,8 @@
+Module
+  name: game_api
+  description: Api Manager
+  author: Union
+  scripts: [ api ]
+  sandboxed: true
+  @onLoad: init()
+  @onUnload: terminate()

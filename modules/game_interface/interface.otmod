@@ -47,9 +47,9 @@ Module
     - game_blessing
     - game_store
     - game_quickloot
-    - game_cyclopedia
+    - game_api
     - game_creatureinformation
-    - game_rewardwall
+    - game_accounts
     - game_jutsusbar
     - game_npcdialog
     - game_notifications

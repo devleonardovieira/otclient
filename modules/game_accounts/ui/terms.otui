@@ -1,0 +1,46 @@
+LabelTitleTermRules < Label-16px-Bold
+  text-auto-resize: true
+  text-wrap: true
+  margin-top: 8
+
+LabelBodyTermRules < Label-16px-Regular
+  text-auto-resize: true
+  text-wrap: true
+  margin-top: 6
+
+TermRules < MainHeadlessWindow
+  size: 641 600
+  !text: tr('Termos e regras')
+  @onEscape: modules.game_accounts.hideTermsPanel()
+
+  TextList
+    id: list
+    anchors.bottom: next.bottom
+    anchors.top: next.top
+    anchors.right: next.left
+    anchors.left: parent.left
+    vertical-scrollbar: scrollList
+    focusable: false
+
+  VerticalScrollBar
+    id: scrollList
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.bottom: next.top
+    margin-bottom: 12
+    step: 46
+    pixels-scroll: true
+    @onValueChange: |
+      function(self, value, delta)
+        print(value .. ' = ' .. delta)
+        self:getParent().okButton:setEnabled(value >= self.maximum)
+      end
+
+  ButtonBlueSmall
+    id: okButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    enabled: false
+    !text: tr('Entendi')
+    @onClick: modules.game_accounts.hideTermsPanel()

@@ -110,11 +110,35 @@ bool FontManager::importTTFFont(const std::string& fontName,
         const int col = index % cols;
         const int row = index / cols;
 
-        const int destX = col * cellW + (xoff > 0 ? xoff : 0);
-        int destY = row * pixelHeight + baseline + yoff; // alinhar baseline
-        destY = clampi(destY, row * pixelHeight, row * pixelHeight + pixelHeight - h);
+        // Garantir que o destino está dentro da célula do atlas e
+        // que o bitmap não ultrapasse os limites (corte se necessário)
+        int cropW = w;
+        int cropH = h;
 
-        atlas->blit(Point(destX, destY), glyphImg);
+        // Se o bitmap for maior que a célula, recorte
+        if (cropW > cellW) cropW = cellW;
+        if (cropH > pixelHeight) cropH = pixelHeight;
+
+        // Clamp do destino considerando o tamanho recortado
+        int destX = col * cellW + (xoff > 0 ? xoff : 0);
+        destX = clampi(destX, col * cellW, col * cellW + cellW - cropW);
+
+        int destY = row * pixelHeight + baseline + yoff; // alinhar baseline
+        destY = clampi(destY, row * pixelHeight, row * pixelHeight + pixelHeight - cropH);
+
+        if (cropW != w || cropH != h) {
+            // Construir imagem recortada (top-left) para blit seguro
+            std::vector<uint8_t> rgbaCrop(static_cast<size_t>(cropW) * static_cast<size_t>(cropH) * 4);
+            for (int yy = 0; yy < cropH; ++yy) {
+                const int srcRowOffset = yy * w * 4;
+                const int dstRowOffset = yy * cropW * 4;
+                memcpy(&rgbaCrop[dstRowOffset], &rgba[srcRowOffset], static_cast<size_t>(cropW) * 4);
+            }
+            auto glyphImgCrop = std::make_shared<Image>(Size(cropW, cropH), 4, rgbaCrop.data());
+            atlas->blit(Point(destX, destY), glyphImgCrop);
+        } else {
+            atlas->blit(Point(destX, destY), glyphImg);
+        }
 
         stbtt_FreeBitmap(bitmap, nullptr);
     }

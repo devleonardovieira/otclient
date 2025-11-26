@@ -1,0 +1,76 @@
+DeleteCharacterWindow < MainHeadlessWindow
+  size: 464 233
+  !text: tr('Delete character')
+
+  Label-16px-Regular
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    margin-top: 8
+    !text: tr('Você realmente deseja excluir este personagem?')
+
+  Label-13px-Regular
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-align: center
+    text-wrap: true
+    margin-top: 14
+    color: #FFDA2B
+    !text: tr('Importante: Seu personagem será deletado após 7 dias. Caso se\narrependa, você poderá cancelar a exclusão do personagem durante\neste período, após o décimo quinto dia o processo se torna irreversível')
+
+  ButtonBlueSmall
+    id: confirmButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    !text: tr('Confirm')
+
+  ButtonRedSmall
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    anchors.left: parent.horizontalCenter
+    margin-left: 5
+    !text: tr('Cancel')
+    @onClick: modules.game_accounts.hideDeletePanel()
+
+CancelCharacterDeletionWindow < MainHeadlessWindow
+  size: 373 203
+  !text: tr('Cancel delete character')
+
+  Label-16px-Regular
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    text-align: center
+    margin-top: 8
+    !text: tr('Deseja cancelar a ação de excluir\nseu personagem?')
+
+  Label-13px-Regular
+    id: dayLabel
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-align: center
+    text-wrap: true
+    margin-top: 14
+    color: #FFDA2B
+
+  ButtonBlueSmall
+    id: confirmButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    !text: tr('Confirm')
+
+  ButtonRedSmall
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    anchors.left: parent.horizontalCenter
+    margin-left: 5
+    !text: tr('Cancel')
+    @onClick:  modules.game_accounts.hideCancelDeletePanel()

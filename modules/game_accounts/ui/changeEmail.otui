@@ -1,0 +1,56 @@
+AccountChangeEmailWindow < MainHeadlessWindow
+  id: window
+  size: 439 205
+  !text: tr('Change email')
+
+  Label-14px-Medium
+    id: label
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+    !text: tr('E-mail')
+
+  TextEdit
+    id: emailInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        onInputEmail(self)
+      end
+
+  Label-13px-Regular
+    id: helperEmailInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  ButtonBlueSmall
+    id: confirmButton
+    anchors.right: parent.horizontalCenter
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-right: 5
+    !text: tr('Confirm')
+    @onClick: modules.game_accounts.onChangeEmail()
+
+  ButtonRedSmall
+    id: cancelButton
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.bottom: prev.bottom
+    margin-left: 5
+    !text: tr('Cancel')
+    @onClick: modules.game_accounts.hideEmailPanel()
+
+AccountChangeEmailPanel < UIWidget
+  anchors.fill: parent
+  background-color: #000000CC
+
+  AccountChangeEmailWindow
+    anchors.centerIn: parent

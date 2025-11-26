@@ -21,3 +21,43 @@ MenuLabel < Label
 GameLabel < UILabel
   font: verdana-11px-antialised
   color: #dfdfdf
+
+Label-12px-Regular < UILabel
+  font: montserrat regular 12
+  color: #FFFFFF
+
+Label-13px-Bold < UILabel
+  font:  montserrat bold 13
+  color: #FFFFFF
+
+Label-13px-Regular < UILabel
+  font: montserrat regular 1
+  color: #FFFFFF
+
+Label-14px-Medium < UILabel
+  font: montserrat medium 14
+  color: #FFFFFF
+
+Label-14px-Regular < UILabel
+  font: montserrat regular 14
+  color: #FFFFFF
+
+Label-16px-Bold < UILabel
+  font: montserrat bold 16
+  color: #FFFFFF
+
+Label-16px-Regular < UILabel
+  font: montserrat regular 16
+  color: #FFFFFF
+
+Label-20px-Bold < UILabel
+  font: montserrat bold 20
+  color: #FFFFFF
+
+Label-26px-Bold < UILabel
+  font: montserrat Dbold 26
+  color: #FFFFFF
+
+Label-30px-Bold < UILabel
+  font: montserrat bold 30
+  color: #FFFFFF

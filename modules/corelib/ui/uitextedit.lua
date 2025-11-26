@@ -76,3 +76,35 @@ function UITextEdit:updateScrollBars()
 end
 
 -- todo: ontext change, focus to cursor
+
+
+function UITextEdit:onTextChange(text)
+	if self.placeholderLabel then
+		self.placeholderLabel:setVisible(text:len() == 0)
+	end
+end
+
+function UITextEdit:setHelperText(color, text)
+	local parent = self:getParent()
+
+	if parent then
+		local helperText = parent:getChildById("helper" .. self:getId():gsub("^%l", string.upper))
+
+		if helperText then
+			helperText:setText(text)
+			helperText:setColor(color)
+		end
+	end
+end
+
+function UITextEdit:onVisibilityChange(visible)
+	rootWidget.currentTextEdit = self
+end
+
+function UITextEdit:onFocusChange(focused)
+	rootWidget.currentTextEdit = self
+end
+
+function UITextEdit:onMousePress(mousePos, button)
+	rootWidget.currentTextEdit = self
+end

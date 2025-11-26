@@ -1375,14 +1375,14 @@ function onAttackInfoChange(localPlayer, attackValue, attackElement)
     end
     local tooltips = "This is your character's basic attack power whenever you enter a \nfight with a weapon or your fists. It does not apply to any spells \nyou cast. The attack value is calculated from the weapon's attack\n value, the corresponding weapon skill, combat tactics, the bonus \nreceived from the Revelation Perks and the player's level. The \nvalue represents the average damage you would inflict on a\ncreature which had no kind of defence or protection."
     setSkillValueWithTooltips('attackValue', attackValue, tooltips, false)
-    local skill = skillsWindow:recursiveGetChildById("attackValue")
+  --[[   local skill = skillsWindow:recursiveGetChildById("attackValue")
     if skill then
         local element = clientCombat[attackElement]
         if element then
             skill:getChildById('icon'):setImageSource(element.path)
             skill:getChildById('icon'):setImageSize({width = 9, height = 9})
         end
-    end
+    end ]]
 end
 
 function onConvertedDamageChange(localPlayer, convertedDamage, convertedElement)

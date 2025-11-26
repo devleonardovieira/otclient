@@ -1,0 +1,114 @@
+CharacterGender < UIWidget
+  size: 232 205
+  image-source: /images/game/characters/gender
+
+CreateCharacterWindow < HeadlessWindow
+  width: 527
+  anchors.top: parent.top
+  anchors.left: parent.left
+  anchors.bottom: parent.bottom
+  padding: 120 30 45 30
+  font: DMSans-30px-bold
+  phantom: false
+  text-align: top
+  text-offset: 0 40
+  draggable: false
+  !text: tr('Create character')
+  @onEscape: modules.game_accounts.hideCharPanel()
+
+  Label-14px-Medium
+    anchors.top: parent.top
+    anchors.left: parent.left
+    text-auto-resize: true
+    !text: tr('Nome do personagem')
+
+  TextEdit
+    id: nameInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        onInputName(self)
+      end
+
+  Label-13px-Regular
+    id: helperNameInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    text-auto-resize: true
+    margin-top: 16
+    !text: tr('Gênero')
+
+  Panel
+    id: genderPanel
+    height: 205
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+    CharacterGender
+      id: 1
+      anchors.top: parent.top
+      anchors.left: parent.left
+      image-clip: 0 0 232 205
+
+      $hover:
+        image-clip: 0 205 232 205
+
+      $checked:
+        image-clip: 0 410 232 205
+
+    CharacterGender
+      id: 0
+      anchors.top: parent.top
+      anchors.right: parent.right
+      image-clip: 232 0 232 205
+
+      $hover:
+        image-clip: 232 205 232 205
+
+      $checked:
+        image-clip: 232 410 232 205
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    text-auto-resize: true
+    margin-top: 16
+    !text: tr('Selecione um mundo')
+
+  ComboBox
+    id: worlds
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  ButtonBlueMedium
+    id: playButton
+    anchors.right: parent.horizontalCenter
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-right: 5
+    !text: tr('Create')
+    @onClick: modules.game_accounts.onCreateCharacter()
+
+  ButtonRedMedium
+    id: cancelButton
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.bottom: prev.bottom
+    margin-left: 5
+    !text: tr('Cancel')
+    @onClick: modules.game_accounts.hideCharPanel()

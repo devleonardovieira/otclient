@@ -19,6 +19,17 @@ function UIWidget:setMargin(...)
     end
 end
 
+function UIWidget:setMultiColorText(text, defaultColor)
+	local highlightData = getHighlightedText(text, defaultColor or "white")
+
+	if #highlightData > 2 then
+		self:setColoredText(highlightData)
+	else
+		self:setText(text)
+	end
+end
+
+
 function UIWidget:setTitle(title)
     self:setText(title)
     self:setTextAlign(AlignTopCenter)

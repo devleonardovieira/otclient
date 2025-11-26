@@ -21,6 +21,7 @@ Module
     dofile 'keyboard'
     dofile 'mouse'
     dofile 'net'
+    dofile 'inputvalidation'
 
     dofiles 'classes'
     dofiles 'ui'

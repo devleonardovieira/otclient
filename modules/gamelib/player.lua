@@ -133,7 +133,7 @@ combatStates= {
 	CLIENT_COMBAT_LIFEDRAIN = 9,
 	CLIENT_COMBAT_MANADRAIN = 10,
 }
-clientCombat ={}
+--[[ clientCombat ={}
 clientCombat[combatStates.CLIENT_COMBAT_PHYSICAL] = { path = '/game_cyclopedia/images/bestiary/icons/monster-icon-physical-resist', id = 'Physical' }
 clientCombat[combatStates.CLIENT_COMBAT_FIRE] = {  path = '/game_cyclopedia/images/bestiary/icons/monster-icon-fire-resist', id = 'Fire' }
 clientCombat[combatStates.CLIENT_COMBAT_EARTH] = { path = '/game_cyclopedia/images/bestiary/icons/monster-icon-earth-resist', id = 'Earth' }
@@ -145,7 +145,7 @@ clientCombat[combatStates.CLIENT_COMBAT_HEALING] = { path = '/game_cyclopedia/im
 clientCombat[combatStates.CLIENT_COMBAT_DROWN] = {  path = '/game_cyclopedia/images/bestiary/icons/monster-icon-drowning-resist', id = 'Drown' }
 clientCombat[combatStates.CLIENT_COMBAT_LIFEDRAIN] = {  path = '/game_cyclopedia/images/bestiary/icons/monster-icon-lifedrain-resist', id = 'Lifedrain ' }
 clientCombat[combatStates.CLIENT_COMBAT_MANADRAIN] = {  path = '/game_cyclopedia/images/bestiary/icons/monster-icon-manadrain-resist', id = 'Manadrain' }
-
+ ]]
 InventorySlotOther = 0
 InventorySlotHead = 1
 InventorySlotNeck = 2

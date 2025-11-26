@@ -22,16 +22,15 @@ UIWindow
     anchors.centerIn: parent
     margin-bottom: 50
 
-    Label
+    Label-14px-Medium
       anchors.top: parent.top
       anchors.left: parent.left
       margin-top: 15
       margin-bottom: 1
       !text: tr('Email : ')
-      font: montserrat regularRounded 20
       text-auto-resize: true
 
-    ShinTextEdit
+    TextEdit
       id: accountNameTextEdit
       anchors.top: prev.bottom
       anchors.left: parent.left
@@ -51,17 +50,16 @@ UIWindow
           self:getParent():setTextHidden(isOn)
           g_settings.set('viewEmail', isOn)
     
-    Label
+    Label-14px-Medium
       anchors.top: prev.top
       anchors.left: parent.left
       margin-top: 65
       margin-bottom: 1
       !text: tr('Password : ')
-      font: montserrat regularRounded 20
       text-auto-resize: true
 
-    ShinTextEdit
-      id: accountNameTextEdit
+    TextEditPassword
+      id: passwordTextEdit
       anchors.top: prev.bottom
       anchors.left: parent.left
       anchors.right: parent.right

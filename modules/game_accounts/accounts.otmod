@@ -1,0 +1,8 @@
+Module
+  name: game_accounts
+  description: Account Manager
+  author: Union
+  scripts: [ termsandrules, accounts ]
+  sandboxed: true
+  @onLoad: init()
+  @onUnload: terminate()

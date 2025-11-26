@@ -185,3 +185,16 @@ SmallReversedQtPanel < UIWidget
     margin-bottom: -4
     margin-right: -4
     size: 2 2
+
+PanelRounded < Panel
+  image-source: /images/ui/window
+  image-border: 10
+
+PanelOutline < Panel
+  image-source: /images/ui/panel_outline
+  image-clip: 0 180 170 60
+  image-border: 14
+
+PanelRoundedSolid < Panel
+  image-source: /images/ui/panel_rounded_solid
+  image-border: 10

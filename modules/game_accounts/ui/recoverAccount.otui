@@ -1,0 +1,151 @@
+RecoverAccountWindow < MainHeadlessWindow
+  id: window
+  size: 439 476
+  !text: tr('Recover account')
+
+  Label-14px-Medium
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    !text: tr("E-mail")
+
+  TextEdit
+    id: emailInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    enabled: false
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        onInputEmail(self)
+      end
+
+  Label-13px-Regular
+    id: helperEmailInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 8
+    !text: tr("Código de recuperação")
+
+  TextEdit
+    id: codeInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  ButtonLabel
+    id: timerLabel
+    anchors.top: prev.bottom
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 2
+    font: DMSans-13px-regular
+    !text: tr('Enviar código por e-mail')
+    color: #0466C8
+    @onClick: modules.game_accounts.onRecoverCodeEmail()
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 8
+    !text: tr("New password")
+
+  TextEditPassword
+    id: passwordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        onInputPassword(self)
+        onInputConfirmPassword(self, self:getParent().confirmPasswordInput)
+      end
+
+  Label-13px-Regular
+    id: helperPasswordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 8
+    !text: tr("Confirm new password")
+
+  TextEditPassword
+    id: confirmPasswordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        onInputConfirmPassword(self:getParent().passwordInput, self)
+      end
+
+  Label-13px-Regular
+    id: helperConfirmPasswordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  ButtonBlueSmall
+    anchors.right: parent.horizontalCenter
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-right: 5
+    !text: tr('Confirm')
+    @onClick: modules.game_accounts.onConfirmRecoverAccount()
+
+  ButtonRedSmall
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.bottom: prev.bottom
+    margin-left: 5
+    !text: tr('Cancel')
+    @onClick: modules.game_accounts.hideRecoverPanel()
+    
+
+RecoverAccountEmailWindow < AccountChangeEmailWindow
+  !text: tr('Recuperação de senha')
+  @onSetup: |
+    self.label:setText('E-mail')
+    self.cancelButton.onClick  = modules.game_accounts.hideRecoverPanel
+    self.confirmButton.onClick = modules.game_accounts.onSendRecoverCodeEmail
+
+RecoverAccountPanel < UIWidget
+  anchors.fill: parent
+  background-color: #000000CC
+
+  RecoverAccountEmailWindow
+    id: windowEmail
+    account.centerIn: parent
+
+  RecoverAccountWindow
+    anchors.centerIn: parent
+    visible: false

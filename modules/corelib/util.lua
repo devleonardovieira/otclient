@@ -466,3 +466,28 @@ function pdumpWidgetId(widget, indent)
         pdumpWidgetId(child, newIndent)
     end
 end
+
+function getHighlightedText(text, color)
+	local tmpData = {}
+
+	for i, part in ipairs(text:split("{")) do
+		if i == 1 then
+			table.insert(tmpData, part)
+			table.insert(tmpData, color)
+		else
+			for j, part2 in ipairs(part:split("}")) do
+				if j == 1 then
+					local value = part2:split("|")
+
+					table.insert(tmpData, value[2] or "")
+					table.insert(tmpData, value[1] or color)
+				else
+					table.insert(tmpData, part2)
+					table.insert(tmpData, color)
+				end
+			end
+		end
+	end
+
+	return tmpData
+end

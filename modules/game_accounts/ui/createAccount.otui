@@ -1,0 +1,203 @@
+WaitPanel < PanelRounded
+  size: 354 61
+  anchors.centerIn: parent
+  font: DMSans-16px-regular
+  !text: tr('Wait') .. '...'
+
+AccountCreateWindow < ShinMainWindow
+  id: window
+  size: 542 500
+  !text: tr('Create Account')
+  draggable: false
+  @onSetup: |
+    self.closeButton:hide()
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 18
+    text-auto-resize: true
+    !text: tr("E-mail")
+
+  TextEdit
+    id: emailInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        modules.game_accounts.onEmailTyping(self)
+        modules.game_accounts.onConfirmEmailTyping(self:getParent().confirmEmailInput)
+      end
+
+  Label-13px-Regular
+    id: helperEmailInput
+    hight: 14
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  Label-14px-Medium
+    id: helperEmail
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 1
+    text-auto-resize: true
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 15
+    !text: tr("Confirm e-mail")
+
+  TextEdit
+    id: confirmEmailInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        modules.game_accounts.onConfirmEmailTyping(self)
+      end
+
+  Label-13px-Regular
+    id: helperConfirmEmailInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+  
+  Label-14px-Medium
+    id: helperConfirmEmail
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 1
+    text-auto-resize: true
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 15
+    !text: tr("Password")
+
+  TextEditPassword
+    id: passwordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        modules.game_accounts.onPasswordTyping(self)
+        modules.game_accounts.onConfirmPasswordTyping(self:getParent().confirmPasswordInput)
+      end
+
+  Label-13px-Regular
+    id: helperPasswordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+  
+  Label-14px-Medium
+    id: helperPassword
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 1
+    text-auto-resize: true
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 15
+    !text: tr("Confirm password")
+
+  TextEditPassword
+    id: confirmPasswordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onTextChange: |
+      function(self, text)
+        modules.game_accounts.onConfirmPasswordTyping(self)
+      end
+
+  Label-13px-Regular
+    id: helperConfirmPasswordInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+  
+  Label-14px-Medium
+    id: helperConfirmPassword
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 1
+    text-auto-resize: true
+  
+  ButtonLabel
+    anchors.left: next.right
+    anchors.right: parent.right
+    anchors.verticalCenter: next.verticalCenter
+    text-auto-resize: true
+    margin: 3 0 0 2
+    phantom: false
+    text-align: left
+    @onSetup: self:setMultiColorText(tr("I accept {#1B80E5|Shin Online terms and rules}"))
+    @onClick: modules.game_accounts.showTermsPanel()
+
+  CheckBox
+    id: acceptTerm
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    margin-bottom: 22
+    @onChecked: g_settings.set('acceptTermAndRules', self:isChecked()) 
+
+  ButtonBlueSmall
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-right: 5
+    !text: tr("Create")
+    @onClick: modules.game_accounts.onCreate()
+
+AccountCreatePanel < Panel
+  anchors.fill: parent
+  padding: 13 12
+  background-color: #000000CC
+
+  ButtonRedSmall
+    anchors.top: parent.top
+    anchors.left: parent.left
+    icon-align: left
+    icon-offset: 6 0
+    !text: tr('Return')
+    icon: /images/game/icons/arrow_back
+    @onClick: modules.game_accounts.hideCreatePanel()
+
+  AccountCreateWindow
+    draggable: false

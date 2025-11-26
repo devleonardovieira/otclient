@@ -1,32 +1,24 @@
 Window < UIWindow
-  font: verdana-11px-antialised
-  size: 200 200
-  opacity: 1
-  color: #dfdfdf
-  text-offset: 0 6
-  text-align: top
+  size: 624 488
   image-source: /images/ui/window
-  image-border: 6
-  image-border-top: 27
-  padding-top: 36
-  padding-left: 16
-  padding-right: 16
-  padding-bottom: 16
-
-  $disabled:
-    color: #dfdfdf88
-
-  $dragging:
-    opacity: 0.8
+  image-border: 20
+  padding: 14 16 14 16
+  font: montserrat bold 26
+  text-offset: 0 14
+  text-align: top
+  color: #FFFFFF
+  &animation: true
 
 ShinWindow < UIWindow
   size: 624 488
   image-source: /images/ui/window
   image-border: 20
   padding: 14 16 14 16
+  font: montserrat bold 26
   text-offset: 0 14
   text-align: top
   color: #FFFFFF
+  &animation: true
 
   ButtonClose
     id: closeButton
@@ -39,6 +31,9 @@ HeadlessWindow < UIWindow
   padding: 5
 
 MainWindow < Window
+  anchors.centerIn: parent
+
+ShinMainWindow < ShinWindow
   anchors.centerIn: parent
   
 StaticWindow < Window
@@ -267,3 +262,12 @@ RulesWindow < NewHeadlessWindow
       font: Verdana Bold-11px
       color: #c0c0c0
       text-auto-resize: true
+
+MainHeadlessWindow < HeadlessWindow
+  anchors.centerIn: parent
+
+StaticHeadlessWindow < HeadlessWindow
+  &static: true
+
+StaticMainHeadlessWindow < StaticHeadlessWindow
+  anchors.centerIn: parent

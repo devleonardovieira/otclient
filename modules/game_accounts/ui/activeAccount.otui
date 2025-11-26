@@ -1,0 +1,106 @@
+TextEditVerification < UITextEdit
+  size: 54 54
+  anchors.left: parent.left
+  anchors.verticalCenter: parent.verticalCenter
+  image-source: /images/ui/panel_outline
+  image-clip: 0 0 170 60
+  image-border: 14
+  border: 0 alpha
+  color: #FFFFFF
+  cursor-color: #FFFFFF
+  font: DMSans-20px-bold
+  padding: 15 0 4 21
+  selection-color: #3C3C3C
+  selection-background-color: #dfdfdf
+  change-cursor-image: true
+
+  $disabled:
+    change-cursor-image: false
+
+  $focus:
+    image-clip: 0 120 170 60
+
+
+  $!first:
+    anchors.left: prev.right
+    margin-left: 4
+
+AccountValidationWindow < MainHeadlessWindow 
+  id: window
+  size: 500 516
+  !text: tr('Verification account')
+
+  Label-16px-Regular
+    id: emailLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-align: center
+    text-wrap: true
+    !text: tr('O código foi enviado para o seu e-mail')
+    color: #A4A4A4
+
+  UIWidget
+    size: 210 210
+    anchors.top: prev.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    image-source: /images/game/characters/verification
+
+  Panel
+    id: panel
+    size: 460 54
+    anchors.bottom: next.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 29
+    @onSetup: |
+      function(self)
+        for i = 1, 8 do
+          g_ui.createWidget('TextEditVerification', self)
+        end
+      end
+
+  ButtonBlueSmall
+    id: sendButton
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    enabled: false
+    margin-bottom: 10
+    !text: tr('Confirm')
+    @onClick: modules.game_accounts.onActive()
+
+  ButtonLabel
+    id: timerLabel
+    anchors.bottom: next.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 10
+    font: DMSans-14px-medium
+    !text: tr('Reenviar código')
+    @onClick: modules.game_accounts.onCodeEmail()
+
+  HorizontalSeparator
+    anchors.bottom: next.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 10
+
+  ButtonLabel
+    anchors.bottom: parent.bottom
+    anchors.left: parent.horizontalCenter
+    font: DMSans-13px-regular
+    margin-left: 3
+    !text: tr('Entre em contato')
+
+  Label-13px-Regular
+    anchors.bottom: parent.bottom
+    anchors.right: parent.horizontalCenter
+    margin-right: 3
+    text-auto-resize: true
+    !text: tr('Enfrentando problemas?')
+
+AccountValidationPanel < UIWidget
+  anchors.fill: parent
+  background-color: #000000CC
+
+  AccountValidationWindow
+    anchors.centerIn: parent

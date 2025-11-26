@@ -206,6 +206,7 @@ MiniPremiumButton < UIButton
   $pressed:
     image-clip: 0 22 26 22
 
+
 ButtonBase < UIButton
   image-source: /images/ui/button_base
   image-border: 10
@@ -220,27 +221,11 @@ ButtonBase < UIButton
     color: #888888
     change-cursor-image: false
 
-
-ButtonClose < ButtonBase
-  size: 24 24
-  image-color: #E12F2F
-  icon: /images/game/icons/button-close
-
-  $hover:
-    image-color: #F2374D
-
-  $pressed:
-    image-color: #EE2C43
-  
-ButtonEye < UIButton
-  size: 24 24
-  image-source: /images/game/icons/eyes_on_off
-  image-clip: 0 0 24 24
+ButtonCommunityBase < UIButton
+  image-source: /images/ui/button_community
+  image-border: 10
   change-cursor-image: true
   cursor: pointer
-
-  $on:
-    image-clip: 0 24 24 24
 
 ButtonBlueBase < ButtonBase
   image-color: #0466C8
@@ -253,15 +238,171 @@ ButtonBlueBase < ButtonBase
 
 ButtonBlueSmall < ButtonBlueBase
   size: 115 40
-  font: montserrat regularRounded 16
+  font: montserrat bold 13
 
 ButtonBlueMedium < ButtonBlueBase
   size: 206 50
-  font: montserrat regularRounded 18
+  font: montserrat bold 16
 
 ButtonBlueLarge < ButtonBlueBase
   size: 265 50
-  font: montserrat regularRounded 18
+  font: montserrat bold 16
+
+ButtonRedBase < ButtonBase
+  image-color: #F83930
+
+  $hover:
+    image-color: #FA605A
+
+  $pressed:
+    image-color: #FB8883
+
+ButtonRedSmall < ButtonRedBase
+  size: 115 40
+  font: montserrat bold 14
+
+ButtonRedMedium < ButtonRedBase
+  size: 206 50
+  font: montserrat bold 16
+
+ButtonRedLarge < ButtonRedBase
+  size: 265 50
+  font: montserrat bold 16
+
+ButtonBlueCommunityBase < ButtonCommunityBase
+  image-color: #0466C8
+
+  $hover:
+    image-color: #057FFA
+
+  $pressed:
+    image-color: #69B2FC
+
+  $disabled:
+    image-color: #C4C4C4
+
+ButtonWarningBase < ButtonBase
+  image-color: #E5BC6D
+
+  $hover:
+    image-color: #FFC658
+
+  $pressed:
+    image-color: #E4AD42
+
+ButtonWarningSmall < ButtonWarningBase
+  size: 115 40
+  font: montserrat bold 13
+
+ButtonWarningMedium < ButtonWarningBase
+  size: 206 50
+  font: montserrat bold 16
+
+ButtonWarningLarge < ButtonWarningBase
+  size: 265 50
+  font: montserrat bold 16
+
+ButtonBlueCommunitySmall < ButtonBlueCommunityBase
+  size: 115 40
+
+ButtonBlueCommunityMedium < ButtonBlueCommunityBase
+  size: 206 50
+
+ButtonBlueCommunityLarge < ButtonBlueCommunityBase
+  size: 265 50
+
+ButtonClose < ButtonBase
+  size: 24 24
+  image-color: #E12F2F
+  icon: /images/game/icons/button-close
+
+  $hover:
+    image-color: #F2374D
+
+  $pressed:
+    image-color: #EE2C43
+
+ButtonPaginationBase < UIButton
+  size: 18 18
+  image-source: /images/ui/button_pagination
+  image-color: #FFFFFF
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    image-color: #69B2FC
+
+  $pressed:
+    image-color: #057FFA
+
+  $disabled:
+    image-color: #8B8686
+    change-cursor-image: false
+
+ButtonPrevious < ButtonPaginationBase
+  image-clip: 19 0 18 18
+
+ButtonNext < ButtonPaginationBase
+  image-clip: 0 22 18 18
+
+ButtonFirst < ButtonPaginationBase
+  image-clip: 0 0 18 18
+
+ButtonLast < ButtonPaginationBase
+  image-clip: 19 22 18 18
+
+ButtonCopyPast < ButtonBlueBase
+  size: 30 30
+  image-source: /images/game/icons/icon_copy_past
+
+ToggleButton < UICheckBox
+  size: 40 18
+  image-source: /images/ui/toggle_button
+  image-clip: 0 0 40 18
+  image-rect: 0 0 40 18
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    image-clip: 0 18 40 18
+
+  $checked:
+    image-clip: 0 36 40 18
+
+  $checked hover:
+    image-clip: 0 54 40 18
+
+  $disabled:
+    change-cursor-image: false
+
+RadioButton < UICheckBox
+  size: 20 20
+  image-source: /images/ui/radio_button
+  image-clip: 0 0 20 20
+  image-rect: 0 0 20 20
+  text-align: left
+  text-offset: 28 0
+  text-auto-resize: true
+  font: montserrat regular 16
+  image-color: #CCCCCC
+  color: #CCCCCC
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover:
+    image-color: #FFFFFF
+    color: #FFFFFF
+
+  $checked:
+    image-clip: 0 20 20 20
+    image-color: #0466C8
+
+  $hover checked:
+    image-color: #69B2FC
+    color: #FFFFFF
+
+  $disabled:
+    change-cursor-image: false
 
 ButtonLabel < UIButton
   color: #0466C8
@@ -278,3 +419,22 @@ ButtonLabel < UIButton
   $disabled:
     change-cursor-image: false
     color: #555555
+
+TabButton < ButtonBlueSmall
+  image-color: #69B2FC
+
+  $checked:
+    image-color: #0466C8
+
+  $on:
+    image-color: #2B2B2B
+
+ButtonEye < UIButton
+  size: 24 24
+  image-source: /images/game/icons/eyes_on_off
+  image-clip: 0 0 24 24
+  change-cursor-image: true
+  cursor: pointer
+
+  $on:
+    image-clip: 0 24 24 24

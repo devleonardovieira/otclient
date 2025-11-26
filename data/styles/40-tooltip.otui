@@ -1,0 +1,5 @@
+TooltipLabel < Label-14px-Regular
+  image-source: /images/ui/panel
+  image-border: 12
+  visible: false
+  border: 1 #3A3939
