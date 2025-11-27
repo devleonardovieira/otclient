@@ -76,13 +76,31 @@ function init()
         pdebug('Using configured locale: ' .. userLocaleName)
     else
         setLocale(defaultLocaleName)
+        -- Defer locale selection UI until loader finishes
+        local function deferredLocales()
+            local function check()
+                local active = false
+                if modules.client_loader and modules.client_loader.Loader and modules.client_loader.Loader.isActive then
+                    active = modules.client_loader.Loader.isActive()
+                else
+                    local lw = rootWidget:recursiveGetChildById('loaderWindow')
+                    active = lw and lw:isVisible()
+                end
+                if active then
+                    scheduleEvent(check, 250)
+                else
+                    createWindow()
+                end
+            end
+            check()
+        end
         if g_app.hasUpdater() then
             connect(g_app, {
-                onUpdateFinished = createWindow,
+                onUpdateFinished = deferredLocales,
             })
         else
             connect(g_app, {
-                onRun = createWindow,
+                onRun = deferredLocales,
             })
         end
     end

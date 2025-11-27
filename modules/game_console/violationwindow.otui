@@ -1,0 +1,41 @@
+MainHeadlessWindow
+  id: ignoreWindow
+  !text: tr('Report Rule Violation')
+  size: 485 414
+
+  Label-16px-Regular
+    !text: tr('Please state the rule violation in one clear sentence and wait for a reply from a gamemaster. Please note that your message will disappear if you close the channel.')
+    text-wrap: true
+    text-auto-resize: true
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+
+  TextEdit
+    id: text
+    text-wrap: true
+    multiline: true
+    anchors.top: prev.bottom
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 18 0 18 0
+    max-length: 255
+
+  ButtonBlueSmall
+    id: buttonOk
+    !text: tr('Ok')
+    anchors.right: parent.horizontalCenter
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-right: 5
+    @onClick: self:getParent():onEnter()
+
+  ButtonRedSmall
+    id: buttonCancel
+    !text: tr('Cancel')
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 5
+    @onClick: self:getParent():onEscape()

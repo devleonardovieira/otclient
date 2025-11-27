@@ -102,9 +102,14 @@ function init()
         toggleOption('enableAudio')
     end) ]]
 
-    addEvent(function()
-        setup()
-    end)
+    local function ensureInterfaceThenSetup()
+        if modules.game_interface and modules.game_interface.getMapPanel then
+            setup()
+        else
+            scheduleEvent(ensureInterfaceThenSetup, 100)
+        end
+    end
+    addEvent(ensureInterfaceThenSetup)
 end
 
 function terminate()
@@ -113,6 +118,17 @@ function terminate()
     optionsWindow:destroy()
    --[[  optionsButton:destroy()
     audioButton:destroy() ]]
+    -- Clear references to destroyed widgets to avoid stale refs warnings
+    optionsWindow = nil
+    optionsTabBar = nil
+    generalPanel = nil
+    controlPanel = nil
+    consolePanel = nil
+    graphicsPanel = nil
+    soundPanel = nil
+    crosshairCombobox = nil
+    antialiasingModeCombobox = nil
+    floorViewModeCombobox = nil
 end
 
 function setupComboBox()

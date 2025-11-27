@@ -1,0 +1,62 @@
+ChannelListLabel < Label-16px-Regular
+  height: 32
+  focusable: true
+  color: #FFFFFF
+  background-color: alpha
+  text-offset: 4 6
+
+  $focus:
+    background-color: #69B2FC
+
+
+MainHeadlessWindow
+  id: channelsWindow
+  !text: tr('Channels')
+  size: 280 330
+  @onEscape: self:destroy()
+
+  TextList
+    id: channelList
+    anchors.top: channelsScrollBar.top
+    anchors.bottom: channelsScrollBar.bottom
+    anchors.left: parent.left
+    anchors.right: channelsScrollBar.left
+    vertical-scrollbar: channelsScrollBar
+    focusable: false
+
+  TextEdit
+    id: openPrivateChannelWith
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: next.top
+    margin-bottom: 10
+    !placeholder: tr('Open new channel')
+
+  ButtonBlueSmall
+    id: buttonOpen
+    width: 115
+    !text: tr('Open')
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    @onClick: self:getParent():onEnter()
+
+  ButtonRedSmall
+    id: buttonCancel
+    width: 115
+    !text: tr('Cancel')
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    anchors.left: parent.horizontalCenter
+    margin-left: 5
+    @onClick: self:getParent():destroy()
+
+  VerticalScrollBar
+    id: channelsScrollBar
+    anchors.top: parent.top
+    anchors.bottom: openPrivateChannelWith.top
+    anchors.right: parent.right
+    margin-bottom: 10
+    step: 14
+    pixels-scroll: true

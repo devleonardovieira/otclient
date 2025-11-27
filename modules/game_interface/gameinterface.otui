@@ -94,6 +94,7 @@ UIWidget
     border-width-right: 1
     border-color-right: #292929
     image-source: /images/ui/actionbar/actionbar_background-light
+    visible: false
     ButtonBlueSmall
       id: leftLock
       size: 34 16
@@ -133,6 +134,7 @@ UIWidget
     border-width-left: 1
     border-color-left: #747474
     image-source: /images/ui/actionbar/actionbar_background-light
+    visible: false
 
     ButtonBlueSmall
       id: rightLock
@@ -166,6 +168,7 @@ UIWidget
     border-width-top: 1
     border-color-top: #292929
     image-source: /images/ui/actionbar/background-dark
+    visible: false
 
     ButtonBlueSmall
       id: bottomLock
@@ -288,8 +291,8 @@ UIWidget
     margin-bottom: 200
     @canUpdateMargin: |
       function(self, newMargin)
-        local dontStretch = modules.client_options.getOption('dontStretchShrink')
-        local minMargin = modules.game_interface.getMinBottomMargin()
+        local dontStretch = (modules.client_options and modules.client_options.getOption and modules.client_options.getOption('dontStretchShrink')) or g_settings.getBoolean('dontStretchShrink') or false
+        local minMargin = (getMinBottomMargin and getMinBottomMargin()) or 118
         local result = math.max(math.min(newMargin, self:getParent():getHeight() - 150), minMargin)
         if dontStretch then
           result = result > 650 and 650 or (result > 450 and 450 or 200)
@@ -299,7 +302,7 @@ UIWidget
     @onGeometryChange: |
       function(self)
         local parentHeight = self:getParent():getHeight()
-        local minMargin = modules.game_interface.getMinBottomMargin()
+        local minMargin = (getMinBottomMargin and getMinBottomMargin()) or 118
         local current = self:getMarginBottom()
         local clamped = math.max(current, minMargin)
         clamped = math.min(clamped, parentHeight - 150)
@@ -319,6 +322,7 @@ UIWidget
     image-clip: 27 0 9 27
     size: 9 27
     @onClick: onIncreaseLeftPanels()
+    visible: false
 
     $pressed !disabled:
       image-clip: 36 0 9 27
@@ -334,6 +338,7 @@ UIWidget
     image-clip: 0 0 9 27
     size: 9 27
     @onClick: onDecreaseLeftPanels()
+    visible: false
 
     $pressed !disabled:
       image-clip: 9 0 9 27
@@ -349,6 +354,7 @@ UIWidget
     image-clip: 27 27 9 27
     size: 9 27
     @onClick: onIncreaseRightPanels()
+    visible: false
 
     $pressed !disabled:
       image-clip: 36 27 9 27
@@ -364,6 +370,7 @@ UIWidget
     image-clip: 0 27 9 27
     size: 9 27
     @onClick: onDecreaseRightPanels()
+    visible: false
 
     $pressed !disabled:
       image-clip: 9 27 9 27

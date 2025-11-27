@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/corelib/ui/uimessagebox.lua
+-- chunkname: @/modules/corelib/ui/uimessagebox.lua
 
 if not UIWindow then
 	dofile("uiwindow")
@@ -22,17 +22,22 @@ function UIMessageBox.display(title, message, buttons, onEnterCallback, onEscape
 
 	buttonHolder:addAnchor(AnchorHorizontalCenter, "parent", AnchorHorizontalCenter)
 
-	local buttonsWidth = 0
-	local buttonsHeight = 0
+    local buttonsWidth = 0
+    local buttonsHeight = 0
+    -- Fallback para largura base caso o label não calcule corretamente
+    local baseWidth = messageLabel:getWidth()
+    if baseWidth <= 0 then
+        baseWidth = math.max(messageBox:getTextSize().width, 280)
+    end
 
 	for i = 1, #buttons do
 		local button = messageBox:addButton(buttons[i].text, buttons[i].callback, buttons[i].color)
 
-		if i == 1 and #buttons == 1 then
-			button:setWidth(messageLabel:getWidth() + button:getMarginLeft())
-		else
-			button:setWidth(messageLabel:getWidth() / #buttons)
-		end
+        if i == 1 and #buttons == 1 then
+            button:setWidth(baseWidth + button:getMarginLeft())
+        else
+            button:setWidth(baseWidth / #buttons)
+        end
 
 		if i == 1 then
 			button:setMarginLeft(0)
@@ -63,7 +68,7 @@ function UIMessageBox.display(title, message, buttons, onEnterCallback, onEscape
 		})
 	end
 
-	messageBox:setWidth(math.max(messageLabel:getWidth(), messageBox:getTextSize().width, buttonHolder:getWidth()) + messageBox:getPaddingLeft() + messageBox:getPaddingRight())
+    messageBox:setWidth(math.max(baseWidth, messageBox:getTextSize().width, buttonHolder:getWidth()) + messageBox:getPaddingLeft() + messageBox:getPaddingRight())
 	messageBox:setHeight(messageLabel:getHeight() + messageLabel:getMarginTop() + messageBox:getPaddingTop() + messageBox:getPaddingBottom() + buttonHolder:getHeight() + buttonHolder:getMarginTop())
 	g_effects.moveToMargin(messageBox, MarginBottom, 0, 30, 140, Easing.easeOutBack, function()
 		g_effects.moveToMargin(messageBox, MarginBottom, 30, 0, 120, Easing.easeOutBack)

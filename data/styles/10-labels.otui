@@ -1,12 +1,12 @@
 Label < UILabel
-  font: verdana-11px-antialised
+  font: montserrat regular 12
   color: #dfdfdf
 
   $disabled:
     color: #dfdfdf88
 
 FlatLabel < UILabel
-  font: verdana-11px-antialised
+  font: montserrat regular 12
   color: #dfdfdf
   size: 86 20
   text-offset: 3 3
@@ -19,7 +19,7 @@ FlatLabel < UILabel
 MenuLabel < Label
 
 GameLabel < UILabel
-  font: verdana-11px-antialised
+  font: montserrat regular 12
   color: #dfdfdf
 
 Label-12px-Regular < UILabel
@@ -27,11 +27,11 @@ Label-12px-Regular < UILabel
   color: #FFFFFF
 
 Label-13px-Bold < UILabel
-  font:  montserrat bold 13
+  font:  montserrat bold 14
   color: #FFFFFF
 
 Label-13px-Regular < UILabel
-  font: montserrat regular 1
+  font: montserrat regular 14
   color: #FFFFFF
 
 Label-14px-Medium < UILabel
@@ -52,10 +52,10 @@ Label-16px-Regular < UILabel
 
 Label-20px-Bold < UILabel
   font: montserrat bold 20
-  color: #FFFFFF
+  color: red
 
 Label-26px-Bold < UILabel
-  font: montserrat Dbold 26
+  font: montserrat bold 26
   color: #FFFFFF
 
 Label-30px-Bold < UILabel

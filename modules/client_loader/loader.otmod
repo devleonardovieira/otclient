@@ -1,0 +1,11 @@
+Module
+  name: client_loader
+  description: Shows a loading screen and loads modules stepwise
+  author: workspace
+  website: workspace
+  reloadable: false
+  sandboxed: true
+  dependencies: [ client_styles ]
+  scripts: [ loader ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -21,28 +21,33 @@ Panel
     color: #36f991
     font: montserrat regularRounded 30
 
-  UILabel
-    id: alphaId
-    text: ALPHA
+  PanelRounded
+    size: 120 60
     anchors.bottom: parent.bottom
     anchors.right: parent.right
-    margin-bottom: 18
-    margin-right: 5
-    text-align: center
-    text-auto-resize: true
-    width: 120
-    padding: 2
-    color: #ffffff
-    font: montserrat semiboldRounded 30
+    margin-bottom: 2
     UILabel
-      text: version 0.1a
+      id: alphaId
+      text: ALPHA
       anchors.bottom: parent.bottom
       anchors.right: parent.right
-      margin-bottom: -12
-      margin-right: 1 
-      font: montserrat mediumRounded 16
+      margin-bottom: 18
+      margin-right: 12
+      text-align: left
       text-auto-resize: true
-      color: #36f991
+      width: 120
+      padding: 2
+      color: #ffffff
+      font: montserrat semiboldRounded 30
+      UILabel
+        text: version 0.1a
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        margin-bottom: -12
+        margin-right: -4
+        font: montserrat mediumRounded 16
+        text-auto-resize: true
+        color: #36f991
       
 
   UIParticles
@@ -50,3 +55,25 @@ Panel
     effect: background-effect
     anchors.fill: parent
     phantom: true
+  
+
+  ButtonBlueBase
+    size: 40 40
+    !tooltiptip: tr('Open client options.')
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-right: 12
+    icon: /images/game/icons/icon_settings
+    on: true
+    @onClick: modules.client_options.toggle()
+  
+  ButtonBlueBase
+    id: logoutButton
+    size: 40 40
+    margin-right: 12
+    !tooltip: tr('Logout account')
+    anchors.top: prev.top
+    anchors.right: prev.left
+    icon: /images/game/icons/arrow_back
+    on: true
+    @onClick: modules.client_entergame2.CharacterList.hide(true)

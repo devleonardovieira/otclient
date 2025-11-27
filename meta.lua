@@ -3545,7 +3545,6 @@ function g_logger.getLevel() end
 ---@class LoginHttp
 LoginHttp = {}
 
----@return LoginHttp
 function LoginHttp.create() end
 
 ---@param host string
@@ -3555,7 +3554,7 @@ function LoginHttp.create() end
 ---@param password string
 ---@param requestId integer
 ---@param httpLogin boolean
-function LoginHttp:httpLogin(host, path, port, email, password, requestId, httpLogin) end
+function LoginHttp:httpLogin(host, path, port, email, password, apiKey, requestId, httpLogin) end
 
 --------------------------------
 ------------ g_http ------------

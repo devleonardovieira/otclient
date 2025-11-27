@@ -33,6 +33,27 @@ local function deriveHostAndPath()
 end
 deriveHostAndPath()
 
+-- Define API endpoint constants used by Accounts wrappers
+-- If your server uses different paths, adjust these to match.
+API = API or {
+    ACTIVATION = {
+        CODE = "/api/activation/code",
+        SEND_EMAIL = "/api/activation/send-email",
+    },
+    EMAIL = {
+        CHANGE = "/api/email/change",
+        CHANGE_CANCEL = "/api/email/change/cancel",
+    },
+    PASSWORD = {
+        CHANGE = "/api/password/change",
+        SEND_RECOVER_CODE = "/api/password/recover/code",
+        RECOVER = "/api/password/recover",
+    },
+    PIX = {
+        DONATE = "/api/pix/donate",
+    }
+}
+
 -- Minimal lifecycle so @onLoad/@onUnload work without errors
 function init()
     -- No-op: module environment is exposed as modules.game_api automatically
@@ -92,6 +113,10 @@ function Accounts:login(email, password, token, callback)
         email = email,
         password = password,
     }
+    -- Include optional apiKey for site login if available
+    if G and G.apiKey then
+        data.apiKey = G.apiKey
+    end
     if token then data.token = token end
     return api:sendSite('login', data, callback)
 end
@@ -150,10 +175,12 @@ function Accounts:createCharacter(name, gender, worldId, callback)
 		name = name,
 		sex = gender,
 		worldId = worldId,
-		-- authenticate via site API using current login credentials
-		email = G and G.account or nil,
-		password = G and G.password or nil
 	}
+
+    -- Envia token de sessão curto para validação no servidor
+    if G and G.sessionToken then
+        data.sessionToken = G.sessionToken
+    end
 
 	-- Use site API endpoint in /login.php
 	return api:sendSite('createCharacter', data, callback)
@@ -167,11 +194,19 @@ end
 
 function Accounts:validateCharacter(name, callback)
     local data = { name = name }
+    if G and G.sessionToken then
+        data.sessionToken = G.sessionToken
+    end
     return api:sendSite('validateCharacter', data, callback)
 end
 
 function Accounts:getCharacters(callback)
-	return api:get(API.CHARACTERS.GET, callback)
+    local data = {}
+    if G and G.sessionToken then
+        data.sessionToken = G.sessionToken
+    end
+    -- Usa a API do site em /login.php para listar personagens da conta
+    return api:sendSite('charactersList', data, callback)
 end
 
 function Accounts:deleteCharacter(name, callback)
@@ -179,7 +214,13 @@ function Accounts:deleteCharacter(name, callback)
 		name = name
 	}
 
-	return api:send(API.CHARACTERS.DELETE, data, callback)
+	-- Inclui token de sessão curto para validação no servidor
+	if G and G.sessionToken then
+		data.sessionToken = G.sessionToken
+	end
+
+	-- Usa a API do site (login.php)
+	return api:sendSite('deleteCharacter', data, callback)
 end
 
 function Accounts:cancelDeleteCharacter(name, callback)
@@ -187,7 +228,13 @@ function Accounts:cancelDeleteCharacter(name, callback)
 		name = name
 	}
 
-	return api:send(API.CHARACTERS.DELETE_CANCEL, data, callback)
+	-- Inclui token de sessão curto para validação no servidor
+	if G and G.sessionToken then
+		data.sessionToken = G.sessionToken
+	end
+
+	-- Usa a API do site (login.php)
+	return api:sendSite('cancelDeleteCharacter', data, callback)
 end
 
 function Accounts:changePassword(oldPassword, newPassword, repeatPassword, callback)
@@ -201,22 +248,22 @@ function Accounts:changePassword(oldPassword, newPassword, repeatPassword, callb
 end
 
 function Accounts:recoverCodeEmail(email, callback)
-	local data = {
-		email = email,
-		bearer = API_KEY[G.host]
-	}
+    local data = {
+        email = email,
+        bearer = G.apiKey
+    }
 
 	return api:send(API.PASSWORD.SEND_RECOVER_CODE, data, callback)
 end
 
 function Accounts:changeRecoverPassword(email, code, newPassword, repeatPassword, callback)
-	local data = {
-		email = email,
-		recoverCode = code,
-		newPassword = newPassword,
-		newPasswordRepeated = repeatPassword,
-		bearer = API_KEY[G.host]
-	}
+    local data = {
+        email = email,
+        recoverCode = code,
+        newPassword = newPassword,
+        newPasswordRepeated = repeatPassword,
+        bearer = G.apiKey
+    }
 
 	return api:send(API.PASSWORD.RECOVER, data, callback)
 end

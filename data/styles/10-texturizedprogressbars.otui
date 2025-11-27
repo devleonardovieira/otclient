@@ -1,0 +1,43 @@
+TexturizedProgressBarTextWidget < UIWidget
+  id: textWidget
+  anchors.fill: parent
+  focusable: false
+  phantom: true
+  font: montserrat regularRounded 16
+  text-offset: 0 2
+
+TexturizedProgressBarFrontWidget < UIWidget
+  id: frontWidget
+  anchors.top: parent.top
+  anchors.bottom: parent.bottom
+  anchors.left: parent.left
+  focusable: false
+  phantom: true
+
+TexturizedProgressBar < UITexturizedProgressBar
+  width: 200
+  height: 16
+  front-progress-image-border: 2
+  front-full-image-border: 2
+  front-image-color: #FFFFFF
+  focusable: false
+  phantom: true
+
+  $!on:
+    visible: false
+    margin-top: 0
+    margin-bottom: 0
+    height: 0
+
+  TexturizedProgressBarFrontWidget
+  TexturizedProgressBarTextWidget
+
+FlatTexturizedProgressBar < TexturizedProgressBar
+  image-source: /images/ui/progressbar_flat
+  image-color: #FFFFFF
+  image-clip: 0 16 80 16
+  image-border: 2
+  front-progress-image-clip: 0 0 78 16
+  front-full-image-clip: 0 0 80 16
+  front-image-source: /images/ui/progressbar_flat
+  front-image-color: #FFFFFF

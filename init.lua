@@ -84,7 +84,7 @@ g_modules.ensureModuleLoaded('gamelib')
 g_modules.ensureModuleLoaded('modulelib')
 g_modules.ensureModuleLoaded("startup")
 
-g_modules.autoLoadModules(999)
+-- pre-load specific shaders if needed; defer broad 999 autoload to loader
 g_modules.ensureModuleLoaded('game_shaders') -- pre load
 
 local function loadModules()
@@ -116,4 +116,7 @@ if g_app.hasUpdater() then
     return Updater.init(loadModules)
 end
 
-loadModules()
+-- Use custom loader to show progress UI during startup
+g_modules.ensureModuleLoaded('client_styles')
+g_modules.ensureModuleLoaded('client_loader')
+return modules.client_loader.Loader.init(loadModules)

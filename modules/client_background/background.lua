@@ -13,6 +13,12 @@ function init()
     clientVersionLabel = background:getChildById('clientVersionLabel')
     clientVersionLabel:setText("Copyright 2025 Shin Online. All Rights Reserverd.")
 
+    -- Esconde o botão de logout por padrão (só aparece na CharacterList)
+    local logoutButton = background:getChildById('logoutButton')
+    if logoutButton then
+        logoutButton:hide()
+    end
+
     if not g_game.isOnline() then
         addEvent(function()
             g_effects.fadeIn(clientVersionLabel, 1500)

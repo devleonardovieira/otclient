@@ -1,13 +1,44 @@
 EnterGameWindow = nil
 EnterGame = EnterGame or {}
-
+local LOCAL_API_KEY = "6f8d9c2a1b7e4d3f9a0c5e7b2d6f1a3c8e9b0d4f2a6c7e5b1d3f9a2c4e6b8d0f"
 controller = Controller:new()
+local function isLoaderActive()
+  local ok, loader = pcall(function() return modules.client_loader and modules.client_loader.Loader end)
+  if not ok or not loader or not loader.isActive then return false end
+  local ok2, active = pcall(loader.isActive)
+  return ok2 and active or false
+end
 
 function controller:onInit()
   EnterGameWindow = g_ui.loadUI('entergame', rootWidget)
   EnterGameWindow.onEscape = function()
     EnterGameWindow:destroy()
     EnterGameWindow = nil
+  end
+  -- Initialize remember email checkbox and prefill state
+  local rememberBox = EnterGameWindow and EnterGameWindow:recursiveGetChildById('rememberEmailBox') or nil
+  if rememberBox then
+    g_settings.setDefault('rememberEmail', false)
+    local remember = g_settings.getBoolean('rememberEmail', false)
+    rememberBox:setChecked(remember)
+    local emailEdit = EnterGameWindow:recursiveGetChildById('accountNameTextEdit')
+    if remember and emailEdit then
+      local savedEmail = g_settings.getString('savedEmail') or ''
+      if savedEmail and savedEmail ~= '' then
+        emailEdit:setText(savedEmail)
+        emailEdit:setCursorPos(-1)
+      end
+    end
+    connect(rememberBox, {
+      onCheckChange = function(widget, checked)
+        g_settings.set('rememberEmail', checked)
+        g_settings.save()
+        if not checked then
+          g_settings.remove('savedEmail')
+          g_settings.save()
+        end
+      end
+    })
   end
   g_logger.info('client_entergame2: controller init')
 end
@@ -80,6 +111,10 @@ function EnterGame.setPassword(password)
 end
 
 function EnterGame.firstShow()
+  if isLoaderActive() then
+    G.deferShowLogin = true
+    return
+  end
   if EnterGameWindow and not EnterGameWindow:isVisible() then
     EnterGameWindow:show()
     EnterGameWindow:raise()
@@ -96,7 +131,10 @@ function EnterGame.show()
       EnterGameWindow = nil
     end
   end
-
+  if isLoaderActive() then
+    G.deferShowLogin = true
+    return
+  end
   EnterGameWindow:show()
   EnterGameWindow:raise()
   EnterGameWindow:focus()
@@ -112,6 +150,17 @@ function EnterGame.doLogin()
 
   G.account = emailEdit:getText()
   G.password = passEdit:getText()
+
+  -- Persist email if checkbox is checked; never persist password
+  local rememberBox = getChild('rememberEmailBox')
+  local remember = rememberBox and rememberBox:isChecked() or g_settings.getBoolean('rememberEmail', false)
+  g_settings.set('rememberEmail', remember)
+  if remember then
+    g_settings.set('savedEmail', G.account)
+  else
+    g_settings.remove('savedEmail')
+  end
+  g_settings.save()
 
   -- Preferir Servers_init, senão usar defaults do URL completo em G.host
   if not G.host or not G.port then
@@ -165,7 +214,8 @@ function EnterGame.doLogin()
   connect(EnterGame.loadBox, {
     onCancel = function()
       if http and http.cancel then http:cancel() end
-      if EnterGame.loadBox then EnterGame.loadBox:destroy() EnterGame.loadBox = nil end
+      -- Usa utilitário para evitar destruir duas vezes
+      EnterGame.destroyLoadBox()
       if EnterGameWindow then
         EnterGameWindow:show()
         EnterGameWindow:raise()
@@ -174,7 +224,19 @@ function EnterGame.doLogin()
     end
   })
 
-  http:httpLogin(host, path, G.port, G.account, G.password, G.requestId, true)
+  -- Definir apiKey apenas quando SITE_API_KEY não estiver presente no ambiente
+  local envApiKey = (os and os.getenv) and os.getenv('SITE_API_KEY') or nil
+  if envApiKey and envApiKey ~= '' then
+    -- Deixe G.apiKey vazio para que o cliente use SITE_API_KEY via fallback interno
+    G.apiKey = ''
+  else
+    if not G.apiKey or G.apiKey == '' then
+      G.apiKey = LOCAL_API_KEY
+    end
+  end
+
+  -- Dispara apenas uma chamada de login HTTP; evitar duplicidade que causa caixas de erro duplas
+  http:httpLogin(host, path, G.port, G.account, G.password, G.apiKey, G.requestId, true)
 end
 
 function EnterGame.destroyLoadBox()
@@ -193,6 +255,12 @@ function EnterGame.loginSuccess(requestId, jsonSession, jsonWorlds, jsonCharacte
 
   local worlds = {}
   local worldsDecoded = json.decode(jsonWorlds)
+  -- Guarda host/porta padrão do primeiro mundo para uso em atualizações locais
+  if worldsDecoded and #worldsDecoded > 0 then
+    local w0 = worldsDecoded[1]
+    G.defaultWorldHost = w0.externaladdressprotected or w0.externaladdress or w0.externaladdressunprotected
+    G.defaultWorldPort = w0.externalportprotected or w0.externalport or w0.externalportunprotected
+  end
   for _, world in ipairs(worldsDecoded) do
     worlds[world.id] = {
       id = world.id,
@@ -211,6 +279,9 @@ function EnterGame.loginSuccess(requestId, jsonSession, jsonWorlds, jsonCharacte
   local characters = {}
   for index, character in ipairs(json.decode(jsonCharacters)) do
     local world = worlds[character.worldid]
+    local worldName = (world and world.name) or (worldsDecoded and worldsDecoded[1] and worldsDecoded[1].name) or tr("Default")
+    local worldIp   = (world and world.ip)   or G.defaultWorldHost or ""
+    local worldPort = (world and world.port) or G.defaultWorldPort or 0
     characters[index] = {
       name = character.name,
       level = character.level,
@@ -224,15 +295,29 @@ function EnterGame.loginSuccess(requestId, jsonSession, jsonWorlds, jsonCharacte
       legscolor = character.legscolor,
       detailcolor = character.detailcolor,
       addonsflags = character.addonsflags,
-      worldName = world.name,
-      worldIp = world.ip,
-      worldPort = world.port,
-      previewState = world.previewstate
+      worldName = worldName,
+      worldIp = worldIp,
+      worldPort = worldPort,
+      previewState = (world and world.previewstate) or false
     }
   end
 
   local session = json.decode(jsonSession)
   G.sessionKey = session.sessionkey
+  -- Captura o token de sessão curto para chamadas do site (login.php)
+  if session.sessiontoken then
+    G.sessionToken = session.sessiontoken
+    G.sessionTokenExpires = session.sessionexpires or 0
+  end
+  -- Recarrega apiKey de configuração, mantendo fallback
+  do
+    local envApiKey = (os and os.getenv) and os.getenv('SITE_API_KEY') or nil
+    if envApiKey and envApiKey ~= '' then
+      G.apiKey = ''
+    else
+      G.apiKey = G.apiKey or LOCAL_API_KEY
+    end
+  end
 
   local premiumUntil = tonumber(session.premiumuntil)
   local account = {
@@ -253,7 +338,8 @@ function EnterGame.loginFailed(requestId, msg, result)
   end
   EnterGame.destroyLoadBox()
   local box = displayErrorBox(tr('Login Error'), msg)
-  function box.onOk()
+  box.onOk = function()
+    -- Deixe o sistema fechar a caixa; apenas restaure a janela
     if EnterGameWindow then
       EnterGameWindow:show()
       EnterGameWindow:raise()

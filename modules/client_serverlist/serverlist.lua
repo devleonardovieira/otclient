@@ -50,7 +50,7 @@ function ServerList.select()
         if server then
             EnterGame.setDefaultServer(selected:getId(), server.port, server.protocol)
             EnterGame.setAccountName(server.account)
-            EnterGame.setPassword(server.password)
+            -- Do not prefill password; user must enter it manually
             EnterGame.setHttpLogin(server.httpLogin)
             ServerList.hide()
         end

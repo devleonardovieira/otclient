@@ -93,7 +93,6 @@ function init()
     })
 
     topMenu = g_ui.displayUI('topmenu')
-    topMenu:destroy()
 
     topLeftButtonsPanel = topMenu:getChildById('topLeftButtonsPanel')
     topLeftTogglesPanel = topMenu:getChildById('topLeftTogglesPanel')
@@ -149,6 +148,7 @@ function terminate()
     })
 
     topMenu:destroy()
+    topMenu = nil
     if PingWidget and not PingWidget:isDestroyed() then
         PingWidget:destroy()
         PingWidget = nil
@@ -158,13 +158,13 @@ function terminate()
         managerAccountsButton = nil
     end
     if g_platform.isMobile() then
-        if zoomInButton and not zoomOutButton:isDestroyed() then
+        if zoomInButton and not zoomInButton:isDestroyed() then
             zoomInButton:destroy()
-            zoomInButton= nil
+            zoomInButton = nil
         end
         if zoomOutButton and not zoomOutButton:isDestroyed() then
             zoomOutButton:destroy()
-            zoomOutButton= nil
+            zoomOutButton = nil
         end
     end
 

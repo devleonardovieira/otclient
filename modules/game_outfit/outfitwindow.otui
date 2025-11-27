@@ -1,7 +1,252 @@
-FloorTile < UIWidget
-  image-source: /images/ui/outfits/floor
-  size: 32 32
-  phantom: true
+OutfitButtonBox < UICheckBox
+  size: 22 22
+  color: #616161
+  text-align: center
+  image-source: /images/game/outfits/button_color
+  font: montserrat bold 13
 
-OutfitWindow
+  $hover !disabled:
+    color: #FFFFFF
 
+  $checked:
+    color: #FFFFFF
+
+  $disabled:
+    color: #61616188
+
+OutfitToList < UICreature
+  id: outfitToList
+  padding: 10
+  animate: true
+  image-source: /images/ui/panel_rounded_solid
+  image-color: #626262
+
+  $focus:
+    image-color: #057FFA
+
+  UIWidget
+    id: lock
+    size: 19 19
+    anchors.top: parent.top
+    anchors.right: parent.right
+    image-source: /images/ui/miniwindow_buttons
+    image-clip: 70 0 19 19
+    margin: -9
+    visible: false
+
+OutfitBox < PanelRoundedSolid
+  image-color: #626262
+  phantom: false
+  padding: 10
+
+  $focus:
+    image-color: #057FFA
+
+  UICreature
+    id: outfit
+    anchors.fill: parent
+    margin-top: 5
+    phantom: true
+
+  UIWidget
+    id: lock
+    anchors.top: parent.top
+    anchors.right: parent.right
+    image-source: /images/game/icons/icon_lock
+    image-color: #979797
+    margin: -8
+    phantom: true
+
+OutfitList < Panel
+  id: outfitList
+  anchors.top: prev.top
+  anchors.bottom: next.top
+  anchors.left: parent.left
+  anchors.right: parent.horizontalCenter
+  margin: 32 10 12 0
+
+  layout:
+    type: grid
+    cell-size: 63 80
+    cell-spacing: 2
+    flow: true
+    num-columns: 3
+    num-lines: 3
+
+PagePanel < UIWidget
+  id: pagePanel
+  size: 155 20
+  anchors.bottom: parent.bottom
+  anchors.left: parent.left
+  anchors.right: parent.horizontalCenter
+  margin-bottom: 12
+
+  ButtonFirst
+    id: firstPage
+    anchors.verticalCenter: next.verticalCenter
+    anchors.right: next.left
+    @onClick: modules.game_outfit.firstPage()
+
+  ButtonPrevious
+    id: prevPage
+    anchors.verticalCenter: next.verticalCenter
+    anchors.right: next.left
+    margin-right: 4
+    @onClick: modules.game_outfit.prevPage()
+
+  Label-16px-Regular
+    id: page
+    anchors.centerIn: parent
+    text-align: center
+    text-auto-resize: true
+
+  ButtonNext
+    id: nextPage
+    anchors.verticalCenter: prev.verticalCenter
+    anchors.left: prev.right
+    margin-left: 4
+    @onClick: modules.game_outfit.nextPage()
+
+  ButtonLast
+    id: lastPage
+    anchors.verticalCenter: prev.verticalCenter
+    anchors.left: prev.right
+    @onClick: modules.game_outfit.lastPage()
+
+OutfitPanel < UIWidget
+  id: outfitPanel
+  width: 316
+  anchors.top: prev.bottom
+  anchors.bottom: parent.bottom
+  anchors.right: parent.right
+  anchors.left: parent.horizontalCenter
+  margin: 0 0 8 10
+  padding: 10
+
+  CheckBox
+    id: addon
+    size: 15 15
+    anchors.top: outfit.top
+    anchors.left: outfit.right
+    margin-top: 25
+    margin-left: 5
+    checked: false
+    visible: false
+    !tooltip: tr('Addon')
+
+  Label-13px-Bold
+    id: name
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+
+  UICreature
+    id: outfit
+    size: 75 75
+    anchors.bottom: next.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin: 0 15 28 0
+
+  ButtonBlueBase
+    size: 28 28
+    anchors.left: next.right
+    anchors.bottom: next.bottom
+    icon: /images/game/icons/pokeinfo
+    icon-clip: 0 44 22 22
+    icon-color: #FFFFFF
+    margin-left: 8
+    !tooltip: tr('Walking')
+    @onClick: modules.game_outfit.setOutfitAnimation(self)
+
+    $on:
+      icon-color: #A8FF80
+
+  ButtonBlueBase
+    size: 28 28
+    anchors.left: next.right
+    anchors.bottom: next.bottom
+    icon: /images/game/outfits/icon_random
+    margin-left: 8
+    !tooltip: tr('Randomize')
+    @onClick: modules.game_outfit.randomize()
+
+  ButtonBlueBase
+    size: 28 28
+    anchors.left: next.left
+    anchors.bottom: next.top
+    icon: /images/game/outfits/icon_rotate
+    margin-bottom: 14
+    !tooltip: tr('Rotate')
+    @onClick: modules.game_outfit.setOutfitRotate()
+
+  UIWidget
+    id: template
+    size: 95 22
+    anchors.bottom: next.top
+    anchors.horizontalCenter: next.horizontalCenter
+    margin-bottom: 10
+
+    OutfitButtonBox
+      id: head
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      !tooltip: tr('Head')
+      text: 1
+      checked: true
+
+    OutfitButtonBox
+      id: primary
+      anchors.bottom: prev.bottom
+      anchors.left: prev.right
+      margin-left: 4
+      !tooltip: tr('Primary')
+      text: 2
+
+    OutfitButtonBox
+      id: secondary
+      anchors.bottom: prev.bottom
+      anchors.left: prev.right
+      margin-left: 4
+      !tooltip: tr('Secondary')
+      text: 3
+
+    OutfitButtonBox
+      id: detail
+      anchors.bottom: prev.bottom
+      anchors.left: prev.right
+      margin-left: 4
+      !tooltip: tr('Detail')
+      text: 4
+
+  Panel
+    id: colorBoxPanel
+    height: 112
+    anchors.bottom: next.top
+    anchors.left: next.left
+    anchors.right: parent.right
+    margin-bottom: 16
+    layout:
+      type: grid
+      cell-size: 16 16
+      num-columns: 19
+      num-lines: 7
+
+  ButtonBlueSmall
+    id: confirm
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    anchors.left: parent.left
+    !text: tr('Use')
+    @onClick: modules.game_outfit.accept()
+
+ShinMainWindow
+  size: 700 490
+  focusable: false
+  !text: tr('Select Outfit')
+  @onEnter: modules.game_outfit.accept()
+  @onEscape: modules.game_outfit.destroy()
+  @onClose: modules.game_outfit.destroy()
+
+  OutfitPanel
+  OutfitList
+  PagePanel

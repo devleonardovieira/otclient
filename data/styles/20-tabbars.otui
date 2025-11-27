@@ -5,7 +5,7 @@ MoveableTabBarButton < UIButton
   size: 153 33
   anchors.top: parent.top
   anchors.left: parent.left
-  font: montserrat medium 14
+  font: montserrat medium 17
   color: #FFFFFF
   image-source: /images/ui/tabbar_button
   image-clip: 0 53 153 33
@@ -101,7 +101,7 @@ TabBarVerticalButton < ButtonBlueSmall
   anchors.right: parent.right
   text-align: left
   text-offset: 10 2
-  font: montserrat bold 13
+  font: montserrat medium 16
   icon-align: top
   icon-offset-y: 5
   icon-color: #6b6b6b
@@ -157,7 +157,7 @@ TabBarHorizontalButton < UIButton
   size: 48 48
   color: #aaaaaa
   anchors.top: parent.top
-  font: righteous-12px-rounded-solid
+  font: montserrat regularRounded 16
   text-align: bottom
   icon-align: top
   icon-offset-y: -6

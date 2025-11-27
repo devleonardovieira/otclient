@@ -25,6 +25,12 @@
 #include "framework/core/eventdispatcher.h"
 #include "framework/util/crypt.h"
 
+// HMAC helpers for signing API requests
+#include <chrono>
+#include "hmac_utils.h"
+
+// HMAC helpers moved to shared header (namespace http_hmac)
+
 Http g_http;
 
 void Http::init()
@@ -241,6 +247,7 @@ void HttpSession::start()
     m_timer.async_wait([sft = shared_from_this()](const std::error_code& ec) { sft->onTimeout(ec); });
 
     if (m_result->postData == "") {
+        // Build GET request
         m_request.append("GET " + instance_uri.query + " HTTP/1.0\r\n");
         m_request.append("Host: " + instance_uri.domain + "\r\n");
         m_request.append("User-Agent: " + m_agent + "\r\n");
@@ -252,8 +259,30 @@ void HttpSession::start()
         for (const auto& ch : m_custom_header) {
             m_request.append(ch.first + ch.second + "\r\n");
         }
+
+        // Inject HMAC headers for GET (empty body)
+        {
+            std::string apiKey = http_hmac::getDefaultSiteApiKey();
+            const auto now = std::chrono::system_clock::now();
+            const auto ts = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+            const std::string nonce = http_hmac::randomNonceHex(16);
+            const std::string body = "";
+            const std::string bodyHash = http_hmac::sha256Hex(body);
+            // Use path only (exclude query string)
+            std::string pathOnly = instance_uri.query;
+            const size_t qpos = pathOnly.find('?');
+            if (qpos != std::string::npos) pathOnly = pathOnly.substr(0, qpos);
+            const std::string canonical = std::string("GET\n") + pathOnly + "\n" + std::to_string(ts) + "\n" + nonce + "\n" + bodyHash;
+            const std::string signature = http_hmac::hmacSha256Hex(apiKey, canonical);
+            m_request.append("X-Api-Timestamp: " + std::to_string(ts) + "\r\n");
+            m_request.append("X-Api-Nonce: " + nonce + "\r\n");
+            m_request.append("X-Api-Body-Hash: " + bodyHash + "\r\n");
+            m_request.append("X-Api-Signature: " + signature + "\r\n");
+        }
+
         m_request.append("\r\n");
     } else {
+        // Build POST request
         m_request.append("POST " + instance_uri.query + " HTTP/1.0\r\n");
         m_request.append("Host: " + instance_uri.domain + "\r\n");
         m_request.append("User-Agent: " + m_agent + "\r\n");
@@ -265,6 +294,27 @@ void HttpSession::start()
         for (const auto& ch : m_custom_header) {
             m_request.append(ch.first + ch.second + "\r\n");
         }
+
+        // Inject HMAC headers for POST
+        {
+            std::string apiKey = http_hmac::getDefaultSiteApiKey();
+            const auto now = std::chrono::system_clock::now();
+            const auto ts = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+            const std::string nonce = http_hmac::randomNonceHex(16);
+            const std::string& body = m_result->postData;
+            const std::string bodyHash = http_hmac::sha256Hex(body);
+            // Use path only (exclude query string)
+            std::string pathOnly = instance_uri.query;
+            const size_t qpos = pathOnly.find('?');
+            if (qpos != std::string::npos) pathOnly = pathOnly.substr(0, qpos);
+            const std::string canonical = std::string("POST\n") + pathOnly + "\n" + std::to_string(ts) + "\n" + nonce + "\n" + bodyHash;
+            const std::string signature = http_hmac::hmacSha256Hex(apiKey, canonical);
+            m_request.append("X-Api-Timestamp: " + std::to_string(ts) + "\r\n");
+            m_request.append("X-Api-Nonce: " + nonce + "\r\n");
+            m_request.append("X-Api-Body-Hash: " + bodyHash + "\r\n");
+            m_request.append("X-Api-Signature: " + signature + "\r\n");
+        }
+
         if (m_isJson) {
             m_request.append("Content-Type: application/json\r\n");
         } else {

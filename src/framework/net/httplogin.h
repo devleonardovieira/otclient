@@ -47,17 +47,20 @@ public:
 
     void httpLogin(const std::string& host, const std::string& path,
                    uint16_t port, const std::string& email,
-                   const std::string& password, int request_id, bool httpLogin);
+                   const std::string& password, const std::string& apiKey,
+                   int request_id, bool httpLogin);
 
     httplib::Result loginHttpsJson(const std::string& host,
                                    const std::string& path, uint16_t port,
                                    const std::string& email,
-                                   const std::string& password);
+                                   const std::string& password,
+                                   const std::string& apiKey);
 
     httplib::Result loginHttpJson(const std::string& host,
                                   const std::string& path, uint16_t port,
                                   const std::string& email,
-                                  const std::string& password);
+                                  const std::string& password,
+                                  const std::string& apiKey);
 
     void cancel();
 
@@ -69,4 +72,8 @@ private:
     std::string session;
     std::string errorMessage;
     std::atomic<bool> cancelled;
+
+    // Returns a default API key: first tries environment variable 'SITE_API_KEY',
+    // then falls back to a compiled-in strong constant.
+    std::string getDefaultApiKey() const;
 };

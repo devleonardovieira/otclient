@@ -52,13 +52,15 @@ Menu.setup = function ()
 			window = modules.game_highscore.ui
 		}, ]]
 		{
-			name = "Inventory (%s)",
-			shortCut = "I",
-			icon = "IconInventory",
-			callback = nil,
-			window = nil
-			--[[ callback = modules.game_inventory.toggle,
-			window = modules.game_inventory.ui ]]
+			name = "Minimap (%s)",
+			shortCut = "Ctrl + M",
+			icon = "IconMap",
+			-- Use a function reference so it runs on click, not during setup
+			callback = function()
+				print('[menu] clicou minimap')
+				modules.game_minimap.toggle()
+			end,
+			window = modules.game_minimap.minimapWindow 
 		},
 	
 		--[[ {
@@ -165,7 +167,11 @@ Menu.setup = function ()
 		end
 		widget.hoverSound = true
 		widget.clickSound = true
+		-- Bind click on the container and the inner icon to ensure reliability
 		widget.onClick = d.callback
+		if widget.icon then
+			widget.icon.onClick = d.callback
+		end
 	end
 
 	return 

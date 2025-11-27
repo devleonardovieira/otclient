@@ -19,7 +19,7 @@ RecoverAccountWindow < MainHeadlessWindow
     margin-top: 4
     @onTextChange: |
       function(self, text)
-        onInputEmail(self)
+        modules.game_accounts.onEmailTyping(self)
       end
 
   Label-13px-Regular
@@ -73,8 +73,8 @@ RecoverAccountWindow < MainHeadlessWindow
     margin-top: 4
     @onTextChange: |
       function(self, text)
-        onInputPassword(self)
-        onInputConfirmPassword(self, self:getParent().confirmPasswordInput)
+        modules.game_accounts.onPasswordTyping(self)
+        modules.game_accounts.onConfirmPasswordTyping(self:getParent().confirmPasswordInput)
       end
 
   Label-13px-Regular
@@ -102,7 +102,7 @@ RecoverAccountWindow < MainHeadlessWindow
     margin-top: 4
     @onTextChange: |
       function(self, text)
-        onInputConfirmPassword(self:getParent().passwordInput, self)
+        modules.game_accounts.onConfirmPasswordTyping(self)
       end
 
   Label-13px-Regular

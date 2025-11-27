@@ -1,4 +1,4 @@
--- chunkname: @/modules/corelib/ui/uiwindow.lua
+﻿-- chunkname: @/modules/corelib/ui/uiwindow.lua
 
 UIWindow = extends(UIWidget, "UIWindow")
 
@@ -74,7 +74,7 @@ function UIWindow:onDragMove(mousePos, mouseMoved)
 end
 
 function UIWindow:onVisibilityChange(visible)
-	 if visible and self.animation then 
+	if visible and self.animation and modules.client_options.getOption("animationWindow") then
 		self:breakAnchors()
 
 		local fromPosition = self:getPosition()
@@ -86,5 +86,5 @@ function UIWindow:onVisibilityChange(visible)
 		g_effects.moveToPosition(self, fromPosition, toPosition, 140, Easing.easeOutBack, function()
 			g_effects.moveToPosition(self, toPosition, fromPosition, 120, Easing.easeOutBack)
 		end)
-	 end 
+	end
 end

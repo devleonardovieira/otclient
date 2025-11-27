@@ -3,7 +3,7 @@ PopupMenuButton < UIButton
   text-offset: 10 0
   text-align: left
   background-color: alpha
-  font: DMSans-14px-regular
+  font: montserrat regular 16
   padding: 4 6 4 6
 
   $hover !disabled:
@@ -36,7 +36,7 @@ PopupScrollMenuButton < UIButton
   text-offset: 10 0
   text-align: left
   background-color: alpha
-  font: DMSans-14px-regular
+  font: montserrat regular 16
   padding: 4 6 4 6
 
   $hover !disabled:

@@ -29,8 +29,9 @@ Module
     - game_creatureinformation
     - game_accounts
     - game_jutsusbar
-    - game_npcdialog
+    - game_dialog
     - game_notifications
     - game_menu
+    - game_minimap
   @onLoad: init()
   @onUnload: terminate()

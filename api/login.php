@@ -11,12 +11,117 @@ require_once SYSTEM . 'functions.php';
 require_once SYSTEM . 'init.php';
 require_once SYSTEM . 'status.php';
 
+
+
 # error function
 function sendError($message, $code = 3){
-	$ret = [];
-	$ret['errorCode'] = $code;
-	$ret['errorMessage'] = $message;
-	die(json_encode($ret));
+    $ret = [];
+    $ret['errorCode'] = $code;
+    $ret['errorMessage'] = $message;
+    die(json_encode($ret));
+}
+
+// -------- Secure session token helpers (stateless, HMAC signed) --------
+// Uses a server-side secret that MUST NOT be exposed to clients.
+// Configure via env API_SECRET or MyAAC setting core.api_secret.
+function api_secret()
+{
+    $secret = getenv('API_SECRET');
+    if (!$secret && function_exists('setting')) {
+        $secret = setting('core.api_secret');
+    }
+    if (!$secret) {
+        // Fallback for dev; override in production via env/setting
+        $secret = 'CHANGE_ME_SECRET';
+    }
+    return (string)$secret;
+}
+
+// Optional site API key (when configured, login requests must include a matching apiKey)
+function site_api_key()
+{
+    $key = getenv('SITE_API_KEY');
+    if (!$key && function_exists('setting')) {
+        $key = setting('core.api_key');
+    }
+    // Fallback para chave padrão fornecida pelo cliente
+    if (!$key) {
+        $key = '6f8d9c2a1b7e4d3f9a0c5e7b2d6f1a3c8e9b0d4f2a6c7e5b1d3f9a2c4e6b8d0f';
+    }
+    return (string)$key;
+}
+
+function b64url_encode($data) { return rtrim(strtr(base64_encode($data), '+/', '-_'), '='); }
+function b64url_decode($data) { return base64_decode(strtr($data, '-_', '+/')); }
+
+function generateSessionToken(int $accountId, string $ip, int $ttlSeconds = 900)
+{
+    $exp = time() + max(60, $ttlSeconds);
+    $payload = $accountId . ':' . $exp . ':' . $ip;
+    $sig = hash_hmac('sha256', $payload, api_secret());
+    return b64url_encode($payload . ':' . $sig);
+}
+
+// -------- Request HMAC verification --------
+// Client signs canonical string: method\npath\ntimestamp\nnonce\nbodySha256Hex using the site API key
+function verify_request_hmac(?string $rawBody = null)
+{
+    $sig = $_SERVER['HTTP_X_API_SIGNATURE'] ?? '';
+    $ts = $_SERVER['HTTP_X_API_TIMESTAMP'] ?? '';
+    $nonce = $_SERVER['HTTP_X_API_NONCE'] ?? '';
+    $bodyHash = $_SERVER['HTTP_X_API_BODY_HASH'] ?? '';
+    if ($sig === '' || $ts === '' || $nonce === '' || $bodyHash === '') {
+        return false;
+    }
+    if (!ctype_digit((string)$ts)) { return false; }
+    $now = time();
+    // 2 minutes clock skew window
+    if (abs($now - (int)$ts) > 120) { return false; }
+    // Basic nonce format check (hex, length 32)
+    if (!preg_match('/^[0-9a-f]{32}$/', strtolower($nonce))) { return false; }
+
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'POST';
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $raw = $rawBody ?? (file_get_contents('php://input') ?? '');
+    $calcHash = hash('sha256', $raw);
+    if (!hash_equals($calcHash, strtolower($bodyHash))) { return false; }
+
+    $canonical = $method . "\n" . $path . "\n" . $ts . "\n" . strtolower($nonce) . "\n" . strtolower($bodyHash);
+    $expected = hash_hmac('sha256', $canonical, site_api_key());
+    return hash_equals(strtolower($expected), strtolower($sig));
+}
+
+// Verifies and returns accountId on success; returns 0 on failure
+function verifySessionToken(?string $token)
+{
+    if (!$token || !is_string($token)) { return 0; }
+    $raw = b64url_decode($token);
+    if (!$raw) { return 0; }
+    $parts = explode(':', $raw);
+    if (count($parts) !== 4) { return 0; }
+    [$aid, $exp, $ipBound, $sig] = $parts;
+    if (!ctype_digit((string)$aid) || !ctype_digit((string)$exp)) { return 0; }
+    if ((int)$exp < time()) { return 0; }
+    $expected = hash_hmac('sha256', $aid . ':' . $exp . ':' . $ipBound, api_secret());
+    if (!hash_equals($expected, $sig)) { return 0; }
+    // Bind to current request IP to reduce replay from other hosts
+    $reqIp = get_browser_real_ip();
+    if ($ipBound !== $reqIp) { return 0; }
+    return (int)$aid;
+}
+
+// Simple application-level rate limiting helper per endpoint
+function applyRateLimit($scope, $limit, $banMinutes) {
+    $ip = get_browser_real_ip();
+    $limiter = new RateLimit($scope, (int)$limit, (int)$banMinutes);
+    // enable for all scopes in API
+    $limiter->enabled = true;
+    $limiter->load();
+    if ($limiter->exceeded($ip)) {
+        sendError('Too many requests. Please wait and try again later.');
+    }
+    // record attempt for current request
+    $limiter->increment($ip);
 }
 
 # event schedule function
@@ -42,21 +147,46 @@ function parseEvent($table1, $date, $table2)
 	return 'error';
 }
 
-$request = json_decode(file_get_contents('php://input'));
+$rawBody = file_get_contents('php://input');
+$request = json_decode($rawBody);
 $action = $request->type ?? '';
+
+// Basic request hardening (keep loose to avoid breaking dev clients)
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    sendError('Invalid request method.');
+}
+if (isset($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > 8192) {
+    sendError('Payload too large.');
+}
+if (!is_object($request)) {
+    sendError('Malformed JSON payload.');
+}
+
+// Exigir HMAC válido em todas as chamadas (assina método, caminho, timestamp, nonce e hash do corpo)
+if (!verify_request_hmac($rawBody)) {
+    sendError('Assinatura HMAC inválida.');
+}
 
 /** @var OTS_Base_DB $db */
 /** @var array $config */
 
 switch ($action) {
     case 'register':
+        // Limit abusive account creations (per IP)
+        applyRateLimit('register_attempts', 5, 30);
         // Create account via client JSON request
         $email = isset($request->email) ? trim($request->email) : '';
         $password = isset($request->password) ? (string)$request->password : '';
 
         // Basic validations
+        if (strlen($email) > 254) {
+            die(json_encode(['errors' => ['email' => ['E-mail muito longo.']]]));
+        }
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             die(json_encode(['errors' => ['email' => ['E-mail inválido.']]]));
+        }
+        if (strlen($password) > 128) {
+            die(json_encode(['errors' => ['password' => ['Senha muito longa.']]]));
         }
         if (strlen($password) < 6) {
             die(json_encode(['errors' => ['password' => ['Senha deve ter pelo menos 6 caracteres.']]]));
@@ -157,7 +287,7 @@ switch ($action) {
 			'raceid' => $boostedCreature->raceid
 		]));
 
-	case 'login':
+    case 'login':
 
 		$port = $config['lua']['gameProtocolPort'];
 
@@ -329,25 +459,30 @@ switch ($action) {
 			$sessionKey .= "\n".floor(time() / 30);
 		}
 
-		$session = [
-			'sessionkey' => $sessionKey,
-			'lastlogintime' => 0,
-			'ispremium' => $account->is_premium,
-			'premiumuntil' => ($account->premium_days) > 0 ? (time() + ($account->premium_days * 86400)) : 0,
-			'status' => 'active', // active, frozen or suspended
-			'returnernotification' => false,
-			'showrewardnews' => true,
-			'isreturner' => true,
-			'fpstracking' => false,
-			'optiontracking' => false,
-			'tournamentticketpurchasestate' => 0,
-			'emailcoderequest' => false
-		];
-		die(json_encode(compact('session', 'playdata')));
+        $session = [
+            'sessionkey' => $sessionKey,
+            'lastlogintime' => 0,
+            'ispremium' => $account->is_premium,
+            'premiumuntil' => ($account->premium_days) > 0 ? (time() + ($account->premium_days * 86400)) : 0,
+            'status' => 'active', // active, frozen or suspended
+            'returnernotification' => false,
+            'showrewardnews' => true,
+            'isreturner' => true,
+            'fpstracking' => false,
+            'optiontracking' => false,
+            'tournamentticketpurchasestate' => 0,
+            'emailcoderequest' => false
+        ];
+        // Issue short-lived, IP-bound session token for site API calls
+        $session['sessiontoken'] = generateSessionToken((int)$account->id, get_browser_real_ip());
+        $session['sessionexpires'] = time() + 900;
+        die(json_encode(compact('session', 'playdata')));
 
-	case 'validateRegister':
-		// Server-side validation for account registration fields (real-time)
-		$errors = [];
+    case 'validateRegister':
+        // Limit real-time validation abuse (per IP)
+        applyRateLimit('validate_register', 60, 1);
+        // Server-side validation for account registration fields (real-time)
+        $errors = [];
 		// Terms accepted
 		if (isset($request->termsAccepted)) {
 			$accepted = (bool)$request->termsAccepted;
@@ -357,19 +492,22 @@ switch ($action) {
 		}
 
 		// Email validation + uniqueness
-		if (isset($request->email)) {
-			$email = trim((string)$request->email);
-			if ($email === '') {
-				$errors['email'][] = 'Preencha este campo.';
-			} else if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-				$errors['email'][] = 'E-mail não é válido.';
-			} else {
-				$exists = Account::where('email', $email)->first();
-				if ($exists) {
-					$errors['email'][] = 'Este e-mail já está em uso.';
-				}
-			}
-		}
+        if (isset($request->email)) {
+            $email = trim((string)$request->email);
+            if ($email === '') {
+                $errors['email'][] = 'Preencha este campo.';
+            } else if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors['email'][] = 'E-mail não é válido.';
+            } else {
+                if (strlen($email) > 254) {
+                    $errors['email'][] = 'E-mail muito longo.';
+                }
+                $exists = Account::where('email', $email)->first();
+                if ($exists) {
+                    $errors['email'][] = 'Este e-mail já está em uso.';
+                }
+            }
+        }
 
 		// Confirm email validation
 		if (isset($request->confirmEmail)) {
@@ -385,18 +523,19 @@ switch ($action) {
 		}
 
 		// Password rules (mirror client isValidPassword)
-		if (isset($request->password)) {
-			$password = (string)$request->password;
-			if (trim($password) === '') {
-				$errors['password'][] = 'Preencha este campo.';
-			} else {
-				if (!preg_match('/[a-z]/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 letra minúscula.'; }
-				if (!preg_match('/[A-Z]/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 letra maiúscula.'; }
-				if (strlen($password) <= 8) { $errors['password'][] = 'A senha deve conter ao menos 8 caracteres.'; }
-				if (!preg_match('/[\p{P}\p{S}]/u', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 caracter especial.'; }
-				if (!preg_match('/\d/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 numero.'; }
-			}
-		}
+        if (isset($request->password)) {
+            $password = (string)$request->password;
+            if (trim($password) === '') {
+                $errors['password'][] = 'Preencha este campo.';
+            } else {
+                if (strlen($password) > 128) { $errors['password'][] = 'Senha muito longa.'; }
+                if (!preg_match('/[a-z]/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 letra minúscula.'; }
+                if (!preg_match('/[A-Z]/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 letra maiúscula.'; }
+                if (strlen($password) <= 8) { $errors['password'][] = 'A senha deve conter ao menos 8 caracteres.'; }
+                if (!preg_match('/[\p{P}\p{S}]/u', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 caracter especial.'; }
+                if (!preg_match('/\d/', $password)) { $errors['password'][] = 'A senha deve conter ao menos 1 numero.'; }
+            }
+        }
 
 		// Confirm password validation
 		if (isset($request->confirmPassword)) {
@@ -421,10 +560,18 @@ switch ($action) {
 		die(json_encode(['status' => true, 'message' => $successMessage]));
 		break;
 
-	case 'validateCharacter':
-		// Server-side validation for character name (real-time)
-		$name = isset($request->name) ? trim((string)$request->name) : '';
-		$errors = [];
+    case 'validateCharacter':
+        // Limit real-time validation abuse (per IP)
+        applyRateLimit('validate_character', 60, 1);
+        // Require a valid session token issued at login
+        $aid = verifySessionToken($request->sessionToken ?? null);
+        if (!$aid) {
+            // Return in the same shape the client expects for inline helper
+            die(json_encode(['errors' => ['name' => ['Sessão inválida ou expirada. Faça login novamente.']]]));
+        }
+        // Server-side validation for character name (real-time)
+        $name = isset($request->name) ? trim((string)$request->name) : '';
+        $errors = [];
 		if ($name === '') {
 			$errors['name'][] = 'Preencha este campo.';
 		} else {
@@ -475,27 +622,25 @@ switch ($action) {
 		break;
 
 	case 'createCharacter':
-		// Create a new character for the authenticated account
-		try {
-			$email = isset($request->email) ? trim($request->email) : '';
-			$password = isset($request->password) ? (string)$request->password : '';
-			$name = isset($request->name) ? trim($request->name) : '';
+        // Limit character creation attempts (per IP)
+        applyRateLimit('create_character', 10, 10);
+        // Create a new character for the authenticated account
+        try {
+            // Require a valid session token issued at login
+            $aid = verifySessionToken($request->sessionToken ?? null);
+            if (!$aid) {
+                die(json_encode(['status' => 'error', 'message' => 'Sessão inválida ou expirada. Faça login novamente.']));
+            }
+            $email = isset($request->email) ? trim($request->email) : '';
+            $password = isset($request->password) ? (string)$request->password : '';
+            $name = isset($request->name) ? trim($request->name) : '';
 			$genderRaw = isset($request->sex) ? (string)$request->sex : 'male';
 			$worldId = isset($request->worldId) ? (int)$request->worldId : 0;
-
-			if ($email === '' || $password === '') {
-				die(json_encode(['status' => 'error', 'message' => 'Credenciais ausentes.']));
-			}
-
-			$account = Account::where('email', $email)->first();
-			if (!$account) {
-				die(json_encode(['status' => 'error', 'message' => 'Conta não encontrada.']));
-			}
-
-			$current_password = encrypt((USE_ACCOUNT_SALT ? $account->salt : '') . $password);
-			if ($account->password != $current_password) {
-				die(json_encode(['status' => 'error', 'message' => 'Senha inválida.']));
-			}
+            // Resolve account by session
+            $account = Account::find($aid);
+            if (!$account) {
+                die(json_encode(['status' => 'error', 'message' => 'Conta não encontrada.']));
+            }
 
 			// Validate character name
 			if ($name === '' || strlen($name) < 2 || strlen($name) > 30) {
@@ -526,10 +671,10 @@ switch ($action) {
 				die(json_encode(['status' => 'error', 'message' => 'World inválido.']));
 			}
 
-			$player = new Player();
-			$player->account_id = $account->id;
-			$player->name = $name;
-			$player->sex = $sex; // 0 female, 1 male
+            $player = new Player();
+            $player->account_id = $account->id;
+            $player->name = $name;
+            $player->sex = $sex; // 0 female, 1 male
 			// Safe defaults
 			if (!isset($player->level)) { $player->level = 1; }
 			if (!isset($player->vocation)) { $player->vocation = 0; }
@@ -550,6 +695,116 @@ switch ($action) {
 			die(json_encode(['status' => 'error', 'message' => 'Erro interno ao criar personagem.']));
 		}
 		break;
+
+    case 'charactersList':
+        // Retorna a lista de personagens no formato esperado pelo cliente (CharacterList)
+        // Requer um token de sessão válido
+        try {
+            $aid = verifySessionToken($request->sessionToken ?? null);
+            if (!$aid) {
+                die(json_encode(['status' => 'error', 'message' => 'Sessão inválida ou expirada. Faça login novamente.']));
+            }
+
+            $columns = 'id, name, level, sex, vocation, looktype, lookhead, lookbody, looklegs, lookfeet, lookaddons';
+            $players = Player::where('account_id', $aid)->notDeleted()->selectRaw($columns)->get();
+            $port = $config['lua']['gameProtocolPort'];
+            $worldName = $config['lua']['serverName'];
+            $worldIp = $config['lua']['ip'];
+
+            $list = [];
+            if ($players && $players->count()) {
+                foreach ($players as $player) {
+                    $list[] = [
+                        'name' => $player->name,
+                        'level' => $player->level,
+                        'worldName' => $worldName,
+                        'worldIp' => $worldIp,
+                        'worldPort' => $port,
+                        'sex' => $player->sex,
+                        'clan' => null,
+                        'daysToDelete' => null
+                    ];
+                }
+            }
+
+            die(json_encode(['body' => $list]));
+        } catch (\Throwable $e) {
+            die(json_encode(['status' => 'error', 'message' => 'Erro ao listar personagens.']));
+        }
+        break;
+
+    case 'deleteCharacter':
+        // Agenda exclusão lógica imediata (soft delete) do personagem da conta
+        // Requer token de sessão válido
+        try {
+            applyRateLimit('delete_character', 20, 2);
+            $aid = verifySessionToken($request->sessionToken ?? null);
+            if (!$aid) {
+                die(json_encode(['status' => 'error', 'message' => 'Sessão inválida ou expirada. Faça login novamente.']));
+            }
+            $name = isset($request->name) ? trim((string)$request->name) : '';
+            if ($name === '') {
+                die(json_encode(['status' => 'error', 'message' => 'Nome do personagem é obrigatório.']));
+            }
+
+            $player = Player::where('account_id', $aid)->where('name', $name)->first();
+            if (!$player) {
+                die(json_encode(['status' => 'error', 'message' => 'Personagem não encontrado nesta conta.']));
+            }
+
+            // Soft delete via flag is_deleted (compatível com notDeleted())
+            if (property_exists($player, 'is_deleted')) {
+                if ($player->is_deleted) {
+                    die(json_encode(['status' => 'error', 'message' => 'Este personagem já está excluído/oculto.']));
+                }
+                $player->is_deleted = 1;
+                $player->save();
+            } else {
+                // Fallback absoluto: remover registro
+                $player->delete();
+            }
+
+            die(json_encode(['status' => true, 'message' => 'Personagem excluído com sucesso.']));
+        } catch (\Throwable $e) {
+            die(json_encode(['status' => 'error', 'message' => 'Erro ao excluir personagem.']));
+        }
+        break;
+
+    case 'cancelDeleteCharacter':
+        // Cancela exclusão lógica (soft delete), restaurando visibilidade
+        // Requer token de sessão válido
+        try {
+            applyRateLimit('cancel_delete_character', 20, 2);
+            $aid = verifySessionToken($request->sessionToken ?? null);
+            if (!$aid) {
+                die(json_encode(['status' => 'error', 'message' => 'Sessão inválida ou expirada. Faça login novamente.']));
+            }
+            $name = isset($request->name) ? trim((string)$request->name) : '';
+            if ($name === '') {
+                die(json_encode(['status' => 'error', 'message' => 'Nome do personagem é obrigatório.']));
+            }
+
+            $player = Player::where('account_id', $aid)->where('name', $name)->first();
+            if (!$player) {
+                die(json_encode(['status' => 'error', 'message' => 'Personagem não encontrado nesta conta.']));
+            }
+
+            if (property_exists($player, 'is_deleted')) {
+                if (!$player->is_deleted) {
+                    die(json_encode(['status' => 'error', 'message' => 'Este personagem não está marcado para exclusão.']));
+                }
+                $player->is_deleted = 0;
+                $player->save();
+            } else {
+                // Sem suporte a soft delete, não há como cancelar
+                die(json_encode(['status' => 'error', 'message' => 'Cancelamento indisponível para este servidor.']));
+            }
+
+            die(json_encode(['status' => true, 'message' => 'Exclusão cancelada com sucesso.']));
+        } catch (\Throwable $e) {
+            die(json_encode(['status' => 'error', 'message' => 'Erro ao cancelar exclusão do personagem.']));
+        }
+        break;
 
 	default:
 		sendError("Unrecognized event {$action}.");

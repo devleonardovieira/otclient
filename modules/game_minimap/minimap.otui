@@ -1,0 +1,9 @@
+MinimapWindow
+  id: minimapWindow
+  @onClose: modules.game_minimap.onMiniWindowClose()
+  &save: true
+  &autoOpen: 0
+  @onSetup: |
+    self.closeButton:hide()
+    self.minimizeButton:hide()
+    self.lockButton:hide()

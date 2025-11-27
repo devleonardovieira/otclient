@@ -1,0 +1,257 @@
+IgnoreListLabel < Label
+  height: 22
+  text-offset: 3 7
+  focusable: true
+  phantom: false
+  color: #6b6b6b
+  background-color: alpha
+  &updateState: |
+    function(self)
+      local opacity = (self:isFocused() or self:isHovered()) and 1 or 0
+
+      self.removeIgnoreButton:setOpacity(opacity)
+    end
+  &updateStateChild: |
+    function(self, child, hovered)
+      self:setOn(hovered)
+      child:setOpacity((self:isFocused() or hovered) and 1 or 0)
+    end
+  @onFocusChange: self:updateState()
+  @onHoverChange: self:updateState()
+
+  $focus:
+    background-color: #ffffff22
+    color: #ffffff
+
+  $hover:
+    background-color: #ffffff22
+    color: #ffffff
+
+  $on:
+    background-color: #ffffff22
+    color: #ffffff
+
+  UIButton
+    id: removeIgnoreButton
+    size: 19 19
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    image-source: /images/ui/miniwindow_buttons
+    image-clip: 0 0 19 19
+    image-color: #ed5042
+    margin-top: 2
+    opacity: 0
+    !tooltip: tr('Remove')
+    @onHoverChange: |
+      function(self, hovered)
+        local parent = self:getParent()
+
+        parent:updateStateChild(self, hovered)
+      end
+
+WhiteListLabel < Label
+  font: verdana-11px-monochrome
+  background-color: alpha
+  text-offset: 2 0
+  focusable: true
+  phantom: false
+
+  $focus:
+    background-color: #ffffff22
+    color: #ffffff
+
+CommunicationWindow < MainHeadlessWindow
+  id: communicationWindow
+  size: 320 340
+  !text: tr('Ignored Players')
+  @onEscape: self:destroy()
+
+  CheckBox
+    id: checkboxIgnorePrivateMessages
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: prev.left
+    !text: tr('Ignore Private Messages')
+    margin-left: 4
+    text-auto-resize: true
+    checked: true
+    visible: false
+
+  ButtonBlueMedium
+    id: buttonSave
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    !text: tr('Save')
+
+  UIButton
+    anchors.bottom: next.top
+    anchors.horizontalCenter: ignoreList.horizontalCenter
+    text-auto-resize: true
+    margin-bottom: 18
+    text-offset: 22 2
+    font: window
+    icon: /images/game/icons/icons_four
+    icon-clip: 172 0 17 17
+    icon-offset: 0 1
+    icon-align: left
+    !text: tr('Add Ignore Players')
+    @onClick: modules.game_console.addIgnorePlayers()
+
+  ButtonRedMedium
+    id: buttonCancel
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    !text: tr('Cancel')
+
+  ButtonRedMedium
+    id: buttonIgnoreRemove 
+    anchors.bottom: prev.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 8
+    visible: false
+    !text: tr('Remove')
+
+  VerticalScrollBar
+    id: ignoreListScrollBar
+    anchors.top: parent.top
+    anchors.bottom: prev.top
+    anchors.right: parent.right
+    margin-bottom: 4
+    step: 14
+    pixels-scroll: true
+
+  TextList
+    id: ignoreList
+    vertical-scrollbar: ignoreListScrollBar
+    anchors.left: parent.left
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.right: prev.left
+    margin: 1
+    padding: 1
+    focusable: false
+
+  CheckBox
+    id: checkboxUseIgnoreList
+    !text: tr('Activate ignorelist')
+    anchors.left: parent.left
+    anchors.top: parent.top
+    text-auto-resize: true
+    width: 180
+    visible: false
+
+  TextEdit
+    id: ignoreNameEdit
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    width: 110
+    margin-top: 5
+    visible: false
+
+  UIButton
+    id: buttonIgnoreAdd
+    !text: tr('Add')
+    width: 48
+    height: 20
+    margin-left: 5
+    anchors.top: prev.top
+    anchors.left: prev.right
+    visible: false
+
+  Label
+    !text: tr('Global ignore settings')
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 20
+    visible: false
+
+  CheckBox
+    id: checkboxIgnoreYelling
+    !text: tr('Ignore Yelling')
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    width: 180
+    margin-top: 5
+    visible: false
+
+  CheckBox
+    id: checkboxUseWhiteList
+    !text: tr('Activate whitelist')
+    anchors.top: parent.top
+    anchors.left: ignoreList.right
+    text-auto-resize: true
+    margin-top: 36
+    margin-left: 20
+    width: 180
+    visible: false
+
+  Label
+    !text: tr('Allowed Players:')
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    margin-top: 10
+    visible: false
+
+  TextList
+    id: whiteList
+    vertical-scrollbar: whiteListScrollBar
+    anchors.left: prev.left
+    anchors.top: prev.bottom
+    height: 150
+    width: 230
+    margin-bottom: 10
+    margin-top: 3
+    padding: 1
+    focusable: false
+    visible: false
+
+  TextEdit
+    id: whitelistNameEdit
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    width: 110
+    margin-top: 5
+    visible: false
+
+  UIButton
+    id: buttonWhitelistAdd
+    !text: tr('Add')
+    width: 48
+    height: 20
+    margin-left: 5
+    anchors.top: prev.top
+    anchors.left: prev.right
+    visible: false
+
+  ButtonRedMedium
+    id: buttonWhitelistRemove
+    !text: tr('Remove')
+    margin-left: 5
+    anchors.top: prev.top
+    anchors.left: prev.right
+    visible: false
+
+  Label
+    !text: tr('Global whitelist settings')
+    anchors.left: whiteList.left
+    anchors.top: prev.bottom
+    margin-top: 20
+    visible: false
+
+  CheckBox
+    id: checkboxAllowVIPs
+    !text: tr('Allow VIPs to message you')
+    anchors.left: prev.left
+    anchors.top: prev.bottom
+    width: 180
+    margin-top: 5
+    visible: false
+
+  VerticalScrollBar
+    id: whiteListScrollBar
+    anchors.top: whiteList.top
+    anchors.bottom: whiteList.bottom
+    anchors.right: whiteList.right
+    step: 14
+    pixels-scroll: true
+    visible: false

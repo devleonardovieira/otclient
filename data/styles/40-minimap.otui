@@ -106,7 +106,7 @@ MinimapZoomOutButton < MinimapButton
   !tooltip: tr('Zoon Out')
 
 MinimapFullButton < MinimapButton
-  id: close
+  id: fullMapToggle
   image-clip: 0 120 24 24
   !tooltip: tr('Full map')
 
@@ -114,6 +114,7 @@ Minimap < UIMinimap
   draggable: true
   focusable: false
   cross: true
+  clipping: true
 
   Panel
     id: panelControls
@@ -200,7 +201,7 @@ MinimapFlagWindow < MainHeadlessWindow
   Label-16px-Bold
     anchors.top: prev.bottom
     anchors.left: parent.left
-    !text: tr('Marcação')
+    !text: tr('Marcaï¿½ï¿½o')
     text-auto-resize: true
     margin-top: 10
 

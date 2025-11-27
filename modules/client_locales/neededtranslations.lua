@@ -74,7 +74,7 @@ neededTranslations = {'1a) Offensive Name', '1b) Invalid Name Format', '1c) Unsu
                       'Premium Account (%s) days left', 'Price', 'Primary', 'Process', 'Protocol', 'Quest Log',
                       'Randomize', 'Randomize characters outfit', 'Reason', 'Refresh', 'Refresh Offers',
                       'Regeneration Time', 'Reject', 'Reload All', 'Remember account and password when starts client',
-                      'Remember password', 'Remove ', 'Remove', 'Remove %s', 'Report Bug', 'Report Rule',
+                      'Remember email', 'Remove ', 'Remove', 'Remove %s', 'Report Bug', 'Report Rule',
                       'Report Rule Violation', 'Reserved for more functionality later.', 'Reset All', 'Reset Market',
                       'Reset selection, filters & search', 'Revoke %s\'s Invitation', 'Rotate', 'Rule Violation',
                       'Rule Violations', 'Save', 'Save Messages', 'Search', 'Search all items', 'Secondary', 'Select',

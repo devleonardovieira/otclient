@@ -1,0 +1,63 @@
+UIWindow
+  id: loaderWindow
+  title: Loading
+  visible: false
+  draggable: false
+  modal: true
+  fixed: true
+  phantom: false
+  &animation: false
+  anchors.fill: parent
+  @onEscape: modules.client_loader.Loader.abort()
+
+  Panel
+    id: overlay
+    anchors.fill: parent
+    background-color: #000000
+    opacity: 0.0
+
+  Panel
+    id: centerPanel
+    anchors.centerIn: parent
+    size: 640 160
+
+    Label
+      id: status
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin.top: 16
+      margin.left: 24
+      margin.right: 24
+      !text: tr('Loading Modules')
+      font: montserrat bold 26
+
+    LoaderProgressBar
+      id: mainProgress
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: prev.bottom
+      margin.left: 24
+      margin.right: 24
+      margin.top: 12
+      minimum: 0
+      maximum: 100
+      value: 0
+
+    Label
+      id: percent
+      anchors.top: prev.bottom
+      anchors.right: parent.right
+      margin.top: 8
+      margin.right: 24
+      text: 0%
+      font: montserrat bold 26
+
+
+LoaderProgressBar < UIProgressBar
+  height: 24
+  background-color: #36f991
+  border: 2 #1e2224
+  background-border: 2
+  font: montserrat bold 26
+  text-offset: 0 1

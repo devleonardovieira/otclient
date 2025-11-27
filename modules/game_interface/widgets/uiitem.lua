@@ -160,7 +160,7 @@ function UIItem:onMouseRelease(mousePosition, mouseButton)
         return false
     end
 
-    if modules.client_options.getOption('classicControl') and
+    if ((modules.client_options and modules.client_options.getOption and modules.client_options.getOption('classicControl')) or g_settings.getBoolean('classicControl')) and
         ((g_mouse.isPressed(MouseLeftButton) and mouseButton == MouseRightButton) or
             (g_mouse.isPressed(MouseRightButton) and mouseButton == MouseLeftButton)) then
         g_game.look(item)

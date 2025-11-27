@@ -1,20 +1,35 @@
 -- chunkname: @/modules/game_accounts/accounts.lua
 
 local accountPanel, activePanel, emailPanel, charPanel, waitPanel, deletePanel, cancelDeletePanel, changePasswordPanel, recoverPanel, termsPanel, accounts
+-- Track last requests to update UI instantly
+local lastCreateRequest = nil
+local lastDeleteRequest = nil
+local lastCancelDeleteRequest = nil
 
 local function onHTTPResult(data, err)
-	hideWaitPanel()
+    hideWaitPanel()
 
-	if not data then
-		return "", false
-	end
+    if not data then
+        return "", false
+    end
 
-	if data.status and table.contains({
-		401,
-		403
-	}, data.status) then
-		return "Ocorreu um erro inesperado.\nPor favor, abra um ticket para entrar em contato com a equipe.", false
-	end
+    -- Normaliza status vindos da nossa API (string/boolean/numérico)
+    if data.status then
+        if type(data.status) == 'number' and table.contains({401, 403}, data.status) then
+            return "Ocorreu um erro inesperado.\nPor favor, abra um ticket para entrar em contato com a equipe.", false
+        end
+        if type(data.status) == 'string' then
+            local s = data.status:lower()
+            if s == 'error' then
+                return data.message or "", false
+            elseif s == 'success' then
+                return data.message or "", true
+            end
+        end
+        if type(data.status) == 'boolean' then
+            return (data.message or ""), data.status
+        end
+    end
 
 	if data.errors then
 		for i, errors in pairs(data.errors) do
@@ -24,11 +39,12 @@ local function onHTTPResult(data, err)
 		return "", false
 	end
 
-	if data.message then
-		return data.message, true
-	end
+    if data.message then
+        -- Mensagem sem status explícito: assume sucesso
+        return data.message, true
+    end
 
-	return "", false
+    return "", false
 end
 
 -- Validação remota: infraestrutura de debounce e helpers
@@ -58,6 +74,15 @@ local function updateHelperFromErrors(helperWidget, fieldKey, data, okText, errD
         return setHelperFeedback(helperWidget, false, nil, table.concat(data.errors[fieldKey], ",\n"))
     end
     return setHelperFeedback(helperWidget, true, okText or "", nil)
+end
+
+-- Formata tempo em mm:ss para labels de cooldown
+local function formatTime(seconds)
+    seconds = tonumber(seconds) or 0
+    if seconds < 0 then seconds = 0 end
+    local m = math.floor(seconds / 60)
+    local s = math.floor(seconds % 60)
+    return string.format("%02d:%02d", m, s)
 end
 
 local function onHTTPActive(data, err)
@@ -129,7 +154,7 @@ local function onHTTPCreate(data, err)
 end
 
 local function onHTTPCharacter(data, err)
-	local message, status = onHTTPResult(data, err)
+    local message, status = onHTTPResult(data, err)
 
 	if not status and message:len() > 0 then
 		local display = displayInfoBox(tr("Warning"), message)
@@ -139,27 +164,83 @@ local function onHTTPCharacter(data, err)
 		end
 	end
 
-	if status and message:len() > 0 then
-		local display = displayInfoBox(tr("Create character"), message)
+    if status and message:len() > 0 then
+        -- Atualiza imediatamente a lista local sem depender de nova requisição
+        if lastCreateRequest and modules.client_entergame2 and modules.client_entergame2.CharacterList and G then
+            G.characters = G.characters or {}
+            local worldName = nil
+            if G.worlds then
+                for _, w in ipairs(G.worlds) do
+                    if w.id == lastCreateRequest.worldId then
+                        worldName = w.name
+                        break
+                    end
+                end
+            end
+            local info = {
+                name = lastCreateRequest.name,
+                level = 1,
+                worldName = worldName or (G.serverName or ""),
+                worldIp = G.defaultWorldHost,
+                worldPort = G.defaultWorldPort,
+                sex = (tonumber(lastCreateRequest.gender) == 1) and 1 or 0,
+                clan = nil,
+                daysToDelete = nil
+            }
+            table.insert(G.characters, info)
+            modules.client_entergame2.CharacterList.createList(G.characters)
+            lastCreateRequest = nil
+        end
 
-		function display.onOk()
-			hideCharPanel()
-			getCharacters()
-		end
-	end
+        -- Fecha lista antes de exibir mensagem, reabre depois
+        if modules.client_entergame2 and modules.client_entergame2.CharacterList and modules.client_entergame2.CharacterList.hide then
+            modules.client_entergame2.CharacterList.hide()
+        end
+        local display = displayInfoBox(tr("Create character"), message)
+        function display.onOk()
+            hideCharPanel()
+            if modules.client_entergame2 and modules.client_entergame2.CharacterList then
+                modules.client_entergame2.CharacterList.show()
+                modules.client_entergame2.CharacterList.createList(G.characters or {})
+            end
+        end
+    end
 end
 
 local function onHTTPDeleteCharacter(data, err)
-	local message, status = onHTTPResult(data, err)
+    local message, status = onHTTPResult(data, err)
 
 	if not status and message:len() > 0 then
 		displayInfoBox(tr("Warning"), message)
 	end
 
-	if status and message:len() > 0 then
-		displayInfoBox(tr("Delete character"), message)
-		getCharacters()
-	end
+    if status and message:len() > 0 then
+        -- Fecha lista antes de exibir mensagem
+        if modules.client_entergame2 and modules.client_entergame2.CharacterList and modules.client_entergame2.CharacterList.hide then
+            modules.client_entergame2.CharacterList.hide()
+        end
+        local display = displayInfoBox(tr("Delete character"), message)
+        -- Remove localmente para refletir imediatamente
+        if lastDeleteRequest and G and G.characters and modules.client_entergame2 and modules.client_entergame2.CharacterList then
+            for i = #G.characters, 1, -1 do
+                if G.characters[i].name == lastDeleteRequest then
+                    table.remove(G.characters, i)
+                    break
+                end
+            end
+            modules.client_entergame2.CharacterList.createList(G.characters)
+            lastDeleteRequest = nil
+        end
+        -- Sincroniza com servidor
+        getCharacters()
+        -- Ao fechar o aviso, reabrir lista
+        function display.onOk()
+            if modules.client_entergame2 and modules.client_entergame2.CharacterList then
+                modules.client_entergame2.CharacterList.show()
+                modules.client_entergame2.CharacterList.createList(G.characters or {})
+            end
+        end
+    end
 end
 
 local function onHTTPCancelDeleteCharacter(data, err)
@@ -224,9 +305,9 @@ local function onHTTPCharacters(data, err)
 		return
 	end
 
-	if data.body then
-		modules.client_entergame.CharacterList.createList(data.body)
-	end
+    if data.body then
+        modules.client_entergame2.CharacterList.createList(data.body)
+    end
 end
 
 function getCharacters()
@@ -400,7 +481,10 @@ end
 function showAccountPanel()
     accountPanel = show("AccountCreatePanel", accountPanel)
 
-    modules.client_entergame2.toggle()
+    -- Evita erro se o módulo de login não estiver carregado
+    if modules.client_entergame2 and modules.client_entergame2.toggle then
+        modules.client_entergame2.toggle()
+    end
 
     -- Inicializa mensagens dos helpers ao abrir o painel
     if accountPanel and accountPanel.window then
@@ -428,9 +512,13 @@ end
 function showCharPanel()
     charPanel = show("CreateCharacterWindow", charPanel)
 
-	hide(genderGroup)
+    -- Reinicializa o grupo de gênero evitando manter referências antigas
+    if genderGroup then
+        genderGroup:destroy()
+        genderGroup = nil
+    end
 
-	genderGroup = UIRadioGroup.create()
+    genderGroup = UIRadioGroup.create()
 
 	for i, panel in pairs(charPanel.genderPanel:getChildren()) do
 		genderGroup:addWidget(panel)
@@ -454,31 +542,142 @@ function showCharPanel()
 end
 
 function showDeletePanel(name)
-	deletePanel = show("DeleteCharacterWindow", deletePanel)
+    local title = tr("Delete character")
+    local message = tr("Você realmente deseja excluir este personagem?") .. "\n\n" ..
+        "{#FFDA2B|" .. tr("Importante: Seu personagem será deletado após 7 dias.") .. "}" .. "\n" ..
+        "{#FFDA2B|" .. tr("Caso se arrependa, você poderá cancelar a exclusão do personagem durante este período,") .. "}" .. "\n" ..
+        "{#FFDA2B|" .. tr("após o décimo quinto dia o processo se torna irreversível.") .. "}"
 
-	function deletePanel.confirmButton.onClick()
-		hideDeletePanel()
-		sendDeleteCharacter(name)
-	end
+    local box
+
+    local function onConfirm()
+        lastDeleteRequest = name
+        sendDeleteCharacter(name)
+        if box then box:ok() end
+    end
+
+    local function onCancel()
+        if box then box:cancel() end
+    end
+
+    local buttons = {
+        { color = "Blue", text = tr("Confirm"), callback = onConfirm },
+        { color = "Red",  text = tr("Cancel"),  callback = onCancel }
+    }
+
+    box = displayGeneralBox(title, message, buttons, onConfirm, onCancel)
 end
 
 function showCancelDeletePanel(name, dayToDelete)
-	cancelDeletePanel = show("CancelCharacterDeletionWindow", cancelDeletePanel)
+    cancelDeletePanel = show("CancelCharacterDeletionWindow", cancelDeletePanel)
 
 	cancelDeletePanel.dayLabel:setText(tr("Restam %d dias para seu personagem ser exclu\xEDdo", dayToDelete))
 
-	function cancelDeletePanel.confirmButton.onClick()
-		hideCancelDeletePanel()
-		sendCancelDeleteCharacter(name)
-	end
+    function cancelDeletePanel.confirmButton.onClick()
+        hideCancelDeletePanel()
+        -- Atualização local otimista: limpa flag de exclusão
+        lastCancelDeleteRequest = name
+        if G and G.characters and modules.client_entergame2 and modules.client_entergame2.CharacterList then
+            for i = 1, #G.characters do
+                local c = G.characters[i]
+                if c.name == name and c.daysToDelete then
+                    c.daysToDelete = nil
+                    break
+                end
+            end
+            modules.client_entergame2.CharacterList.createList(G.characters)
+            lastCancelDeleteRequest = nil
+        end
+        sendCancelDeleteCharacter(name)
+    end
 end
 
 function showPasswordPanel()
 	changePasswordPanel = show("ChangePasswordPanel", changePasswordPanel)
+
+    -- Conecta validação local + remota (mesma verificação da criação de conta)
+    if changePasswordPanel and changePasswordPanel.window then
+        local w = changePasswordPanel.window
+        if w.passwordInput then
+            w.passwordInput.onTextChange = function(self, text)
+                -- Validação local
+                onInputPassword(self)
+                if w.confirmPasswordInput then
+                    onInputConfirmPassword(self, w.confirmPasswordInput)
+                end
+                -- Validação remota (complexidade de senha)
+                local txt = self:getText()
+                debounceField('password', function()
+                    local payload = { password = txt }
+                    accounts:validateRegister(payload, function(data, err)
+                        updateHelperFromErrors(w.helperPasswordInput, 'password', data, tr("Senha válida"))
+                    end)
+                end)
+            end
+        end
+
+        if w.confirmPasswordInput then
+            w.confirmPasswordInput.onTextChange = function(self, text)
+                -- Validação local
+                if w.passwordInput then
+                    onInputConfirmPassword(w.passwordInput, self)
+                end
+                -- Validação remota (senhas coincidem)
+                local password = w.passwordInput and w.passwordInput:getText() or ""
+                local confirm  = self:getText()
+                debounceField('confirmPassword', function()
+                    local payload = { password = password, confirmPassword = confirm }
+                    accounts:validateRegister(payload, function(data, err)
+                        updateHelperFromErrors(w.helperConfirmPasswordInput, 'confirmPassword', data, tr("Senhas coincidem"))
+                    end)
+                end)
+            end
+        end
+    end
 end
 
 function showRecoverPanel()
 	recoverPanel = show("RecoverAccountPanel", recoverPanel)
+
+    -- Conecta validação local + remota para senha nova
+    if recoverPanel and recoverPanel.window then
+        local w = recoverPanel.window
+        if w.passwordInput then
+            w.passwordInput.onTextChange = function(self, text)
+                -- Validação local
+                onInputPassword(self)
+                if w.confirmPasswordInput then
+                    onInputConfirmPassword(self, w.confirmPasswordInput)
+                end
+                -- Validação remota (complexidade)
+                local txt = self:getText()
+                debounceField('password', function()
+                    local payload = { password = txt }
+                    accounts:validateRegister(payload, function(data, err)
+                        updateHelperFromErrors(w.helperPasswordInput, 'password', data, tr("Senha válida"))
+                    end)
+                end)
+            end
+        end
+
+        if w.confirmPasswordInput then
+            w.confirmPasswordInput.onTextChange = function(self, text)
+                -- Validação local
+                if w.passwordInput then
+                    onInputConfirmPassword(w.passwordInput, self)
+                end
+                -- Validação remota (match)
+                local password = w.passwordInput and w.passwordInput:getText() or ""
+                local confirm  = self:getText()
+                debounceField('confirmPassword', function()
+                    local payload = { password = password, confirmPassword = confirm }
+                    accounts:validateRegister(payload, function(data, err)
+                        updateHelperFromErrors(w.helperConfirmPasswordInput, 'confirmPassword', data, tr("Senhas coincidem"))
+                    end)
+                end)
+            end
+        end
+    end
 end
 
 function showTermsPanel()
@@ -516,10 +715,35 @@ end
 
 function hideCreatePanel()
     hideWaitPanel()
+    -- Desconecta callbacks e cancela validações pendentes para evitar referências a helpers
+    if accountPanel and accountPanel.window then
+        local w = accountPanel.window
+        if w.emailInput then w.emailInput.onTextChange = nil end
+        if w.confirmEmailInput then w.confirmEmailInput.onTextChange = nil end
+        if w.passwordInput then w.passwordInput.onTextChange = nil end
+        if w.confirmPasswordInput then w.confirmPasswordInput.onTextChange = nil end
+        -- Cancela qualquer event associado ao painel
+        if accountPanel.event then
+            removeEvent(accountPanel.event)
+            accountPanel.event = nil
+        end
+    end
+    -- Cancela eventos de debounce usados nas validações remotas
+    if validationEvents then
+        for k, ev in pairs(validationEvents) do
+            if ev then
+                removeEvent(ev)
+                validationEvents[k] = nil
+            end
+        end
+    end
     hideTermsPanel()
     hide(accountPanel)
     accountPanel = nil
-    modules.client_entergame2.toggle()
+    -- Evita tentar acessar módulo não carregado durante unload
+    if modules.client_entergame2 and modules.client_entergame2.toggle then
+        modules.client_entergame2.toggle()
+    end
 end
 
 function hideWaitPanel()
@@ -536,6 +760,12 @@ function hideCharPanel()
                 validationEvents[k] = nil
             end
         end
+    end
+
+    -- Libera referências do grupo de rádio antes de destruir os widgets filhos
+    if genderGroup then
+        genderGroup:destroy()
+        genderGroup = nil
     end
 
     hide(charPanel)
@@ -557,11 +787,61 @@ end
 
 function hidePasswordChangePanel()
     hideWaitPanel()
+    -- Desconecta callbacks de texto para evitar refer\xEAncias pendentes
+    if changePasswordPanel and changePasswordPanel.window then
+        local w = changePasswordPanel.window
+        if w.passwordInput then w.passwordInput.onTextChange = nil end
+        if w.confirmPasswordInput then w.confirmPasswordInput.onTextChange = nil end
+        if w.oldPasswordInput then w.oldPasswordInput.onTextChange = nil end
+        -- Cancela qualquer event associado aos inputs
+        if w.passwordInput and w.passwordInput.event then removeEvent(w.passwordInput.event) w.passwordInput.event = nil end
+        if w.confirmPasswordInput and w.confirmPasswordInput.event then removeEvent(w.confirmPasswordInput.event) w.confirmPasswordInput.event = nil end
+        if w.oldPasswordInput and w.oldPasswordInput.event then removeEvent(w.oldPasswordInput.event) w.oldPasswordInput.event = nil end
+    end
+    -- Cancel any pending validation events to avoid dangling widget references
+    if validationEvents then
+        for k, ev in pairs(validationEvents) do
+            if ev then
+                removeEvent(ev)
+                validationEvents[k] = nil
+            end
+        end
+    end
+    -- Cancela cooldown/efeitos pendentes no painel, se houver
+    if changePasswordPanel and changePasswordPanel.event then
+        removeEvent(changePasswordPanel.event)
+        changePasswordPanel.event = nil
+    end
     hide(changePasswordPanel)
     changePasswordPanel = nil
 end
 
 function hideRecoverPanel()
+    -- Desconecta callbacks de texto para evitar refer\xEAncias pendentes
+    if recoverPanel and recoverPanel.window then
+        local w = recoverPanel.window
+        if w.passwordInput then w.passwordInput.onTextChange = nil end
+        if w.confirmPasswordInput then w.confirmPasswordInput.onTextChange = nil end
+        if w.emailInput then w.emailInput.onTextChange = nil end
+        -- Cancela qualquer event associado aos inputs
+        if w.passwordInput and w.passwordInput.event then removeEvent(w.passwordInput.event) w.passwordInput.event = nil end
+        if w.confirmPasswordInput and w.confirmPasswordInput.event then removeEvent(w.confirmPasswordInput.event) w.confirmPasswordInput.event = nil end
+        if w.emailInput and w.emailInput.event then removeEvent(w.emailInput.event) w.emailInput.event = nil end
+    end
+    -- Cancel any pending validation events before destroying recover panel
+    if validationEvents then
+        for k, ev in pairs(validationEvents) do
+            if ev then
+                removeEvent(ev)
+                validationEvents[k] = nil
+            end
+        end
+    end
+    -- Cancela cooldown/efeitos pendentes no painel (timer)
+    if recoverPanel and recoverPanel.event then
+        removeEvent(recoverPanel.event)
+        recoverPanel.event = nil
+    end
     hide(recoverPanel)
     recoverPanel = nil
 end
@@ -660,12 +940,18 @@ function onCreate()
     sendCreate(email, password)
 end
 
+-- Última solicitação de criação (para atualizar lista localmente)
+
 function onCreateCharacter()
     local name = charPanel.nameInput:getText()
+    local genderId = genderGroup:getSelectedWidget():getId()
+    local worldId = charPanel.worlds:getCurrentOption().data
     showWaitPanel()
     charPanel:hide()
+    -- Armazena dados para atualizar a lista sem relogar
+    lastCreateRequest = { name = name, gender = genderId, worldId = worldId }
     -- Validação final na API
-    sendCreateCharacter(name, genderGroup:getSelectedWidget():getId(), charPanel.worlds:getCurrentOption().data)
+    sendCreateCharacter(name, genderId, worldId)
 end
 
 function onChangePassword()
@@ -693,10 +979,36 @@ function onSendRecoverCodeEmail()
 
 	local display = displayInfoBox(tr("C\xF3digo reenviado"), tr("Um c\xF3digo foi enviado para o seu e-mail. O c\xF3digo \xE9\nv\xE1lido por apenas 5 minutos."))
 
+	local function startRecoverCooldown()
+		if not recoverPanel or not recoverPanel.window or not recoverPanel.window.timerLabel then return end
+		local params = {
+			onStart = function(cooldown)
+				recoverPanel.window.timerLabel:disable()
+				return true
+			end,
+			onExecute = function(cooldown)
+				if recoverPanel and recoverPanel.window then
+					recoverPanel.window.timerLabel:setText(tr("Enviar c\xF3digo novamente em %s", formatTime(cooldown)))
+				end
+				return true
+			end,
+			onEnd = function(cooldown)
+				if recoverPanel and recoverPanel.window then
+					recoverPanel.window.timerLabel:enable()
+					recoverPanel.window.timerLabel:setText(tr("Enviar c\xF3digo por e-mail"))
+				end
+				return true
+			end
+		}
+		g_effects.onCooldown(recoverPanel, 60, params)
+	end
+
 	local function onOk()
 		recoverPanel.window:show()
 		sendRecoverCodeEmail(recoverPanel.windowEmail.emailInput:getText())
 		recoverPanel.window.emailInput:setText(recoverPanel.windowEmail.emailInput:getText())
+		-- Inicia cooldown imediatamente ap\xF3s primeiro envio
+		startRecoverCooldown()
 	end
 
 	display.onOk = onOk
@@ -711,18 +1023,17 @@ function onRecoverCodeEmail()
 
 	local display = displayInfoBox(tr("C\xF3digo reenviado"), tr("Um c\xF3digo foi enviado para o seu e-mail. O c\xF3digo \xE9\nv\xE1lido por apenas 5 minutos."))
 
-	local function onResendCode()
+	local function startRecoverCooldown()
+		if not recoverPanel or not recoverPanel.window or not recoverPanel.window.timerLabel then return end
 		local params = {
 			onStart = function(cooldown)
 				recoverPanel.window.timerLabel:disable()
-
 				return true
 			end,
 			onExecute = function(cooldown)
 				if recoverPanel and recoverPanel.window then
 					recoverPanel.window.timerLabel:setText(tr("Enviar c\xF3digo novamente em %s", formatTime(cooldown)))
 				end
-
 				return true
 			end,
 			onEnd = function(cooldown)
@@ -730,16 +1041,14 @@ function onRecoverCodeEmail()
 					recoverPanel.window.timerLabel:enable()
 					recoverPanel.window.timerLabel:setText(tr("Enviar c\xF3digo por e-mail"))
 				end
-
 				return true
 			end
 		}
-
 		g_effects.onCooldown(recoverPanel, 60, params)
 	end
 
 	local function onOk()
-		onResendCode()
+		startRecoverCooldown()
 		recoverPanel.window:show()
 		sendRecoverCodeEmail(recoverPanel.window.emailInput:getText())
 	end

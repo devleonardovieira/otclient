@@ -233,7 +233,7 @@ function NpcDialog.refreshOptionsFromText(text)
   NpcDialog.optionsPanel:show()
 
   for _, opt in ipairs(options) do
-    local btn = g_ui.createWidget('Button', NpcDialog.optionsPanel)
+    local btn = g_ui.createWidget('ButtonCommunityBase', NpcDialog.optionsPanel)
     btn:setText(opt)
     btn.onClick = function() NpcDialog.chooseOption(opt) end
   end

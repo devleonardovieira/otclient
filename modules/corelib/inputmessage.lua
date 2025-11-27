@@ -49,3 +49,26 @@ function InputMessage:getPosition()
     position.z = self:getU8()
     return position
 end
+
+
+function InputMessage:getOutfit()
+	local lookType = self:getU16()
+	local outfit = {}
+
+	if lookType ~= 0 then
+		outfit.type = lookType
+		outfit.head = self:getU8()
+		outfit.body = self:getU8()
+		outfit.legs = self:getU8()
+		outfit.feet = self:getU8()
+		outfit.addons = self:getU8()
+	else
+		outfit.auxType = self:getU16()
+	end
+
+	outfit.wings = self:getU16()
+	outfit.aura = self:getU16()
+	outfit.shader = self:getString()
+
+	return outfit
+end

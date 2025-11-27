@@ -217,11 +217,12 @@ function CharacterList.init()
 		onLogout = onLogout
 	})
 
-	if G.characters then
-		CharacterList.create(G.characters, G.characterAccount)
-	end
+    -- Carregar favoritos antes de criar a lista para aplicar ordenação
+    favorites = g_settings.getNode("favoritesCharacterList") or {}
 
-	favorites = g_settings.getNode("favoritesCharacterList") or {}
+    if G.characters then
+        CharacterList.create(G.characters, G.characterAccount)
+    end
 end
 
 function CharacterList.terminate()
@@ -304,23 +305,39 @@ function CharacterList.terminate()
 end
 
 function CharacterList.createList(characters)
-	characterList = charactersWindow:getChildById("characters")
-	G.characters = characters
+    characterList = charactersWindow:getChildById("characters")
+    G.characters = characters
 
-	characterList:destroyChildren()
+    characterList:destroyChildren()
 
-	local focusLabel
+    local focusLabel
+    -- Pré-ordenar: favoritos primeiro (por newIndex), depois não favoritos na ordem original
+    local favs, nonfavs = {}, {}
+    for _, info in ipairs(characters) do
+        if favorites[info.name] then
+            table.insert(favs, info)
+        else
+            table.insert(nonfavs, info)
+        end
+    end
+    table.sort(favs, function(a, b)
+        local fa = favorites[a.name]
+        local fb = favorites[b.name]
+        local ia = (fa and fa.newIndex) or 1
+        local ib = (fb and fb.newIndex) or 1
+        if ia ~= ib then return ia < ib end
+        return tostring(a.name) < tostring(b.name)
+    end)
+    local sorted = {}
+    for _, info in ipairs(favs) do table.insert(sorted, info) end
+    for _, info in ipairs(nonfavs) do table.insert(sorted, info) end
 
-	for i, info in ipairs(characters) do
-		local widget = g_ui.createWidget("CharacterBox", characterList)
-		local favoriteChar = favorites[info.name]
+    for i, info in ipairs(sorted) do
+        local widget = g_ui.createWidget("CharacterBox", characterList)
+        local favoriteChar = favorites[info.name]
+        if favoriteChar then widget.favorite:setOn(true) end
 
-		if favoriteChar then
-			widget.favorite:setOn(true)
-			characterList:moveChildToIndex(widget, favoriteChar.newIndex or i)
-		end
-
-		widget:setId(info.name)
+        widget:setId(info.name)
 
 		widget.characterName = info.name
 		widget.worldName = info.worldName
@@ -331,16 +348,18 @@ function CharacterList.createList(characters)
 		if charName == '' then
 		charName = tr('Unknown')
 		end
-    widget.name:setFont('verdana-11px-antialised')
-    widget.name:setText(charName)
-    widget.name:setVisible(true)
-    widget.name:setHeight(24)
-    widget.name:setWidth(260)
-    widget.name:setColor('#FFFFFF')
-    g_logger.info(string.format("characterlist: name size=%dx%d pos=%d,%d", widget.name:getWidth(), widget.name:getHeight(), widget.name:getX(), widget.name:getY()))
-    g_logger.info(string.format("characterlist: name set -> '%s'", charName))
-			widget.level:setText(tr("Nv. %d", info.level or 1))
-		widget.world:setText(info.worldName)
+		widget.name:setFont("montserrat bold 20")
+		widget.name:setText(charName)
+		widget.name:setVisible(true)
+		widget.name:setHeight(24)
+		widget.name:setWidth(260)
+		widget.name:setColor('#FFFFFF')
+        widget.level:setText(tr("Nv. %d", info.level or 1))
+        -- Garantir que o nome do mundo seja exibido corretamente
+        widget.world:setText(info.worldName or tr("Default"))
+        widget.world:setVisible(true)
+        widget.world:setHeight(18)
+        widget.world:setColor('#FFFFFF')
 		widget:setImageSource("/images/game/characters/" .. (info.sex == 0 and "female" or "male"))
 		widget.clan:setImageSource("/images/game/icons/" .. (info.clan and iconsClan[tonumber(math.floor(info.clan))] or "icon_no_clan_20px"))
 		connect(widget, {
@@ -368,35 +387,47 @@ function CharacterList.createList(characters)
 			modules.game_accounts.showCancelDeletePanel(info.name, info.daysToDelete)
 		end
 
-		function widget.favorite:onClick()
-			local favoriteChar = favorites[info.name]
+        function widget.favorite:onClick()
+            local favoriteChar = favorites[info.name]
 
-			if favoriteChar then
-				self:setOn(false)
+            if favoriteChar then
+                self:setOn(false)
 
-				favorites[info.name] = nil
+                favorites[info.name] = nil
 
-				characterList:moveChildToIndex(widget, favoriteChar.oldIndex)
-			else
-				favorites[info.name] = {
-					newIndex = 1,
-					oldIndex = characterList:getChildIndex(widget)
-				}
+                local desired = favoriteChar.oldIndex or characterList:getChildIndex(widget)
+                local count = characterList:getChildCount()
+                if desired < 1 then desired = 1 end
+                if desired > count then desired = count end
+                characterList:moveChildToIndex(widget, desired)
+            else
+                favorites[info.name] = {
+                    newIndex = 1,
+                    oldIndex = characterList:getChildIndex(widget)
+                }
 
-				characterList:moveChildToIndex(widget, 1)
-				self:setOn(true)
-			end
+                characterList:moveChildToIndex(widget, 1)
+                self:setOn(true)
+            end
 
-			local newIndex = 1
+            -- Renumera favoritos conforme ordem visível na UI (determinístico)
+            local idx = 1
+            for i = 1, characterList:getChildCount() do
+                local child = characterList:getChildByIndex(i)
+                if child and child.favorite and child.favorite:isOn() then
+                    local name = child:getId()
+                    if favorites[name] then
+                        favorites[name].newIndex = idx
+                    else
+                        favorites[name] = { newIndex = idx, oldIndex = i }
+                    end
+                    idx = idx + 1
+                end
+            end
 
-			for _, v in pairs(favorites) do
-				if v.newIndex ~= newIndex then
-					v.newIndex = newIndex
-				end
-
-				newIndex = newIndex + 1
-			end
-		end
+            -- Persiste imediatamente as preferências de favoritos
+            g_settings.setNode("favoritesCharacterList", favorites)
+        end
 
 		if i == 1 or g_settings.get("last-used-character") == widget.characterName and g_settings.get("last-used-world") == widget.worldName then
 			focusLabel = widget
@@ -405,12 +436,16 @@ function CharacterList.createList(characters)
 
 	g_ui.createWidget("CharacterBoxCreate", characterList)
 
-	if focusLabel then
-		characterList:focusChild(focusLabel, KeyboardFocusReason)
-		addEvent(function()
-			characterList:ensureChildVisible(focusLabel)
-		end)
-	end
+    if focusLabel then
+        characterList:focusChild(focusLabel, KeyboardFocusReason)
+        local labelId = focusLabel:getId()
+        addEvent(function()
+            local w = characterList:getChildById(labelId)
+            if w then
+                characterList:ensureChildVisible(w)
+            end
+        end)
+    end
 end
 
 function CharacterList.create(characters, account, otui)
@@ -477,25 +512,35 @@ function CharacterList.destroy()
 end
 
 function CharacterList.show()
-	if loadBox or errorBox or not charactersWindow then
-		return
-	end
+  if loadBox or errorBox or not charactersWindow then
+    return
+  end
 
-	charactersWindow:show()
-	charactersWindow:raise()
-	charactersWindow:focus()
-	CharacterList.showInfoPanel()
-	--[[ modules.client_background.getBackground().logoutButton:setOn(false) ]]
+  charactersWindow:show()
+  charactersWindow:raise()
+  charactersWindow:focus()
+  CharacterList.showInfoPanel()
+  -- Mostrar botão de logout somente enquanto a lista de personagens está visível
+  local bg = modules.client_background.getBackground()
+  if bg then
+    local logoutButton = bg:getChildById('logoutButton')
+    if logoutButton then logoutButton:show() end
+  end
 end
 
 function CharacterList.hide(showLogin)
-	showLogin = showLogin or false
+  showLogin = showLogin or false
 
-	charactersWindow:hide()
-	CharacterList.hideInfoPanel()
-	modules.game_accounts.hideDeletePanel()
-	modules.game_accounts.hideCancelDeletePanel()
-	--[[ modules.client_background.getBackground().logoutButton:setOn(true) ]]
+  charactersWindow:hide()
+  CharacterList.hideInfoPanel()
+  modules.game_accounts.hideDeletePanel()
+  modules.game_accounts.hideCancelDeletePanel()
+  -- Oculta botão de logout quando sair da lista de personagens
+  local bg = modules.client_background.getBackground()
+  if bg then
+    local logoutButton = bg:getChildById('logoutButton')
+    if logoutButton then logoutButton:hide() end
+  end
 
 	if showLogin and EnterGame and not g_game.isOnline() then
 		EnterGame.show()

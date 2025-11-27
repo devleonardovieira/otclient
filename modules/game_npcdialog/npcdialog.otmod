@@ -5,6 +5,6 @@ Module
   website: https://shinonline.com/
   sandboxed: true
   dependencies: [ game_interface, gamelib ]
-  scripts: [ npcdialog ]
+  scripts: [ npcdialog_stub ]
   @onLoad: init()
   @onUnload: terminate()

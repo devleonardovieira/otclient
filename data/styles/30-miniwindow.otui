@@ -1,6 +1,6 @@
 MiniWindow < UIMiniWindow
   size: 192 200
-  font: montserrat bold 13
+  font: DMSans-13px-bold
   icon-rect: 4 3 18 18
   text-offset: 26 5
   text-align: topLeft

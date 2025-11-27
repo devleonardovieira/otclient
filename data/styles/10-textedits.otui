@@ -6,7 +6,7 @@ TextEdit < UITextEdit
   border: 2 #444444
   cursor-color: #FFFFFF
   background-color: #242424
-  font: montserrat regular 16
+  font: montserrat regular 20
   padding: 10 5 4 8
   selection-color: #3C3C3C
   selection-background-color: #dfdfdf

@@ -1,0 +1,233 @@
+ConsolePhantom < ScrollablePanel
+  id: consolePhantom
+  focusable: false
+  phantom: true
+  visible: false
+  layout:
+    type: verticalBox
+    align-bottom: true
+
+ConsoleLabel < UITextEdit
+  font: montserrat regularRounded 14
+  height: 14
+  color: yellow
+  margin-left: 2
+  text-wrap: true
+  text-auto-resize: true
+  selection-color: #FFFFFF
+  selection-background-color: #999999
+  change-cursor-image: false
+  cursor-visible: false
+  editable: false
+  draggable: true
+  selectable: false
+  focusable: false
+  border: 0 white
+
+ConsolePhantomLabel < UILabel
+  font: montserrat regularRounded 14
+  height: 14
+  color: yellow
+  text-wrap: true
+  text-auto-resize: true
+  selection-color: #111416
+  selection-background-color: #999999
+
+ConsoleTabBar < MoveableTabBar
+
+ConsoleTabBarPanel < MoveableTabBarPanel
+  id: consoleTab
+  border: 0 alpha
+
+  ScrollablePanel
+    id: consoleBuffer
+    anchors.fill: parent
+    vertical-scrollbar: consoleScrollBar
+    layout:
+      type: verticalBox
+      align-bottom: true
+    background: alpha
+    inverted-scroll: true
+    padding: 5 10 0 5
+    border: 0 alpha
+
+  VerticalScrollBar
+    id: consoleScrollBar
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin: 2 0 2 0
+    step: 18
+    pixels-scroll: true
+
+ConsoleTabBarButton < MoveableTabBarButton
+  height: 33
+  padding: 10
+
+ConsolePanel < Panel
+  size: 120 80
+  anchors.left: gameActionPanel.left
+  anchors.right: gameActionPanel.right
+  anchors.top: gameActionPanel.bottom
+  anchors.bottom: parent.bottom
+
+  @onSetup: |
+    self.saveWidth = 480
+    self.saveHeight = 143
+    self.savePos = { x = 10, y = g_window.getHeight() }
+
+  UIWidget
+    id: background
+    anchors.fill: parent
+    background-color: #242424
+    border: 2 #444444
+    phantom: true
+
+  ButtonPrevious
+    id: prevChannelButton
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin: 16 0 0 10
+
+  ConsoleTabBar
+    id: consoleTabBar
+    anchors.left: prev.right
+    anchors.top: parent.top
+    anchors.right: next.left
+    margin: 10 10 0 10
+    tab-spacing: 2
+    movable: true
+
+  ButtonNext
+    id: nextChannelButton
+    anchors.right: next.left
+    anchors.top: next.top
+    margin: 1 8 0 0
+
+  UIButton
+    id: closeChannelButton
+    size: 20 20
+    !tooltip: tr('Close this channel') .. ' (Ctrl+E)'
+    image-source: /images/game/console/closechannel
+    anchors.right: next.left
+    anchors.top: next.top
+    margin-right: 8
+    enabled: false
+    change-cursor-image: true
+    cursor: pointer
+    @onClick: removeCurrentTab()
+
+  UIButton
+    id: channelsButton
+    size: 20 20
+    !tooltip: tr('Open new channel') .. ' (Ctrl+O)'
+    image-source: /images/game/console/open_chat
+    anchors.right: next.left
+    anchors.top: next.top
+    margin-right: 8
+    change-cursor-image: true
+    cursor: pointer
+    @onClick: g_game.requestChannels()
+
+  UIButton
+    id: clearChannelButton
+    size: 20 20
+    !tooltip: tr('Clear current message window')
+    icon: /images/game/console/clearchannel
+    anchors.right: parent.right
+    anchors.top: parent.top
+    margin: 15 15 0 0
+    change-cursor-image: true
+    cursor: pointer
+    @onClick: |
+      local consoleTabBar = self:getParent():getChildById('consoleTabBar')
+      clearChannel(consoleTabBar)
+
+  Panel
+    id: consoleContentPanel
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: consoleTextEdit.top
+    margin: 7 10 1 10
+    padding: 1
+    focusable: false
+    phantom: true
+    background-color: #1C1C1C
+
+  ConsolePhantom
+    anchors.fill: prev
+
+  UIButton
+    id: sayModeButton
+    icon: /images/game/console/say
+    !tooltip: tr('Adjust volume')
+    &sayMode: 2
+    size: 20 20
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin: 0 0 14 14
+    @onClick: sayModeChange()
+    visible: false
+
+  UITextEdit
+    id: consoleTextEdit
+    height: 30
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin: 0 10 10 10
+    padding: 7 5 5 32
+    shift-navigation: true
+    max-length: 255
+    text-auto-submit: true
+    font: montserrat regular 20
+    !placeholder: tr('Digite aqui...')
+
+  UICheckBox
+    id: toggleChat
+    size: 22 22
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin: 0 0 14 16
+    !tooltip: tr('Disable chat mode, allow to walk using ASDW')
+    change-cursor-image: true
+    cursor: pointer
+    @onCheckChange: toggleChat()
+
+    $!checked:
+      image-source: /images/game/console/icon_open
+      image-color: #FFFFFF
+
+    $checked:
+      image-source: /images/game/console/icon_lock
+      image-color: #FFFFFF
+
+  ResizeBorder
+    id: bottomResizeBorder
+    height: 3
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    minimum: 145
+    maximum: 600
+    background: #FFFFFF88
+    &inverted: true
+    @onUpdateSize: |
+      function(self, newSize)
+        self:getParent().saveHeight = newSize
+      end
+
+  ResizeBorder
+    id: rightResizeBorder
+    height: 3
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    minimum: 420
+    maximum: 1000
+    background: #FFFFFF88
+    @onUpdateSize: |
+      function(self, newSize)
+        self:getParent().saveWidth = newSize
+      end
