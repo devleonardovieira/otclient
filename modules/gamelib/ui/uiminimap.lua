@@ -297,14 +297,21 @@ function UIMinimap:onMouseRelease(pos, button)
 		return
 	end
 
-	if button == MouseLeftButton then
-		local player = g_game.getLocalPlayer()
+    if button == MouseLeftButton then
+        local player = g_game.getLocalPlayer()
 
-		--[[ if self.autowalk and not modules.game_minigame.isPlaying() then
-			player:autoWalk(mapPos)
-		end ]]
+        -- Reativa o autowalk ao clicar no minimapa/fullmap.
+        -- Faz checagens seguras para evitar erro caso o módulo de minigame não exista.
+        local canAutoWalk = true
+        if modules and modules.game_minigame and type(modules.game_minigame.isPlaying) == 'function' then
+            canAutoWalk = not modules.game_minigame.isPlaying()
+        end
 
-		return true
+        if self.autowalk and canAutoWalk then
+            player:autoWalk(mapPos)
+        end
+
+        return true
 	elseif button == MouseRightButton then
 		local menu = g_ui.createWidget("PopupMenu")
 

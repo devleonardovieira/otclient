@@ -93,6 +93,7 @@ function init()
     })
 
     topMenu = g_ui.displayUI('topmenu')
+    topMenu:hide()
 
     topLeftButtonsPanel = topMenu:getChildById('topLeftButtonsPanel')
     topLeftTogglesPanel = topMenu:getChildById('topLeftTogglesPanel')
@@ -480,8 +481,8 @@ function toggle()
 
     if topMenu:isVisible() then
         hide()
-    else
-        show()
+    --[[ else
+        show() ]]
     end
 end
 
