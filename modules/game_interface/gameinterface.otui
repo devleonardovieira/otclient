@@ -1,5 +1,5 @@
 GameSidePanel < UIMiniWindowContainer
-  image-source: /images/ui/2pixel_up_frame_borderimage
+  image-source: /images/ui/panel_container
   image-border: 4
   width: 176
   layout:
@@ -13,7 +13,7 @@ SelectColumnButton < CheckBox
     opacity: 1
 
 GameBottomPanel < UIWindow
-  image-source: /images/ui/background_dark
+  image-source: /images/ui/panel_bottom
   image-repeated: true
   draggable:false
 
@@ -78,7 +78,7 @@ UIWidget
     border-width-right: 1
     border-color-right: #292929
     width: 36
-    image-source: /images/ui/actionbar/actionbar_background-light
+    image-source: /images/ui/panel
     image-border: 1
     margin-bottom: 16
     padding-right: 3 
@@ -93,7 +93,7 @@ UIWidget
     anchors.left: gameLeftActionPanel.left
     border-width-right: 1
     border-color-right: #292929
-    image-source: /images/ui/actionbar/actionbar_background-light
+    image-source: /images/ui/panel
     visible: false
     ButtonBlueSmall
       id: leftLock
@@ -117,7 +117,7 @@ UIWidget
     border-width-left: 1
     border-color-left: #747474
     width: 36
-    image-source: /images/ui/actionbar/actionbar_background-light
+    image-source: /images/ui/panel
     image-border: 1
     margin-bottom: 16
     padding-left: 3
@@ -133,7 +133,7 @@ UIWidget
     anchors.right: gameRightActionPanel.right
     border-width-left: 1
     border-color-left: #747474
-    image-source: /images/ui/actionbar/actionbar_background-light
+    image-source: /images/ui/panel
     visible: false
 
     ButtonBlueSmall
@@ -167,7 +167,7 @@ UIWidget
     margin-left: 1
     border-width-top: 1
     border-color-top: #292929
-    image-source: /images/ui/actionbar/background-dark
+    image-source: /images/ui/panel_bottom
     visible: false
 
     ButtonBlueSmall
@@ -283,7 +283,7 @@ UIWidget
     anchors.right: gameRightExtraPanel.left
     anchors.bottom: parent.bottom
     height: 6
-    image-source: /images/ui/actionbar/splitterActBottom
+    image-source: /images/ui/panel_outline
     size: 300 6
     opacity: 100
     margin-right: 1
@@ -318,7 +318,7 @@ UIWidget
     id: leftIncreaseSidePanels
     anchors.left: gameLeftExtraPanel.right
     anchors.top: parent.top
-    image-source: /images/ui/topstats_button_panel
+    // image removed: fallback without texture
     image-clip: 27 0 9 27
     size: 9 27
     @onClick: onIncreaseLeftPanels()
@@ -334,7 +334,7 @@ UIWidget
     id: leftDecreaseSidePanels
     anchors.left: leftIncreaseSidePanels.left
     anchors.top: leftIncreaseSidePanels.bottom
-    image-source: /images/ui/topstats_button_panel
+    // image removed: fallback without texture
     image-clip: 0 0 9 27
     size: 9 27
     @onClick: onDecreaseLeftPanels()
@@ -350,7 +350,7 @@ UIWidget
     id: rightIncreaseSidePanels
     anchors.right: gameRightExtraPanel.left
     anchors.top: parent.top
-    image-source: /images/ui/topstats_button_panel
+    // image removed: fallback without texture
     image-clip: 27 27 9 27
     size: 9 27
     @onClick: onIncreaseRightPanels()
@@ -366,7 +366,7 @@ UIWidget
     id: rightDecreaseSidePanels
     anchors.right: rightIncreaseSidePanels.right
     anchors.top: rightIncreaseSidePanels.bottom
-    image-source: /images/ui/topstats_button_panel
+    // image removed: fallback without texture
     image-clip: 0 27 9 27
     size: 9 27
     @onClick: onDecreaseRightPanels()

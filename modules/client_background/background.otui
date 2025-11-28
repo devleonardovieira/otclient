@@ -21,33 +21,28 @@ Panel
     color: #36f991
     font: montserrat regularRounded 30
 
-  PanelRounded
-    size: 120 60
+  UILabel
+    id: alphaId
+    text: ALPHA
     anchors.bottom: parent.bottom
     anchors.right: parent.right
-    margin-bottom: 2
+    margin-bottom: 18
+    margin-right: 12
+    text-align: left
+    text-auto-resize: true
+    width: 120
+    padding: 2
+    color: #ffffff
+    font: montserrat semiboldRounded 30
     UILabel
-      id: alphaId
-      text: ALPHA
+      text: version 0.1a
       anchors.bottom: parent.bottom
       anchors.right: parent.right
-      margin-bottom: 18
-      margin-right: 12
-      text-align: left
+      margin-bottom: -12
+      margin-right: -4
+      font: montserrat mediumRounded 16
       text-auto-resize: true
-      width: 120
-      padding: 2
-      color: #ffffff
-      font: montserrat semiboldRounded 30
-      UILabel
-        text: version 0.1a
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        margin-bottom: -12
-        margin-right: -4
-        font: montserrat mediumRounded 16
-        text-auto-resize: true
-        color: #36f991
+      color: #36f991
       
 
   UIParticles

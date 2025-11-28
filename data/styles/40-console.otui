@@ -8,7 +8,6 @@ ConsolePhantom < ScrollablePanel
     align-bottom: true
 
 ConsoleLabel < UITextEdit
-  font: montserrat regularRounded 14
   height: 14
   color: yellow
   margin-left: 2
@@ -23,15 +22,16 @@ ConsoleLabel < UITextEdit
   selectable: false
   focusable: false
   border: 0 white
+  font: montserrat regular 14
 
 ConsolePhantomLabel < UILabel
-  font: montserrat regularRounded 14
   height: 14
   color: yellow
   text-wrap: true
   text-auto-resize: true
   selection-color: #111416
   selection-background-color: #999999
+  font: montserrat regular 14
 
 ConsoleTabBar < MoveableTabBar
 
@@ -181,7 +181,8 @@ ConsolePanel < Panel
     shift-navigation: true
     max-length: 255
     text-auto-submit: true
-    font: montserrat regular 20
+    font: montserrat regular 14
+    text-offset: 4 0
     !placeholder: tr('Digite aqui...')
 
   UICheckBox

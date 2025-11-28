@@ -1,0 +1,9 @@
+Module
+  name: game_cooldown
+  description: Stub cooldowns module to satisfy interface dependencies
+  author: Redemption Team
+  sandboxed: true
+  scripts: [ cooldown ]
+  @onLoad: init()
+  @onUnload: terminate()
+

@@ -316,7 +316,15 @@ std::string UIWidget::getFont() { return m_font->getName(); }
 
 void UIWidget::setFont(const std::string_view fontName)
 {
-    m_font = g_fonts.getFont(fontName);
+    // Busca a fonte pelo nome. O gerenciador tenta importar famílias dinamicamente.
+    const auto newFont = g_fonts.getFont(fontName);
+    if (!newFont) {
+        // Se não carregar, mantenha a fonte atual para evitar texto invisível
+        g_logger.warning("UIWidget:setFont('{}') falhou em carregar; mantendo fonte atual", std::string(fontName));
+        return;
+    }
+
+    m_font = newFont;
     computeHtmlTextIntrinsicSize();
     updateText();
     onFontChange(fontName);

@@ -5,7 +5,7 @@ MoveableTabBarButton < UIButton
   size: 153 33
   anchors.top: parent.top
   anchors.left: parent.left
-  font: montserrat medium 17
+  font: montserrat regular 14
   color: #FFFFFF
   image-source: /images/ui/tabbar_button
   image-clip: 0 53 153 33

@@ -88,6 +88,7 @@ UIWindow
       text-auto-resize: true
       !text: tr('Remember email')
       !tooltip: tr('Remember account email when starts client')
+      font: montserrat regular 16
   
   ButtonBlueLarge
     anchors.top: prev.bottom

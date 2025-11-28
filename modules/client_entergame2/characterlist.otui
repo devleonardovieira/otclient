@@ -48,7 +48,7 @@ CharacterBoxBase < UIWidget
   $focus:
     image-clip: 0 164 467 164
 
-  Label-20px-Bold
+  Label-16px-Bold
     id: name
     anchors.top: parent.top
     anchors.left: parent.left

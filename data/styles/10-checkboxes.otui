@@ -46,7 +46,7 @@ ColorBox < UICheckBox
     change-cursor-image: false
 
 ButtonBox < UICheckBox
-  font: damas
+  font: montserrat bold 16
   color: #a8a8a8
   size: 106 23
   text-offset: 0 0

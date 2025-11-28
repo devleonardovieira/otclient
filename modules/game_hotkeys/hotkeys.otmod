@@ -1,0 +1,9 @@
+Module
+  name: game_hotkeys
+  description: Stub hotkeys module to satisfy interface dependencies
+  author: Redemption Team
+  sandboxed: true
+  scripts: [ hotkeys ]
+  @onLoad: init()
+  @onUnload: terminate()
+

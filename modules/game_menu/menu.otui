@@ -1,5 +1,5 @@
 MenuTooltip < UIWidget
-  font: verdana-11px-rounded
+  font: montserrat regular 14
   text-horizontal-auto-resize: true
   image-source: /images/ui/windows/tooltip/background
   image-border: 15

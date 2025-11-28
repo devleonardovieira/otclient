@@ -791,8 +791,8 @@ end
 function loadComposition()
 	g_minimap.loadImage("/images/game/premap", {
 		z = 7,
-		y = 10,
-		x = 22
+		y = 1,
+		x = 1
 	}, 0.5)
 
 	for _, composition in pairs(MAP_COMPOSITIONS) do
@@ -958,6 +958,54 @@ function updateCameraPosition()
 	end
 end
 
+-- Full minimap UI helpers
+local fullMapMode = 'icons'
+local suppressModeEvents = false
+
+function setFullMapMode(mode)
+  fullMapMode = (mode == 'teleports') and 'teleports' or 'icons'
+  if not panelControls then return end
+  local rightPanel = panelControls:getChildById('fullRightPanel')
+  if not rightPanel then return end
+  local icons = rightPanel:getChildById('modeIcons')
+  local teleports = rightPanel:getChildById('modeTeleports')
+  local filtersPanel = rightPanel:getChildById('filtersPanel')
+  suppressModeEvents = true
+  if icons then icons:setChecked(fullMapMode == 'icons') end
+  if teleports then teleports:setChecked(fullMapMode == 'teleports') end
+  suppressModeEvents = false
+  -- For now the same filters are shown; later, swap contents by mode
+  if filtersPanel then filtersPanel:setVisible(true) end
+end
+
+function onModeIconsChange(checked)
+  if suppressModeEvents then return end
+  if checked then setFullMapMode('icons') end
+end
+
+function onModeTeleportsChange(checked)
+  if suppressModeEvents then return end
+  if checked then setFullMapMode('teleports') end
+end
+
+function clearAllFullMapFilters()
+  if not panelControls then return end
+  local rightPanel = panelControls:getChildById('fullRightPanel')
+  if not rightPanel then return end
+  local filtersPanel = rightPanel:getChildById('filtersPanel')
+  if not filtersPanel then return end
+  for _, child in ipairs(filtersPanel:getChildren()) do
+    if child.setChecked then child:setChecked(false) end
+  end
+end
+
+local function setupFullMapUI()
+  if not panelControls then return end
+  local rightPanel = panelControls:getChildById('fullRightPanel')
+  if not rightPanel then return end
+  setFullMapMode(fullMapMode)
+end
+
 function toggleFullMap()
 	if not minimapWidget.fullView then
 		minimapWidget.fullView = true
@@ -966,8 +1014,9 @@ function toggleFullMap()
 		minimapWidget:setParent(modules.game_interface.getRootPanel())
 		minimapWidget:fill("parent")
 		minimapWidget:setAlternativeWidgetsVisible(true)
-		panelControls:setVisible(true)
-		minimapWidget:setMargin(90, 210, 140, 210)
+        panelControls:setVisible(true)
+        setupFullMapUI()
+        minimapWidget:setMargin(90, 210, 140, 210)
 	else
 		minimapWidget.fullView = false
 

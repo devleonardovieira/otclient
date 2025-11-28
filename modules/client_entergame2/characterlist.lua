@@ -348,8 +348,7 @@ function CharacterList.createList(characters)
 		if charName == '' then
 		charName = tr('Unknown')
 		end
-		widget.name:setFont("montserrat bold 20")
-		widget.name:setText(charName)
+		widget.name:setText(charName or tr("Default"))
 		widget.name:setVisible(true)
 		widget.name:setHeight(24)
 		widget.name:setWidth(260)
@@ -358,14 +357,13 @@ function CharacterList.createList(characters)
         -- Garantir que o nome do mundo seja exibido corretamente
         widget.world:setText(info.worldName or tr("Default"))
         widget.world:setVisible(true)
-        widget.world:setHeight(18)
+        widget.world:setHeight(20)
         widget.world:setColor('#FFFFFF')
 		widget:setImageSource("/images/game/characters/" .. (info.sex == 0 and "female" or "male"))
 		widget.clan:setImageSource("/images/game/icons/" .. (info.clan and iconsClan[tonumber(math.floor(info.clan))] or "icon_no_clan_20px"))
 		connect(widget, {
 			onDoubleClick = function()
 				CharacterList.doLogin()
-
 				return true
 			end
 		})
