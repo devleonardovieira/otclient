@@ -48,7 +48,7 @@ CharacterBoxBase < UIWidget
   $focus:
     image-clip: 0 164 467 164
 
-  Label-16px-Bold
+  UILabel
     id: name
     anchors.top: parent.top
     anchors.left: parent.left
@@ -63,10 +63,13 @@ CharacterBoxBase < UIWidget
 
   Label-13px-Regular
     id: world
+    text: Shin Online
     anchors.top: prev.bottom
     anchors.left: parent.left
     text-auto-resize: true
     margin-top: 4
+    color: #36f991
+
 
   UIWidget
     id: clan

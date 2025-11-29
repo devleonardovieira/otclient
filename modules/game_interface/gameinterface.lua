@@ -160,9 +160,8 @@ function init()
     end
     panelsRadioGroup:selectWidget(panelsList[1].checkbox)
 
-    --[[ logoutButton = modules.client_topmenu.addTopRightToggleButton('logoutButton', tr('Exit'), '/images/topbuttons/logout',
+    logoutButton = modules.client_topmenu.addTopRightToggleButton('logoutButton', tr('Exit'), '/images/topbuttons/logout',
         tryLogout, true)
- ]]
     gameMapPanel.onClick = toggleInternalFocus
     gameRightPanel.onClick = toggleInternalFocus
     gameRightExtraPanel.onClick = toggleInternalFocus
@@ -259,7 +258,7 @@ function terminate()
         })
     end
 
-    --[[ logoutButton:destroy() ]]
+    logoutButton:destroy() 
     gameRootPanel:destroy()
     Keybind.delete("Movement", "Stop All Actions")
     Keybind.delete("Misc", "Logout")
@@ -301,7 +300,7 @@ function show()
     gameMapPanel:followCreature(g_game.getLocalPlayer())
 
     updateStretchShrink()
-  --[[   logoutButton:setTooltip(tr('Logout')) ]]
+    logoutButton:setTooltip(tr('Logout'))
 
     if modules.game_console then
         modules.game_console.switchMode(true)
@@ -334,7 +333,7 @@ function hide()
     disconnect(g_app, {
         onClose = tryExit
     })
-  --[[   logoutButton:setTooltip(tr('Exit')) ]]
+    logoutButton:setTooltip(tr('Exit'))
 
     if logoutWindow then
         logoutWindow:destroy()
@@ -382,103 +381,118 @@ function forceExit()
 end
 
 function tryExit()
-    if exitWindow then
-        return true
-    end
+	if exitWindow then
+		return true
+	end
 
-    local exitFunc = function()
-        g_game.safeLogout()
-        forceExit()
-    end
-    local logoutFunc = function()
-        g_game.safeLogout()
-        exitWindow:destroy()
-        exitWindow = nil
-    end
-    local cancelFunc = function()
-        exitWindow:destroy()
-        exitWindow = nil
-    end
+	local function exitFunc()
+		g_game.safeLogout()
+		forceExit()
+	end
 
-    exitWindow = displayGeneralBox(tr('Exit'), tr(
-            'If you shut down the program, your character might stay in the game.\nClick on \'Logout\' to ensure that you character leaves the game properly.\nClick on \'Exit\' if you want to exit the program without logging out your character.'),
-        {
-            {
-                text = tr('Cancel'),
-                callback = cancelFunc
-            },
-            {
-                text = tr('Logout'),
-                callback = logoutFunc
-            },
-            {
-                text = tr('Force Exit'),
-                callback = exitFunc
-            },
-            anchor = AnchorHorizontalCenter
-        }, logoutFunc, cancelFunc)
+	local function logoutFunc()
+		g_game.safeLogout()
+		exitWindow:destroy()
 
-    return true
+		exitWindow = nil
+	end
+
+	local function cancelFunc()
+		exitWindow:destroy()
+
+		exitWindow = nil
+	end
+
+	exitWindow = displayGeneralBox(tr("Exit"), tr("If you shut down the program, your character might stay in the game.\nClick on 'Logout' to ensure that you character leaves the game properly.\nClick on 'Exit' if you want to exit the program without logging out your character."), {
+		{
+			color = "Blue",
+			text = tr("Force Exit"),
+			callback = exitFunc
+		},
+		{
+			color = "Blue",
+			text = tr("Logout"),
+			callback = logoutFunc
+		},
+		{
+			color = "Red",
+			text = tr("Cancel"),
+			callback = cancelFunc
+		},
+		anchor = AnchorHorizontalCenter
+	}, logoutFunc, cancelFunc)
+
+	return true
 end
 
 function tryLogout(prompt)
-    if type(prompt) ~= 'boolean' then
-        prompt = true
-    end
-    if not g_game.isOnline() then
-        exit()
-        return
-    end
+	if type(prompt) ~= "boolean" then
+		prompt = true
+	end
 
-    if logoutWindow then
-        return
-    end
+	if not g_game.isOnline() then
+		exit()
 
-    local msg, yesCallback
-    if not g_game.isConnectionOk() then
-        msg =
-        'Your connection is failing, if you logout now your character will be still online, do you want to force logout?'
+		return
+	end
 
-        yesCallback = function()
-            g_game.forceLogout()
-            if logoutWindow then
-                logoutWindow:destroy()
-                logoutWindow = nil
-            end
-        end
-    else
-        msg = 'Are you sure you want to logout?'
+	if logoutWindow then
+		return
+	end
 
-        yesCallback = function()
-            g_game.safeLogout()
-            if logoutWindow then
-                logoutWindow:destroy()
-                logoutWindow = nil
-            end
-        end
-    end
+	local msg, yesCallback
 
-    local noCallback = function()
-        logoutWindow:destroy()
-        logoutWindow = nil
-    end
+	if not g_game.isConnectionOk() then
+		msg = "Your connection is failing, if you logout now your character will be still online, do you want to force logout?"
 
-    if prompt then
-        logoutWindow = displayGeneralBox(tr('Logout'), tr(msg), {
-            {
-                text = tr('No'),
-                callback = noCallback
-            },
-            {
-                text = tr('Yes'),
-                callback = yesCallback
-            },
-            anchor = AnchorHorizontalCenter
-        }, yesCallback, noCallback)
-    else
-        yesCallback()
-    end
+		function yesCallback()
+			g_game.forceLogout()
+
+			if logoutWindow then
+				logoutWindow:destroy()
+
+				logoutWindow = nil
+			end
+		end
+	else
+		msg = "Are you sure you want to logout?"
+
+		function yesCallback()
+			g_game.safeLogout()
+
+			if logoutWindow then
+				logoutWindow:destroy()
+
+				logoutWindow = nil
+			end
+		end
+	end
+
+	local function noCallback()
+		logoutWindow:destroy()
+
+		logoutWindow = nil
+	end
+
+	if prompt then
+		logoutWindow = displayGeneralBox(tr("Logout"), tr(msg), {
+			{
+				color = "Blue",
+				text = tr("Yes"),
+				callback = yesCallback
+			},
+			{
+				color = "Red",
+				text = tr("No"),
+				callback = noCallback
+			},
+			anchor = AnchorHorizontalCenter
+		}, yesCallback, noCallback)
+	else
+		yesCallback()
+	end
 end
+
 
 function updateStretchShrink()
     if getClientOption('dontStretchShrink', false) and not alternativeView then
@@ -725,13 +739,7 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                 g_game.requestOutfit()
             end)
 
-            if g_game.getFeature(GamePrey) then
-                menu:addOption(tr('Prey Dialog'), function()
-                    modules.game_prey.show()
-                end)
-            end
-
-            if g_game.getFeature(GamePlayerMounts) then
+          --[[   if g_game.getFeature(GamePlayerMounts) then
                 if not localPlayer:isMounted() then
                     menu:addOption(tr('Mount'), function()
                         localPlayer:mount()
@@ -741,7 +749,7 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                         localPlayer:dismount()
                     end)
                 end
-            end
+            end ]]
 
             if creatureThing:isPartyMember() then
                 if creatureThing:isPartyLeader() then

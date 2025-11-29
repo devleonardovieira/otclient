@@ -629,7 +629,8 @@ local GUIDES = {
 }
 
 function init()
-    minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRightPanel())
+    -- Carrega a miniwindow diretamente no RootPanel para evitar ajuste automático aos side panels
+    minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
 
 	minimapWindow:setContentMinimumHeight(64)
     minimapWidget = minimapWindow:recursiveGetChildById("minimap")
@@ -638,6 +639,12 @@ function init()
         minimapWidget:setClipping(true)
     end
     panelControls = minimapWidget:getChildById("panelControls")
+    -- Garantir que o painel de controles do fullmap fique oculto ao iniciar a miniwindow
+    if panelControls then panelControls:hide() end
+    if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
+        minimapWidget:setAlternativeWidgetsVisible(false)
+    end
+    minimapWidget.fullView = false
 
 	local gameRootPanel = modules.game_interface.getRootPanel()
 
@@ -703,11 +710,19 @@ function terminate()
 
     -- If full map is active, minimapWidget may be parented to root; destroy it explicitly
     if minimapWidget and minimapWidget.fullView then
+        if panelControls then panelControls:hide() end
+        if minimapWidget.setAlternativeWidgetsVisible then
+            minimapWidget:setAlternativeWidgetsVisible(false)
+        end
         minimapWidget:destroy()
     end
 
     -- Destroy the miniwindow and clear Lua references
     if minimapWindow and not minimapWindow:isDestroyed() then
+        if panelControls then panelControls:hide() end
+        if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
+            minimapWidget:setAlternativeWidgetsVisible(false)
+        end
         minimapWindow:destroy()
     end
     minimapWindow = nil
@@ -727,31 +742,35 @@ end
 
 function toggle()
 	-- Se a janela foi destruída ou ainda não existe, recria
-	if not minimapWindow or minimapWindow:isDestroyed() then
-		minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRightPanel())
+    if not minimapWindow or minimapWindow:isDestroyed() then
+        -- Recria a miniwindow no RootPanel para preservar posição absoluta ao abrir/fechar
+        minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
 		minimapWindow:setContentMinimumHeight(64)
 		minimapWidget = minimapWindow:recursiveGetChildById("minimap")
 		if minimapWidget and minimapWidget.setClipping then
 			minimapWidget:setClipping(true)
 		end
 		panelControls = minimapWidget and minimapWidget:getChildById("panelControls") or nil
+		-- Recriação da miniwindow: manter painel do fullmap oculto
+        if panelControls then panelControls:hide() end
+		if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
+			minimapWidget:setAlternativeWidgetsVisible(false)
+		end
+		minimapWidget.fullView = false
 		minimapWindow:setup()
 	end
 
-	local targetParent = modules.game_interface.getRightPanel()
-	if targetParent then
-		local currentParent = minimapWindow and minimapWindow:getParent() or nil
-		if minimapWindow and currentParent ~= targetParent then
-			minimapWindow:setParent(targetParent)
-		end
-
-		if targetParent.setOn then targetParent:setOn(true) end
-		if targetParent.setVisible then targetParent:setVisible(true) end
-	end
-
+    -- Não reparentar para o painel direito ao alternar; manter no RootPanel para evitar snap
 	if minimapWidget and minimapWidget.fullView then
 		toggleFullMap()
 	end
+
+	-- Abrindo/fechando a miniwindow: garantir que o painel do fullmap não apareça
+    if panelControls then panelControls:hide() end
+	if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
+		minimapWidget:setAlternativeWidgetsVisible(false)
+	end
+	minimapWidget.fullView = false
 
 	if minimapWindow and minimapWindow:isVisible() then
 		minimapWindow:close()
@@ -791,8 +810,8 @@ end
 function loadComposition()
 	g_minimap.loadImage("/images/game/premap", {
 		z = 7,
-		y = 1,
-		x = 1
+		y = 0,
+		x = 0
 	}, 0.5)
 
 	for _, composition in pairs(MAP_COMPOSITIONS) do
@@ -822,18 +841,27 @@ function loadComposition()
 end
 
 function loadGuides()
-	for k, city in pairs(GUIDES) do
-		for _, mark in pairs(city) do
-			minimapWidget:addFlag(mark.position, mark.type, tr(mark.description), true, tocolor(mark.color))
-			table.insert(COMPOSITIONS_POS_GUIDES, mark.position)
-		end
-	end
+    if not minimapWidget then return end
+
+    for k, city in pairs(GUIDES) do
+        for _, mark in pairs(city) do
+            -- Adiciona flags das cidades/locais guiados
+            minimapWidget:addFlag(mark.position, mark.type, tr(mark.description), true, tocolor(mark.color))
+            -- Armazena posições para alternar visibilidade posteriormente
+            table.insert(COMPOSITIONS_POS_GUIDES, mark.position)
+        end
+    end
 end
 
 function toggleGuides()
-	--[[ for _, pos in pairs(COMPOSITIONS_POS_GUIDES) do
-		minimapWidget:getFlag(pos):setVisible(minimapWidget.fullView)
-	end ]]
+    if not minimapWidget then return end
+
+    for _, pos in pairs(COMPOSITIONS_POS_GUIDES) do
+        local flag = minimapWidget:getFlag(pos)
+        if flag then
+            flag:setVisible(minimapWidget.fullView)
+        end
+    end
 end
 
 function destroySearchPokemon()
@@ -1014,7 +1042,7 @@ function toggleFullMap()
 		minimapWidget:setParent(modules.game_interface.getRootPanel())
 		minimapWidget:fill("parent")
 		minimapWidget:setAlternativeWidgetsVisible(true)
-        panelControls:setVisible(true)
+        panelControls:show()
         setupFullMapUI()
         minimapWidget:setMargin(90, 210, 140, 210)
 	else
@@ -1024,12 +1052,12 @@ function toggleFullMap()
 		minimapWidget:fill("parent")
 		minimapWindow:show()
 		minimapWidget:setAlternativeWidgetsVisible(false)
-		panelControls:setVisible(false)
+        panelControls:hide()
 		minimapWidget:setMargin(0)
 		destroySearchPokemon()
 	end
 
-	local zoom = oldZoom or 0
+	local zoom = oldZoom or 2
 	local pos = oldPos or minimapWidget:getCameraPosition()
 
 	oldZoom = minimapWidget:getZoom()

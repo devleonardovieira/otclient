@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/corelib/ui/uiresizeborder.lua
+-- chunkname: @/modules/corelib/ui/uiresizeborder.lua
 
 UIResizeBorder = extends(UIWidget, "UIResizeBorder")
 
@@ -14,10 +14,13 @@ function UIResizeBorder.create()
 end
 
 function UIResizeBorder:onSetup()
-	if self:getWidth() > self:getHeight() then
-		self.vertical = true
-	else
-		self.vertical = false
+	-- Only auto-detect orientation if not explicitly set via style
+	if type(self.vertical) ~= 'boolean' then
+		if self:getWidth() > self:getHeight() then
+			self.vertical = true
+		else
+			self.vertical = false
+		end
 	end
 end
 
@@ -33,12 +36,17 @@ function UIResizeBorder:onHoverChange(hovered)
 			return
 		end
 
-		if self:getWidth() > self:getHeight() then
-			self.vertical = true
-			self.cursortype = "vertical"
+		-- Respect explicit orientation if provided; otherwise infer
+		if type(self.vertical) ~= 'boolean' then
+			if self:getWidth() > self:getHeight() then
+				self.vertical = true
+				self.cursortype = "vertical"
+			else
+				self.vertical = false
+				self.cursortype = "horizontal"
+			end
 		else
-			self.vertical = false
-			self.cursortype = "horizontal"
+			self.cursortype = self.vertical and "vertical" or "horizontal"
 		end
 
 		g_mouse.pushCursor(self.cursortype)
@@ -78,14 +86,14 @@ function UIResizeBorder:onMouseMove(mousePos, mouseMoved)
 				parent:setWidth(newSize)
 			end
 		elseif self.vertical then
-			local delta = mousePos.y - self:getY()
+			local delta = mousePos.y - self:getY() - self:getHeight() / 2
 
 			newSize = math.min(math.max(parent:getHeight() - delta, self.minimum), self.maximum)
 
 			parent:setY(parent:getY() + (parent:getHeight() - newSize))
 			parent:setHeight(newSize)
 		else
-			local delta = mousePos.x - self:getX()
+			local delta = mousePos.x - self:getX() - self:getWidth() / 2
 
 			newSize = math.min(math.max(parent:getWidth() - delta, self.minimum), self.maximum)
 
@@ -115,6 +123,17 @@ function UIResizeBorder:onStyleApply(styleName, styleNode)
 			self:setMaximum(tonumber(value))
 		elseif name == "minimum" then
 			self:setMinimum(tonumber(value))
+		elseif name == "inverted" then
+			self.inverted = (value == true) or (value == 'true')
+		elseif name == "vertical" then
+			self.vertical = (value == true) or (value == 'true')
+		elseif name == "orientation" then
+			local v = tostring(value)
+			if v == 'vertical' then
+				self.vertical = true
+			elseif v == 'horizontal' then
+				self.vertical = false
+			end
 		end
 	end
 end

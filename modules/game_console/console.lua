@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_console/console.lua
+-- chunkname: @/modules/game_console/console.lua
 
 SpeakTypesSettings = {
 	none = {},
@@ -251,12 +251,29 @@ function init()
 end
 
 function clearSelection(consoleBuffer)
-	for _, label in pairs(consoleBuffer:getChildren()) do
-		label:clearSelection()
-	end
+    for _, label in pairs(consoleBuffer:getChildren()) do
+        label:clearSelection()
+    end
 
-	consoleBuffer.selectionText = nil
-	consoleBuffer.selection = nil
+    consoleBuffer.selectionText = nil
+    consoleBuffer.selection = nil
+end
+
+-- Safely destroy a console label by removing event handlers and selections
+local function destroyConsoleLabelSafely(label)
+  if not label then return end
+  -- Unhook handlers to avoid closures holding references
+  label.onMouseRelease = nil
+  label.onMousePress = nil
+  label.onDragEnter = nil
+  label.onDragLeave = nil
+  label.onDragMove = nil
+  -- Clear any selection state
+  protectedcall(function() label:clearSelection() end)
+  -- Remove auxiliary fields
+  label.name = nil
+  -- Finally destroy the widget
+  label:destroy()
 end
 
 function addConsolePhatomLine(text, color)
@@ -331,8 +348,11 @@ function visibleConsolePanel(state)
 		consolePanel.toggleChat:show()
 		consolePanel:setPhantom(not state)
 		consolePanel.consolePhantom:setVisible(not state)
-		getCurrentTab().tabPanel:getChildById("consoleBuffer"):setOn(state)
-		getCurrentTab().tabPanel:getChildById("consoleScrollBar"):setVisible(state)
+		local currentTab = consoleTabBar and consoleTabBar:getCurrentTab()
+		if currentTab then
+			currentTab.tabPanel:getChildById("consoleBuffer"):setOn(state)
+			currentTab.tabPanel:getChildById("consoleScrollBar"):setVisible(state)
+		end
 	end)
 end
 
@@ -483,6 +503,13 @@ function terminate()
 		violationWindow:destroy()
 	end
 
+    -- Safely clear the current console buffer to release label widgets
+    pcall(function()
+      if consoleTabBar then
+        clearChannel(consoleTabBar)
+      end
+    end)
+
     -- Ensure tabbar releases all tab references before panel destruction
     if consoleTabBar and consoleTabBar.clearTabs then
       pcall(function()
@@ -494,6 +521,8 @@ function terminate()
     consoleContentPanel = nil
     consoleToggleChat = nil
   consoleTextEdit = nil
+
+  
 
   consolePanel:destroy()
 
@@ -531,10 +560,12 @@ function onTabChange(tabBar, tab)
 		return
 	end
 
-	addEvent(function()
-		getCurrentTab().tabPanel:getChildById("consoleBuffer"):setOn(isChatEnabled())
-		getCurrentTab().tabPanel:getChildById("consoleScrollBar"):setVisible(isChatEnabled())
-	end)
+    addEvent(function()
+        local currentTab = consoleTabBar and consoleTabBar:getCurrentTab()
+        if not currentTab then return end
+        currentTab.tabPanel:getChildById("consoleBuffer"):setOn(isChatEnabled())
+        currentTab.tabPanel:getChildById("consoleScrollBar"):setVisible(isChatEnabled())
+    end)
 end
 
 function clear()
@@ -682,7 +713,34 @@ function onDragLeave(widget, pos)
 end
 
 function clearChannel(consoleTabBar)
-	consoleTabBar:getCurrentTab().tabPanel:getChildById("consoleBuffer"):destroyChildren()
+  local currentTab = consoleTabBar:getCurrentTab()
+  if not currentTab then return end
+  local panel = consoleTabBar:getTabPanel(currentTab)
+  if not panel then return end
+  local consoleBuffer = panel:getChildById("consoleBuffer")
+  if not consoleBuffer then return end
+
+  -- Clear selection and focus before destroying children
+  clearSelection(consoleBuffer)
+  protectedcall(function()
+    local focused = consoleBuffer.getFocusedChild and consoleBuffer:getFocusedChild()
+    if focused then
+      -- Some engines support setFocusedChild; guard with pcall
+      if consoleBuffer.setFocusedChild then
+        consoleBuffer:setFocusedChild(nil)
+      else
+        focused:setPhantom(true)
+      end
+    end
+  end)
+
+  -- Destroy each label safely to avoid lingering references
+  for _, child in pairs(consoleBuffer:getChildren()) do
+    destroyConsoleLabelSafely(child)
+  end
+
+  -- Fallback to ensure buffer is empty
+  protectedcall(function() consoleBuffer:destroyChildren() end)
 end
 
 function setTextEditText(text)
@@ -776,9 +834,9 @@ function removeTab(tab)
 		g_game.closeNpcChannel()
 	end
 
-	if getCurrentTab() == tab then
-		consoleTabBar:selectTab(defaultTab)
-	end
+  if consoleTabBar:getCurrentTab() == tab then
+    consoleTabBar:selectTab(defaultTab)
+  end
 
 	consoleTabBar:removeTab(tab)
 end
@@ -1319,14 +1377,14 @@ function addTabText(text, speaktype, tab, creatureName)
 end
 
 function removeTabLabelByName(tab, name)
-	local panel = consoleTabBar:getTabPanel(tab)
-	local consoleBuffer = panel:getChildById("consoleBuffer")
+    local panel = consoleTabBar:getTabPanel(tab)
+    local consoleBuffer = panel:getChildById("consoleBuffer")
 
-	for _, label in pairs(consoleBuffer:getChildren()) do
-		if label.name == name then
-			label:destroy()
-		end
-	end
+    for _, label in pairs(consoleBuffer:getChildren()) do
+        if label.name == name then
+            destroyConsoleLabelSafely(label)
+        end
+    end
 end
 
 function processChannelTabMenu(tab, mousePos, mouseButton)
@@ -1495,7 +1553,7 @@ function removeFilter(filter)
 end
 
 function sendMessage(message, tab)
-	local tab = tab or getCurrentTab()
+    local tab = tab or consoleTabBar:getCurrentTab()
 
 	if not tab then
 		return

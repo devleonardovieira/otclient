@@ -1,9 +1,14 @@
 local messageModeCallbacks = {}
+local messageQueue = {}
 
 function g_game.onTextMessage(messageMode, message)
     local callbacks = messageModeCallbacks[messageMode]
     if not callbacks or #callbacks == 0 then
-        perror(string.format('Unhandled onTextMessage message mode %i: %s', messageMode, message))
+        -- Sem handlers registrados ainda: enfileira para entrega posterior
+        if not messageQueue[messageMode] then
+            messageQueue[messageMode] = {}
+        end
+        table.insert(messageQueue[messageMode], message)
         return
     end
 
@@ -18,6 +23,14 @@ function registerMessageMode(messageMode, callback)
     end
 
     table.insert(messageModeCallbacks[messageMode], callback)
+
+    -- Assim que um handler é registrado, entrega mensagens pendentes daquele modo
+    if messageQueue[messageMode] and #messageQueue[messageMode] > 0 then
+        for _, queuedMessage in pairs(messageQueue[messageMode]) do
+            callback(messageMode, queuedMessage)
+        end
+        messageQueue[messageMode] = nil
+    end
     return true
 end
 

@@ -98,12 +98,12 @@ MinimapFloorDownButton < MinimapButton
 MinimapZoomInButton < MinimapButton
   id: zoomIn
   image-clip: 0 48 24 24
-  !tooltip: tr('Zoon In')
+  !tooltip: tr('Zoom In')
 
 MinimapZoomOutButton < MinimapButton
   id: zoomOut
   image-clip: 0 96 24 24
-  !tooltip: tr('Zoon Out')
+  !tooltip: tr('Zoom Out')
 
 // CheckBox estilizado para lista de filtros
 FilterCheckBox < CheckBox
@@ -126,6 +126,7 @@ MinimapFullButton < MinimapButton
   id: fullMapToggle
   image-clip: 0 120 24 24
   !tooltip: tr('Full map')
+  @onClick: modules.game_minimap.toggleFullMap()
 
 Minimap < UIMinimap
   draggable: true
@@ -135,7 +136,6 @@ Minimap < UIMinimap
   Panel
     id: panelControls
     anchors.fill: parent
-    padding: 8
     visible: false
     border: 1 #444444
 
@@ -143,7 +143,6 @@ Minimap < UIMinimap
       anchors.top: parent.top
       anchors.right: parent.right
       @onClick: modules.game_minimap.toggleFullMap()
-
 
     MinimapFloorUpButton
       anchors.bottom: next.top
@@ -168,27 +167,26 @@ Minimap < UIMinimap
       anchors.top: prev.bottom
       anchors.left: prev.left
       margin-top: 8
-    // Painel direito do mapa completo
-  Panel
-    id: fullRightPanel
-    anchors.top: parent.top
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    width: 210
-    image-source: /images/ui/panel
-    image-border: 4
-    padding: 8
-    layout:
-      type: verticalBox
-      // não usar fit-children em painel ancorado (evita loop de layout)
-
-    // Cabeçalho com modos
+    // Painel direito do mapa completo (agora dentro de panelControls)
     Panel
-      id: modesRow
+      id: fullRightPanel
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      width: 210
+      image-source: /images/ui/panel
+      margin-top: 25
       layout:
-        type: horizontalBox
-      margin-bottom: 6
-      height: 26
+        type: verticalBox
+        // não usar fit-children em painel ancorado (evita loop de layout)
+
+      // Cabeçalho com modos
+      Panel
+        id: modesRow
+        layout:
+          type: horizontalBox
+        margin-bottom: 6
+        height: 26
         
       Label
         !text: tr('Modo:')
@@ -196,134 +194,134 @@ Minimap < UIMinimap
         color: #FFFFFF
         margin-right: 8
 
-      CheckBox
-        id: modeIcons
-        !text: tr('Icon Viewer')
-        checked: true
-        @onCheckChange: |
-          modules.game_minimap.onModeIconsChange(self:isChecked())
+        CheckBox
+          id: modeIcons
+          !text: tr('Icon Viewer')
+          checked: true
+          @onCheckChange: |
+            modules.game_minimap.onModeIconsChange(self:isChecked())
 
-      CheckBox
-        id: modeTeleports
-        !text: tr('Teleports')
-        margin-left: 16
-        @onCheckChange: |
-          modules.game_minimap.onModeTeleportsChange(self:isChecked())
+        CheckBox
+          id: modeTeleports
+          !text: tr('Teleports')
+          margin-left: 16
+          @onCheckChange: |
+            modules.game_minimap.onModeTeleportsChange(self:isChecked())
 
-    // Ações
-    Panel
-      id: actionsRow
-      layout:
-        type: horizontalBox
-      margin-bottom: 6
+      // Ações
+      Panel
+        id: actionsRow
+        layout:
+          type: horizontalBox
+        margin-bottom: 6
         
-      Label
-        !text: tr('Ações:')
-        font: montserrat regular 14
-        color: #FFFFFF
-        margin-right: 8
+        Label
+          !text: tr('Ações:')
+          font: montserrat regular 14
+          color: #FFFFFF
+          margin-right: 8
 
-      ButtonBlueSmall
-        id: clearAllButton
-        !text: tr('Marcar Todos')
-        @onClick: modules.game_minimap.clearAllFullMapFilters()
+        ButtonBlueSmall
+          id: clearAllButton
+          !text: tr('Marcar Todos')
+          @onClick: modules.game_minimap.clearAllFullMapFilters()
 
       
 
+        Panel
+          id: actionsDivider
+          width: 1
+          height: 16
+          margin-left: 8
+          image-color: #FFFFFF22
+          image-source: /images/ui/white
+
+      // Lista de filtros
+      Label
+        !text: tr('Filtros')
+        font: montserrat regular 14
+        color: #FFFFFF
+        margin-top: 8
+
       Panel
-        id: actionsDivider
-        width: 1
-        height: 16
-        margin-left: 8
-        image-color: #FFFFFF22
+        id: filtersDivider
+        width: parent.width
+        height: 1
+        margin-top: 4
+        image-color: #FFFFFF18
         image-source: /images/ui/white
 
-    // Lista de filtros
-    Label
-      !text: tr('Filtros')
-      font: montserrat regular 14
-      color: #FFFFFF
-      margin-top: 8
+      Panel
+        id: filtersPanel
+        margin-top: 8
+        layout:
+          type: verticalBox
+          fit-children: true
 
-    Panel
-      id: filtersDivider
-      width: parent.width
-      height: 1
-      margin-top: 4
-      image-color: #FFFFFF18
-      image-source: /images/ui/white
+        FilterCheckBox
+          id: filter_player_markings
+          !text: tr('Player Markings')
+          checked: true
 
-    Panel
-      id: filtersPanel
-      margin-top: 8
-      layout:
-        type: verticalBox
-        fit-children: true
+        FilterCheckBox
+          id: filter_pokemon_center
+          !text: tr('Pokemon Center')
+          checked: true
 
-      FilterCheckBox
-        id: filter_player_markings
-        !text: tr('Player Markings')
-        checked: true
+        FilterCheckBox
+          id: filter_fishing_spot
+          !text: tr('Fishing Spot')
+          checked: true
 
-      FilterCheckBox
-        id: filter_pokemon_center
-        !text: tr('Pokemon Center')
-        checked: true
+        FilterCheckBox
+          id: filter_pokemon_buyer
+          !text: tr('Pokemon Buyer')
+          checked: true
 
-      FilterCheckBox
-        id: filter_fishing_spot
-        !text: tr('Fishing Spot')
-        checked: true
+        FilterCheckBox
+          id: filter_npc_mark
+          !text: tr('NPC - Mark')
+          checked: true
 
-      FilterCheckBox
-        id: filter_pokemon_buyer
-        !text: tr('Pokemon Buyer')
-        checked: true
+        FilterCheckBox
+          id: filter_npc_hugh
+          !text: tr('NPC - Hugh')
+          checked: true
 
-      FilterCheckBox
-        id: filter_npc_mark
-        !text: tr('NPC - Mark')
-        checked: true
+        FilterCheckBox
+          id: filter_npc_guru
+          !text: tr('NPC - Guru')
+          checked: true
 
-      FilterCheckBox
-        id: filter_npc_hugh
-        !text: tr('NPC - Hugh')
-        checked: true
+        FilterCheckBox
+          id: filter_npc_heather
+          !text: tr('NPC - Heather')
+          checked: true
 
-      FilterCheckBox
-        id: filter_npc_guru
-        !text: tr('NPC - Guru')
-        checked: true
+        FilterCheckBox
+          id: filter_furnitures_shop
+          !text: tr('Furnitures Shop')
+          checked: true
 
-      FilterCheckBox
-        id: filter_npc_heather
-        !text: tr('NPC - Heather')
-        checked: true
+        FilterCheckBox
+          id: filter_electronic_shop
+          !text: tr('Electronic Shop')
+          checked: true
 
-      FilterCheckBox
-        id: filter_furnitures_shop
-        !text: tr('Furnitures Shop')
-        checked: true
+        FilterCheckBox
+          id: filter_mining_spot
+          !text: tr('Mining Spot')
+          checked: true
 
-      FilterCheckBox
-        id: filter_electronic_shop
-        !text: tr('Electronic Shop')
-        checked: true
+        FilterCheckBox
+          id: filter_anvil
+          !text: tr('Anvil')
+          checked: true
 
-      FilterCheckBox
-        id: filter_mining_spot
-        !text: tr('Mining Spot')
-        checked: true
-
-      FilterCheckBox
-        id: filter_anvil
-        !text: tr('Anvil')
-        checked: true
-
-      FilterCheckBox
-        id: filter_furnace
-        !text: tr('Furnace')
-        checked: true
+        FilterCheckBox
+          id: filter_furnace
+          !text: tr('Furnace')
+          checked: true
 // Minimap Flag Create Window
 
 
@@ -597,9 +595,41 @@ MinimapWindow < MiniWindow
     anchors.left: prev.right
     margin-left: 8
 
+  // Resize borders for the MiniWindow (right, left, top)
   ResizeBorder
+    id: rightResizeBorder
     anchors.right: parent.right
     anchors.top: parent.top
     anchors.bottom: parent.bottom
     enabled: true
-    &minimum: 164
+    minimum: 164
+    width: 3
+    vertical: false
+    opacity: 0
+    background-color: transparent
+
+  ResizeBorder
+    id: leftResizeBorder
+    anchors.left: parent.left
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    enabled: true
+    minimum: 164
+    inverted: true
+    width: 5
+    vertical: false
+    opacity: 0
+    background-color: transparent
+
+  ResizeBorder
+    id: topResizeBorder
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    enabled: true
+    height: 5
+    minimum: 100
+    inverted: true
+    vertical: true
+    opacity: 0
+    background-color: transparent
