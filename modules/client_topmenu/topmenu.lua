@@ -174,15 +174,10 @@ end
 
 function hide()
     topMenu:hide()
-    -- When hidden, collapse the top menu height so anchors to topMenu.bottom
-    -- don't reserve vertical space.
-    topMenu:setHeight(0)
     modules.game_interface.getRootPanel():addAnchor(AnchorTop, 'parent', AnchorTop)
 end
 
 function show()
-    -- Restore menu height when showing so layout anchors behave correctly.
-    topMenu:setHeight(32)
     topMenu:show()
     topMenu:raise()
     topMenu:focus()

@@ -1606,16 +1606,6 @@ function getBottomActionPanel()
 -- Computes the minimum bottom margin for the splitter based on UI state.
 -- If the action bar module is missing or hidden, this gracefully falls back.
 function getMinBottomMargin()
-    -- If no bottom UI is visible, don't reserve any space
-    local bottomVisible = false
-    if gameBottomPanel and gameBottomPanel:isVisible() then bottomVisible = true end
-    if gameBottomActionPanel and gameBottomActionPanel:isVisible() then bottomVisible = true end
-    if gameBottomStatsBarPanel and gameBottomStatsBarPanel:isVisible() then bottomVisible = true end
-
-    if not bottomVisible then
-        return 0
-    end
-
     local base = 118 -- baseline space (e.g., stats bar + bottom panels)
     local actionBars = 0
     if modules.game_actionbar and modules.game_actionbar.getVisibleBarsCount then
@@ -1631,11 +1621,6 @@ end
 function applyCleanGeometryStart()
     if not gameRootPanel or not gameMapPanel then return end
 
-    -- Ensure UI debug boxes are disabled to avoid yellow outlines
-    if g_ui and g_ui.setDebugBoxesDrawing then
-        g_ui.setDebugBoxesDrawing(false)
-    end
-
     -- Hide side panels and extras
     if gameLeftPanel then gameLeftPanel:setOn(false); gameLeftPanel:setVisible(false) end
     if gameRightPanel then gameRightPanel:setOn(false); gameRightPanel:setVisible(false) end
@@ -1646,20 +1631,18 @@ function applyCleanGeometryStart()
     if gameTopPanel then gameTopPanel:setVisible(false) end
     if gameBottomActionPanel then gameBottomActionPanel:setVisible(false) end
     if gameBottomStatsBarPanel then gameBottomStatsBarPanel:setVisible(false) end
-    if gameBottomCooldownPanel then gameBottomCooldownPanel:setVisible(false) end
-    if lockPanel then lockPanel:setVisible(false) end
     if gameBottomPanel then gameBottomPanel:setVisible(false) end
 
-    -- Normalize map anchors to sit below the top menu and above bottom splitter
-    gameMapPanel:breakAnchors()
-    gameMapPanel:addAnchor(AnchorLeft, 'gameLeftActionPanel', AnchorRight)
-    gameMapPanel:addAnchor(AnchorRight, 'gameRightActionPanel', AnchorLeft)
-    gameMapPanel:addAnchor(AnchorTop, 'topMenu', AnchorBottom)
-    gameMapPanel:addAnchor(AnchorBottom, 'bottomSplitter', AnchorBottom)
+    -- Maximize map area and clamp splitter
+    gameMapPanel:fill('parent')
+    local parentHeight = bottomSplitter and bottomSplitter:getParent():getHeight() or gameRootPanel:getHeight()
+    local minMargin = getMinBottomMargin()
     if bottomSplitter then
-        -- Oculta o splitter inferior e zera a margem para remover espaço reservado
+        -- Oculta o splitter inferior para evitar a alça visível quando não há painel inferior
         bottomSplitter:setVisible(false)
-        bottomSplitter:setMarginBottom(0)
+        local clamped = math.max(bottomSplitter:getMarginBottom(), minMargin)
+        clamped = math.min(clamped, parentHeight - 150)
+        bottomSplitter:setMarginBottom(clamped)
     end
 end
   
