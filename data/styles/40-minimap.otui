@@ -176,6 +176,7 @@ Minimap < UIMinimap
       width: 210
       image-source: /images/ui/panel
       margin-top: 25
+      visible: false
       layout:
         type: verticalBox
         // não usar fit-children em painel ancorado (evita loop de layout)

@@ -54,7 +54,39 @@ void MinimapBlock::update()
 
             Color col = Color::black;
             if (c != UINT8_MAX) {
-                col = Color::from8bit(c);
+                const Color src = Color::from8bit(c);
+                const int r = src.r();
+                const int g = src.g();
+                const int b = src.b();
+
+                const bool isRedish   = (r >= 150) && (g <= 100) && (b <= 100);
+                const bool isBlueish  = (b >= 150) && (r <= 120) && (g <= 150);
+                const bool isYellowish= (r >= 180) && (g >= 180) && (b <= 120);
+                const bool isGreenish = (g >= 150) && (r <= 120) && (b <= 150);
+
+                if (isRedish) {
+                    // Construções: preto
+                    col.setRGBA(0, 0, 0, src.a());
+                } else if (isBlueish) {
+                    // Água: azul clarinho
+                    col.setRGBA(180, 220, 255, src.a());
+                } else if (isYellowish) {
+                    // Subidas/descidas: manter amarelo
+                    col.setRGBA(255, 220, 0, src.a());
+                } else if (isGreenish) {
+                    // Plantações/vegetações: verdinho claro
+                    col.setRGBA(170, 240, 170, src.a());
+                } else {
+                    // Paleta sépia/marrom para o restante
+                    const int nr = std::min(255, static_cast<int>(0.393f * r + 0.769f * g + 0.189f * b));
+                    const int ng = std::min(255, static_cast<int>(0.349f * r + 0.686f * g + 0.168f * b));
+                    const int nb = std::min(255, static_cast<int>(0.272f * r + 0.534f * g + 0.131f * b));
+                    // Marrom mais forte: realça vermelho, reduz um pouco verde/azul
+                    const int nr2 = std::min(255, static_cast<int>(nr * 1.12f));
+                    const int ng2 = std::min(255, static_cast<int>(ng * 0.96f));
+                    const int nb2 = std::min(255, static_cast<int>(nb * 0.88f));
+                    col.setRGBA(nr2, ng2, nb2, src.a());
+                }
                 shouldDraw = true;
             }
 

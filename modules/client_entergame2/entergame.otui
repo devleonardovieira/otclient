@@ -9,6 +9,7 @@ UIWindow
   border: 3 #3A3939
   &animation: true
   visible: false
+  @onEnter: EnterGame.doLogin()
 
   UIWidget
     anchors.top: parent.top
