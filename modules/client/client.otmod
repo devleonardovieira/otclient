@@ -13,6 +13,7 @@ Module
     - client_loader
     - client_styles
     - client_locales
+    - client_terminal
     - client_topmenu
     - client_background
     - client_options

@@ -299,6 +299,11 @@ private:
         uint16_t speed{ 0 };
     } m_bounce;
 
+    // Death animation (rise and fade)
+    bool m_deathAnimating{ false };
+    Timer m_deathTimer;
+    float m_deathRisePixels{ 0.f };
+
     // jump related
     Timer m_jumpTimer;
     PointF m_jumpOffset;
@@ -355,6 +360,27 @@ private:
     // Estado de fade para o ícone de interação "F" em NPCs
     float m_fKeyOpacity{ 0.f };
     Timer m_fKeyFadeTimer;
+
+    // Afterimage
+public:
+    void setAfterimageEnabled(bool enabled) { m_afterimageEnabled = enabled; if (!enabled) m_afterimages.clear(); }
+    bool isAfterimageEnabled() { return m_afterimageEnabled; }
+
+private:
+    struct AfterimageSnapshot {
+        Outfit outfit;
+        Otc::Direction direction{ Otc::South };
+        uint16_t animationPhase{ 0 };
+        Point offset;
+        Position tilePos; // tile absoluto onde a sombra deve ser desenhada
+        ticks_t createdAt{ 0 };
+        uint8_t level{ 0 }; // 0..3
+        float baseOpacity{ 0.55f }; // Opacidade inicial por nível
+    };
+
+    std::vector<AfterimageSnapshot> m_afterimages;
+    bool m_afterimageEnabled{ false };
+    ticks_t m_lastAfterimageSpawn{ 0 };
 };
 
 // @bindclass

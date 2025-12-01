@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_minimap/minimap.lua
+-- chunkname: @/modules/game_minimap/minimap.lua
 
 minimapWidget = nil
 minimapButton = nil
@@ -1081,4 +1081,73 @@ function onFloorChange(posZ)
 	oldFloor = posZ
 
 	onSearchPokemon(searchPokemon.name, posZ)
+end
+
+-- NPC minimap flags via icon
+local npcFlagsByCid = {}
+
+local function npcGetMinimapIconPath(creature)
+  local iconId = creature:getIcon()
+  if not iconId or iconId == NpcIconNone then
+    return nil
+  end
+  if type(iconId) == 'string' then
+    return iconId
+  end
+  return getIconImagePath and getIconImagePath(iconId) or nil
+end
+
+local function npcAddOrUpdateFlag(creature)
+	print(creature:getName())
+  if not minimapWidget then return end
+  if not creature:isNpc() then return end
+  local iconPath = npcGetMinimapIconPath(creature)
+  if not iconPath then return end
+
+  local cid = creature:getId()
+  local prevPos = npcFlagsByCid[cid]
+  if prevPos then
+    minimapWidget:removeFlag(prevPos)
+  end
+
+  local pos = creature:getPosition()
+  minimapWidget:addFlag(pos, iconPath, creature:getName(), true, 'white')
+  print('pos', pos)
+  npcFlagsByCid[cid] = pos
+end
+
+local function npcRemoveFlag(creature)
+  if not minimapWidget then return end
+  local cid = creature:getId()
+  local prevPos = npcFlagsByCid[cid]
+  if prevPos then
+    minimapWidget:removeFlag(prevPos)
+    npcFlagsByCid[cid] = nil
+  end
+end
+
+local npcFlagController = Controller:new()
+
+function npcFlagController:onGameStart()
+  npcFlagController:registerEvents(Creature, {
+    onAppear = function(creature)
+      if not creature:isNpc() then return end
+      npcAddOrUpdateFlag(creature)
+    end,
+    onIconChange = function(creature, iconId)
+      if not creature:isNpc() then return end
+      if not iconId or iconId == NpcIconNone then
+        npcRemoveFlag(creature)
+      else
+        npcAddOrUpdateFlag(creature)
+      end
+    end,
+    onDisappear = function(creature)
+      npcRemoveFlag(creature)
+    end
+  })
+end
+
+function npcFlagController:onGameEnd()
+  npcFlagsByCid = {}
 end

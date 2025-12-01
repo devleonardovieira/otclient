@@ -67,10 +67,73 @@ void Creature::onCreate() {
 
 void Creature::draw(const Point& dest, const bool drawThings, LightView* /*lightView*/)
 {
-    if (!canBeSeen() || !canDraw() || isDead())
+    // Permite desenhar durante a animação de morte mesmo se já estiver morto
+    if (!canBeSeen() || ((!m_deathAnimating && !canDraw()) || (isDead() && !m_deathAnimating)))
         return;
 
+    const auto now = g_clock.millis();
+    if (m_afterimageEnabled) {
+        // Limpa sombras antigas para manter cauda por sqm
+        constexpr float kLifeMs = 1000.f; // vida maior para permitir ver até 4 tiles
+        m_afterimages.erase(std::remove_if(m_afterimages.begin(), m_afterimages.end(), [&](const AfterimageSnapshot& s) {
+            return static_cast<float>(now - s.createdAt) >= kLifeMs;
+        }), m_afterimages.end());
+    }
+
     if (drawThings) {
+        // draw afterimages behind creature
+        if (m_afterimageEnabled && !m_afterimages.empty()) {
+            constexpr float kLifeMs = 1200.f; // vida um pouco maior para destacar
+            const int spriteSize = g_gameConfig.getSpriteSize();
+            const float levelsOpacity[4]{ 0.85f, 0.65f, 0.50f, 0.35f }; // mais visíveis
+            const int innerSpacingPx = std::max(2, spriteSize / 8); // ~4px para sprite 32
+
+            for (size_t idx = 0; idx < m_afterimages.size() && idx < 4; ++idx) {
+                const auto& s = m_afterimages[idx];
+                const float t = std::min<float>(static_cast<float>(now - s.createdAt) / kLifeMs, 1.f);
+                const float base = levelsOpacity[std::min<size_t>(idx, 3)];
+                const float opacity = std::max(0.f, base * (1.f - t));
+                if (opacity <= 0.f) continue;
+
+                // 1 sombra por sqm: posiciona no tile de s.tilePos
+                const auto& curPos = getPosition();
+                const int dx = static_cast<int>(s.tilePos.x) - curPos.x;
+                const int dy = static_cast<int>(s.tilePos.y) - curPos.y;
+                const Point deltaPix(dx * spriteSize, dy * spriteSize);
+                // Deslocamento intra-tile em direção ao player para "colar" sombras
+                Point towardCurrent(std::clamp(-dx, -1, 1), std::clamp(-dy, -1, 1));
+                const int factor = static_cast<int>(std::max<int>(1, 4 - static_cast<int>(idx))); // mais próximo recebe deslocamento maior
+                const Point innerOffset = towardCurrent * (innerSpacingPx * factor);
+                auto drawDest = dest + (deltaPix + innerOffset - getDisplacement()) * g_drawPool.getScaleFactor();
+
+                const int oldScaleFactor = g_drawPool.getScaleFactor();
+                const int xPattern = (s.direction == Otc::NorthEast || s.direction == Otc::SouthEast) ? Otc::East
+                    : (s.direction == Otc::NorthWest || s.direction == Otc::SouthWest) ? Otc::West
+                    : static_cast<int>(s.direction);
+
+                ThingType* datType = g_things.getRawThingType(s.outfit.isCreature() ? s.outfit.getId() : s.outfit.getAuxId(), s.outfit.getCategory());
+                if (!datType) continue;
+
+                g_drawPool.setOpacity(opacity, true);
+
+                if (s.outfit.hasMount()) {
+                    if (auto* mountType = g_things.getRawThingType(s.outfit.getMount(), ThingCategoryCreature)) {
+                        mountType->draw(drawDest, 0, xPattern, 0, 0, s.animationPhase, Color::white);
+                    }
+                }
+
+                const int yCount = datType->getNumPatternY();
+                const int zPattern = s.outfit.hasMount() ? 1 : 0;
+                for (int yPattern = 0; yPattern < yCount; ++yPattern) {
+                    if (yPattern > 0 && !(s.outfit.getAddons() & (1 << (yPattern - 1))))
+                        continue;
+                    datType->draw(drawDest, 0, xPattern, yPattern, zPattern, s.animationPhase, Color::white);
+                }
+
+                g_drawPool.resetOpacity();
+            }
+        }
+
         if (m_showTimedSquare) {
             g_drawPool.addBoundingRect(Rect(dest + (m_walkOffset - getDisplacement() + 2) * g_drawPool.getScaleFactor(), Size(28 * g_drawPool.getScaleFactor())), m_timedSquareColor, std::max<int>(static_cast<int>(2 * g_drawPool.getScaleFactor()), 1));
         }
@@ -80,6 +143,22 @@ void Creature::draw(const Point& dest, const bool drawThings, LightView* /*light
         }
 
         auto _dest = dest + m_walkOffset * g_drawPool.getScaleFactor();
+
+        // Animação de morte: subir e sumir (em diagonal)
+        bool deathOpacityPushed = false;
+        if (m_deathAnimating) {
+            constexpr float kDeathDurationMs = 800.f;
+            const float t = std::min<float>(m_deathTimer.ticksElapsed() / kDeathDurationMs, 1.f);
+            const float rise = t * g_gameConfig.getSpriteSize() * 0.8f;
+            const float diag = rise * 0.45f; // componente X para deslocamento diagonal (esquerda)
+            _dest.y -= static_cast<int>(std::round(rise * g_drawPool.getScaleFactor()));
+            _dest.x -= static_cast<int>(std::round(diag * g_drawPool.getScaleFactor()));
+            g_drawPool.setOpacity(std::max(0.f, 1.f - t), true);
+            deathOpacityPushed = true;
+            if (t >= 1.f) {
+                m_deathAnimating = false;
+            }
+        }
 
         auto oldScaleFactor = g_drawPool.getScaleFactor();
 
@@ -97,6 +176,9 @@ void Creature::draw(const Point& dest, const bool drawThings, LightView* /*light
             internalDraw(_dest, getHighlightColor());
 
         g_drawPool.setScaleFactor(oldScaleFactor);
+        if (deathOpacityPushed) {
+            g_drawPool.resetOpacity();
+        }
     }
 
     // drawLight(dest, lightView);
@@ -155,7 +237,8 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         DEFAULT_COLOR(96, 96, 96),
         NPC_COLOR(0x66, 0xcc, 0xff);
 
-    if (isDead() || !canBeSeen() || !(drawFlags & Otc::DrawCreatureInfo) || !mapRect.isInRange(getPosition()))
+    // Oculta informações enquanto a animação de morte está em andamento
+    if (isDead() || m_deathAnimating || !canBeSeen() || !(drawFlags & Otc::DrawCreatureInfo) || !mapRect.isInRange(getPosition()))
         return;
 
     if (g_gameConfig.isDrawingInformationByWidget()) {
@@ -484,6 +567,21 @@ void Creature::walk(const Position& oldPos, const Position& newPos)
 
     // starts updating walk
     nextWalkUpdate();
+
+    // Rastro por sqm: cria uma sombra exatamente no tile que está sendo deixado
+    if (m_afterimageEnabled) {
+        AfterimageSnapshot s;
+        s.outfit = m_outfit;
+        s.direction = m_lastStepDirection;
+        s.animationPhase = getCurrentAnimationPhase();
+        s.tilePos = oldPos;
+        s.createdAt = g_clock.millis();
+        // mantemos apenas as últimas 4 sombras (uma por sqm)
+        m_afterimages.push_back(s);
+        if (m_afterimages.size() > 4) {
+            m_afterimages.erase(m_afterimages.begin(), m_afterimages.begin() + (m_afterimages.size() - 4));
+        }
+    }
 }
 
 void Creature::stopWalk()
@@ -577,12 +675,28 @@ void Creature::onAppear()
         callLuaField("onAppear");
     } // walk
     else if (m_oldPosition != m_position && m_oldPosition.isInRange(m_position, 1, 1) && m_allowAppearWalk) {
+        // Cancelar animação de morte se for um evento de walk
+        if (m_deathAnimating) {
+            m_deathAnimating = false;
+            if (m_walkingTile) {
+                m_walkingTile->removeWalkingCreature(static_self_cast<Creature>());
+                m_walkingTile = nullptr;
+            }
+        }
         m_allowAppearWalk = false;
         walk(m_oldPosition, m_position);
         callLuaField("onWalk", m_oldPosition, m_position);
     } // teleport
     else if (m_oldPosition != m_position) {
         stopWalk();
+        // Cancelar animação de morte em caso de teleport
+        if (m_deathAnimating) {
+            m_deathAnimating = false;
+            if (m_walkingTile) {
+                m_walkingTile->removeWalkingCreature(static_self_cast<Creature>());
+                m_walkingTile = nullptr;
+            }
+        }
         callLuaField("onDisappear");
         callLuaField("onAppear");
     } // else turn
@@ -598,9 +712,24 @@ void Creature::onDisappear()
     // a pair onDisappear and onAppear events are fired even when creatures walks or turns,
     // so we must filter
     const auto self = static_self_cast<Creature>();
-    m_disappearEvent = g_dispatcher.addEvent([self] {
+
+    // Se já estiver animando morte (definido em onDeath),
+    // adiciona como "walking creature" para continuar o desenho após remoção do tile
+    if (m_deathAnimating && !isLocalPlayer()) {
+        if (const auto& tile = g_map.getTile(m_position)) {
+            tile->addWalkingCreature(self);
+            m_walkingTile = tile;
+        }
+    }
+    // Se estiver animando morte, adia o desaparecimento para após a animação
+    const auto scheduleLambda = [self] {
         self->m_removed = true;
         self->stopWalk();
+
+        // Remove o fantasma de morte (walking creature) do tile
+        if (self->m_walkingTile)
+            self->m_walkingTile->removeWalkingCreature(self);
+        self->m_walkingTile = nullptr;
 
         self->callLuaField("onDisappear");
 
@@ -615,13 +744,23 @@ void Creature::onDisappear()
             g_game.cancelAttack();
         else if (g_game.getFollowingCreature() == self)
             g_game.cancelFollow();
-    });
+    };
+
+    if (m_deathAnimating) {
+        constexpr int kDeathDelayMs = 800; // igual à duração de kDeathDurationMs
+        m_disappearEvent = g_dispatcher.scheduleEvent(scheduleLambda, kDeathDelayMs);
+    } else {
+        m_disappearEvent = g_dispatcher.addEvent(scheduleLambda);
+    }
 
     Thing::onDisappear();
 }
 
 void Creature::onDeath()
 {
+    // inicia animação de morte (subir e desaparecer)
+    m_deathAnimating = true;
+    m_deathTimer.restart();
     callLuaField("onDeath");
 }
 

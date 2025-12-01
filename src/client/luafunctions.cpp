@@ -623,6 +623,8 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<Creature>("setDrawOutfitColor", &Creature::setDrawOutfitColor);
     g_lua.bindClassMemberFunction<Creature>("setDisableWalkAnimation", &Creature::setDisableWalkAnimation);
     g_lua.bindClassMemberFunction<Creature>("isDisabledWalkAnimation", &Creature::isDisabledWalkAnimation);
+    g_lua.bindClassMemberFunction<Creature>("setAfterimageEnabled", &Creature::setAfterimageEnabled);
+    g_lua.bindClassMemberFunction<Creature>("isAfterimageEnabled", &Creature::isAfterimageEnabled);
     g_lua.bindClassMemberFunction<Creature>("isTimedSquareVisible", &Creature::isTimedSquareVisible);
     g_lua.bindClassMemberFunction<Creature>("getTimedSquareColor", &Creature::getTimedSquareColor);
     g_lua.bindClassMemberFunction<Creature>("isStaticSquareVisible", &Creature::isStaticSquareVisible);
