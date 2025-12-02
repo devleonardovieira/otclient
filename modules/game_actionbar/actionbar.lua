@@ -306,7 +306,7 @@ function setupActionPanel(index, panel)
 end
 
 function setupAction(action)
-	local config = action.config
+  local config = action.config
 
 	action.item:setShowCount(false)
 
@@ -377,7 +377,38 @@ function setupAction(action)
 		end
 	end
 
-	action.item.onItemChange = actionOnItemChange
+  action.item.onItemChange = actionOnItemChange
+
+  -- Ensure proper cleanup to avoid leftover references warnings
+  function action.onDestroy(widget)
+    -- Unbind hotkey if still bound
+    local cfg = widget.config
+    if cfg and type(cfg.hotkey) == "string" and cfg.hotkey:len() > 0 then
+      local gameRootPanel = modules.game_interface.getRootPanel()
+      pcall(function()
+        g_keyboard.unbindHotkeyPress(cfg.hotkey, widget.callback, gameRootPanel)
+      end)
+    end
+
+    -- Cancel cooldown update event
+    if widget.cooldownEvent then
+      removeEvent(widget.cooldownEvent)
+      widget.cooldownEvent = nil
+    end
+
+    -- Clear item change handler and other callbacks
+    if widget.item then
+      widget.item.onItemChange = nil
+    end
+    widget.onMouseRelease = nil
+    widget.onTouchRelease = nil
+    widget.callback = nil
+
+    -- Drop strong references to children
+    widget.text = nil
+    widget.hotkeyLabel = nil
+    widget.cooldown = nil
+  end
 end
 
 function setupActionType(action, actionType)
@@ -589,7 +620,7 @@ function executeAction(action, ticks)
 	local actionType = action.config.actionType
 
 	if type(action.config.text) == "string" and action.config.text:len() > 0 then
-		if g_app.isMobile() then
+		if g_platform.isMobile() then
 			local target = g_game.getAttackingCreature()
 
 			if target then

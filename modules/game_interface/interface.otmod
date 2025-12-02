@@ -34,5 +34,6 @@ Module
     - game_minimap
     - game_inventory
     - game_actionbar
+    - game_battle
   @onLoad: init()
   @onUnload: terminate()

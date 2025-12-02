@@ -10,12 +10,6 @@ function UITextEdit:onStyleApply(styleName, styleNode)
 			addEvent(function()
 				self:setHorizontalScrollBar(self:getParent():getChildById(value))
 			end)
-		elseif name == "placeholder" then
-			addEvent(function()
-				if self.placeholderLabel then
-					self.placeholderLabel:setText(value)
-				end
-			end)
 		end
 	end
 end

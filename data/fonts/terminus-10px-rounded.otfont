@@ -1,0 +1,8 @@
+Font
+  name: terminus-10px-rounded
+  texture: terminus-10px-rounded
+  height: 13
+  y-offset: 0
+  glyph-size: 16 16
+  fixed-glyph-width: 7
+  space-width: 3

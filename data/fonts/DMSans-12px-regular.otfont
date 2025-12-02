@@ -1,0 +1,7 @@
+Font
+  name: DMSans-12px-regular
+  texture: DMSans-12px-regular
+  height: 16
+  glyph-size: 16 16
+  space-width: 4
+  spacing: -1 0

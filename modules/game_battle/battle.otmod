@@ -1,0 +1,9 @@
+Module
+  name: game_battle
+  description: Manage battle window (new)
+  author: otclient@kornoh.ovh
+  website: kornoh.ovh
+  sandboxed: true
+  scripts: [ battle ]
+  @onLoad: init()
+  @onUnload: terminate()

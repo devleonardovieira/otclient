@@ -139,11 +139,12 @@ ShinMainWindow
     anchors.left: parent.left
     anchors.right: prev.left
     anchors.verticalCenter: prev.verticalCenter
+    font: montserrat regular 16
     margin-right: 6
-    !placeholder: tr('Edit hotkey text:')
-    @onTextChange: |
-      self.placeholderLabel:setVisible(self:getText():len() == 0)
-      modules.game_hotkeys.onHotkeyTextChange(self:getText())
+    placeholder: Edit hotkey text
+    placeholder-font: montserrat bold 16
+    placeholder-align: center
+    placeholder-color: white
 
   ComboBoxGame
     id: action

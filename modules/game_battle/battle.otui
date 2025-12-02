@@ -1,0 +1,127 @@
+BattleIcon < UICheckBox
+  size: 25 25
+  image-color: #BABABA
+
+  $hover !disabled:
+    image-color: #FFFFFF
+
+  $checked:
+    image-color: #FFFFFF
+
+  $disabled:
+    image-color: #BABABA
+
+BattlePlayers < BattleIcon
+  image-source: /images/game/battle/icon_players
+
+BattleNPCs < BattleIcon
+  image-source: /images/game/battle/icon_npcs
+
+BattleMonsters < BattleIcon
+  image-source: /images/game/battle/icon_creatures
+
+BattlePokemons < BattleIcon
+  image-source: /images/game/battle/icon_pokemons
+  
+MiniWindow
+  id: battleWindow
+  visible: false
+  !text: tr('Battle')
+  height: 166
+  icon: /images/topbuttons/battle
+  @onClose: modules.game_battle.onMiniWindowClose()
+  &save: true
+  &autoOpen: false
+
+  Panel
+    id: filterPanel
+    margin-top: 26
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: miniwindowScrollBar.left
+    height: 75
+
+    Panel
+      id: buttons
+      anchors.top: parent.top
+      anchors.left: parent.left
+      size: 115 25
+      margin-left: 6
+
+      layout:
+        type: horizontalBox
+        spacing: 4
+
+      BattlePlayers
+        id: hidePlayers
+        !tooltip: tr('Hide players')
+        @onSetup: if g_platform.isMobile() then self:setChecked(true) end
+        @onCheckChange: modules.game_battle.checkCreatures()
+          
+      BattleNPCs
+        id: hideNPCs
+        !tooltip: tr('Hide Npcs')
+        @onSetup: if g_platform.isMobile() then self:setChecked(true) end
+        @onCheckChange: modules.game_battle.checkCreatures()
+
+      BattleMonsters
+        id: hideMonsters
+        !tooltip: tr('Hide monsters')
+        @onCheckChange: modules.game_battle.checkCreatures()
+
+      BattlePokemons
+        id: hidePokemons
+        !tooltip: tr('Hide Pokemons')
+        @onCheckChange: modules.game_battle.checkCreatures()
+
+    Panel
+      id: sortPanel
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 40
+      margin: 8 3 3 3
+
+      ComboBoxGame
+        id: sortTypeBox
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.horizontalCenter
+        margin-right: 2
+
+      ComboBoxGame
+        id: sortOrderBox
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.left: parent.horizontalCenter
+        margin-left: 2
+
+  Panel
+    height: 0
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: miniwindowScrollBar.left
+    visible: false
+
+    UIWidget
+      id: toggleFilterButton
+      anchors.top: prev.top
+      width: 21
+      anchors.horizontalCenter: parent.horizontalCenter
+      @onClick: modules.game_battle.toggleFilterPanel()
+      phantom: false
+
+  MiniWindowContents
+    anchors.top: filterPanel.bottom
+    margin-top: 8
+
+    Panel
+      id: battlePanel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-top: 5
+      padding-right: 5
+      layout:
+        type: verticalBox
+        fit-children: true

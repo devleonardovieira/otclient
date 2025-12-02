@@ -1,0 +1,7 @@
+Font
+  name: righteous-12px-rounded-solid
+  texture: righteous-12px-rounded-solid
+  height: 18
+  glyph-size: 18 18
+  space-width: 5
+  spacing: -1 0

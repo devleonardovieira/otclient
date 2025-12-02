@@ -1783,6 +1783,11 @@ function limitZoom()
     limitedZoom = true
 end
 
+function isChatVisible()
+	return gameBottomPanel:getHeight() >= 5
+end
+
+
 function updateStatsBar(dimension, placement)
     StatsBar.updateCurrentStats(dimension, placement)
     StatsBar.updateStatsBarOption()

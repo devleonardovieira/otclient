@@ -31,7 +31,7 @@ Label-13px-Bold < UILabel
   color: #FFFFFF
 
 Label-13px-Regular < UILabel
-  font: montserrat regular 14
+  font: montserrat regular 13
   color: #FFFFFF
 
 Label-14px-Medium < UILabel

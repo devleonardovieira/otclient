@@ -16,14 +16,6 @@ TextEdit < UITextEdit
     background-color: #7D7D7D
     change-cursor-image: false
 
-  UILabel
-    id: placeholderLabel
-    anchors.left: parent.left
-    anchors.verticalCenter: parent.verticalCenter
-    text-auto-resize: true
-    margin-top: -2
-    color: #595959
-
 TextEditPassword < TextEdit
   text-hidden: true
 

@@ -1,0 +1,6 @@
+Font
+  name: comic-sans-ms-14px
+  texture: comic-sans-ms-14px
+  height: 20
+  glyph-size: 32 32
+  space-width: 4

@@ -1,0 +1,7 @@
+Font
+  name: righteous-32px
+  texture: righteous-32px
+  height: 40
+  glyph-size: 50 50
+  space-width: 8
+  spacing: 0 0

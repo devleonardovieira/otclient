@@ -1,0 +1,7 @@
+Font
+  name: montreal-16px-bold
+  texture: montreal-16px-bold
+  height: 20
+  glyph-size: 23 23
+  spacing: 0 0
+  space-width: 5

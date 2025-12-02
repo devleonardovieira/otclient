@@ -44,16 +44,16 @@ Menu.terminate = function ()
 end
 Menu.setup = function ()
 	Menu.modules = {
-		--[[ {
-			name = "Character (%s)",
-			shortCut = "X",
+		 {
+			name = "Battle (%s)",
+			shortCut = "Ctrl+B",
 			icon = "IconCharacter",
-			callback = modules.game_highscore.show,
-			window = modules.game_highscore.ui
-		}, ]]
+			callback = modules.game_battle.toggle,
+			window = modules.game_battle.battleWindow
+		}, 
 		{
 			name = "Minimap (%s)",
-			shortCut = "Ctrl + M",
+			shortCut = "Ctrl+M",
 			icon = "IconMap",
 			-- Use a function reference so it runs on click, not during setup
 			callback = function()
@@ -63,7 +63,7 @@ Menu.setup = function ()
 		},
 		{
 			name = "Hotkeys (%s)",
-			shortCut = "Ctrl + K",
+			shortCut = "Ctrl+K",
 			icon = "IconHotkey",
 			-- Use a function reference so it runs on click, not during setup
 			callback = function()
@@ -73,7 +73,7 @@ Menu.setup = function ()
 		},
 		{
 			name = "Inventory (%s)",
-			shortCut = "Ctrl + I",
+			shortCut = "Ctrl+I",
 			icon = "IconInventory",
 			-- Use a function reference so it runs on click, not during setup
 			callback = function()
