@@ -1243,7 +1243,7 @@ function addTabText(text, speaktype, tab, creatureName)
 		if string.find(text:lower(), tr("@%s", playerName:lower())) then
 			label:setPadding(3)
 			label:setImageBorder(10)
-			label:setImageColor("#0466C8")
+            label:setImageColor("#1fbf6e")
 			label:setImageSource("/images/ui/panel_rounded_solid")
 		end
 	end

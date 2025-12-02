@@ -39,7 +39,7 @@ OptionDialog < RadioButton
     margin-top: 11
 
   $hover:
-    image-color: #0466C8
+    image-color: #1aa562
     color: #FFFFFF
     image-clip: 0 20 20 20
 
@@ -62,7 +62,7 @@ DialogWindow < MainWindow
     anchors.left: prev.right
     text-auto-resize: true
     margin-left: 10
-    color: #0466C8
+    color: #1fbf6e
 
   Label-16px-Regular
     id: message

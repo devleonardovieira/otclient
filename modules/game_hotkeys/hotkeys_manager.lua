@@ -1,9 +1,9 @@
-﻿﻿-- chunkname: @/modules/game_hotkeys/hotkeys_manager.lua
+﻿-- chunkname: @/modules/game_hotkeys/hotkeys_manager.lua
 
-HOTKEY_MANAGER_USE = nil
-HOTKEY_MANAGER_USEONSELF = 1
-HOTKEY_MANAGER_USEONTARGET = 2
-HOTKEY_MANAGER_USEWITH = 3
+local HOTKEY_MANAGER_USE = nil
+local HOTKEY_MANAGER_USEONSELF = 1
+local HOTKEY_MANAGER_USEONTARGET = 2
+local HOTKEY_MANAGER_USEWITH = 3
 HotkeyColors = {
 	text = "#888888",
 	itemUseTarget = "#FF0000",

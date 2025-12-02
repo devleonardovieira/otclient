@@ -22,7 +22,7 @@ OutfitToList < UICreature
   image-color: #626262
 
   $focus:
-    image-color: #057FFA
+    image-color: #1aa562
 
   UIWidget
     id: lock
@@ -40,7 +40,7 @@ OutfitBox < PanelRoundedSolid
   padding: 10
 
   $focus:
-    image-color: #057FFA
+    image-color: #1aa562
 
   UICreature
     id: outfit

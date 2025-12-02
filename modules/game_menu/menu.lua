@@ -145,7 +145,7 @@ Menu.setup = function ()
 		end
 		widget.iconDescription = nameText
 		-- Versão colorida: deixa o atalho em verde e o restante branco
-		local coloredShortcut = d.shortCut and ("[color=#36f991]" .. d.shortCut .. "[/color]") or nil
+  local coloredShortcut = d.shortCut and ("[color=#1fbf6e]" .. d.shortCut .. "[/color]") or nil
 		local coloredText = coloredShortcut and string.format(d.name, coloredShortcut) or nameText
 		widget.iconDescriptionColored = coloredText
 

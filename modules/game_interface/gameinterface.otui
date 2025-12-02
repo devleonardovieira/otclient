@@ -177,11 +177,10 @@ UIWidget
       anchors.right: parent.right
       margin-top: 1
       margin-bottom: 1
-      icon-source: /images/ui/actionbar/locked
-      icon-offset: 0 0
+      // Fallback: remove missing icon reference
       @onClick: modules.game_actionbar.changeLockStatus(self, "Bottom")
       $pressed:
-        icon-offset: 1 1
+        // no icon offset needed
 
   Panel
     id: gameBottomCooldownPanel

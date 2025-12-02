@@ -56,7 +56,7 @@ UIWindow
 
 LoaderProgressBar < UIProgressBar
   height: 24
-  background-color: #36f991
+  background-color: #1fbf6e
   border: 2 #1e2224
   background-border: 2
   font: montserrat bold 26

@@ -249,11 +249,11 @@ ActionBarPanel < Panel
     cursor: pointer
     @onClick: modules.client_options.toggleOption('actionBar1')
 
-    $hover:
-      image-color: #69B2FC
+  $hover:
+    image-color: #1aa562
 
-    $pressed:
-      image-color: #057FFA
+  $pressed:
+    image-color: #128c4f
 
     $disabled:
       image-color: #8B8686

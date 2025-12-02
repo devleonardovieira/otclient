@@ -6,7 +6,7 @@ actionBottomPanel = nil
 actionBalance = nil
 
 local actionConfig, hotkeyAssignWindow
-local actionButtonsInPanel = 50
+local actionButtonsInPanel = 20
 local extraAction = {
 	"pokedex",
 	"fishing",
@@ -197,12 +197,12 @@ function updateActionbarWidth()
   local leftPanel = root:getChildById('gameLeftPanel')
   local rightPanel = root:getChildById('gameRightPanel')
 
-  local gap = 16
+  local gap = 8
   local leftWidth = leftPanel and leftPanel:getWidth() or 0
   local rightWidth = rightPanel and rightPanel:getWidth() or 0
 
   local maxAllowed = math.max(0, root:getWidth() - leftWidth - rightWidth - (gap * 2))
-  local desired = g_settings.getNumber('actionBarWidth', 620)
+  local desired = g_settings.getNumber('actionBarWidth', 920)
   local width = math.max(420, math.min(desired, maxAllowed))
 
   actionBottomPanel:setWidth(width)

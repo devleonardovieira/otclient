@@ -18,7 +18,7 @@ Panel
     text-auto-resize: true
     width: 120
     padding: 2
-    color: #36f991
+  color: #1fbf6e
     font: montserrat regularRounded 30
 
   UILabel
@@ -42,7 +42,7 @@ Panel
       margin-right: -4
       font: montserrat mediumRounded 16
       text-auto-resize: true
-      color: #36f991
+  color: #1fbf6e
       
 
   UIParticles

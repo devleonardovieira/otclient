@@ -7,7 +7,7 @@ PopupMenuButton < UIButton
   padding: 4 6 4 6
 
   $hover !disabled:
-    background-color: #69B2FC
+    background-color: #1aa562
 
 PopupMenuShortcutLabel < Label-12px-Regular
   text-align: right
@@ -40,7 +40,7 @@ PopupScrollMenuButton < UIButton
   padding: 4 6 4 6
 
   $hover !disabled:
-    background-color: #69B2FC
+    background-color: #1aa562
 
 PopupScrollMenuShortcutLabel < Label-12px-Regular
   text-align: right

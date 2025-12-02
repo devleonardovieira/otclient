@@ -10,11 +10,11 @@ CityLabel < Panel
     phantom: false
     text: teste
 
-    $hover:
-      color: #057FFA
+  $hover:
+    color: #1aa562
 
-    $on:
-      color: #057FFA
+  $on:
+    color: #1fbf6e
 
   UIButton
     id: icon
@@ -234,8 +234,7 @@ Minimap < UIMinimap
           width: 1
           height: 16
           margin-left: 8
-          image-color: #FFFFFF22
-          image-source: /images/ui/white
+          background-color: #FFFFFF22
 
       // Lista de filtros
       Label
@@ -249,8 +248,7 @@ Minimap < UIMinimap
         width: parent.width
         height: 1
         margin-top: 4
-        image-color: #FFFFFF18
-        image-source: /images/ui/white
+        background-color: #FFFFFF18
 
       Panel
         id: filtersPanel

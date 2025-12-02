@@ -6,7 +6,7 @@ ChannelListLabel < Label-16px-Regular
   text-offset: 4 6
 
   $focus:
-    background-color: #69B2FC
+    background-color: #1aa562
 
 
 MainHeadlessWindow
@@ -24,38 +24,45 @@ MainHeadlessWindow
     vertical-scrollbar: channelsScrollBar
     focusable: false
 
-  TextEdit
-    id: openPrivateChannelWith
+  Panel
+    id: footerPanel
     anchors.left: parent.left
     anchors.right: parent.right
-    anchors.bottom: next.top
-    margin-bottom: 10
-    !placeholder: tr('Open new channel')
-
-  ButtonBlueSmall
-    id: buttonOpen
-    width: 115
-    !text: tr('Open')
-    anchors.left: parent.left
     anchors.bottom: parent.bottom
-    anchors.right: parent.horizontalCenter
-    margin-right: 5
-    @onClick: self:getParent():onEnter()
+    height: 70
 
-  ButtonRedSmall
-    id: buttonCancel
-    width: 115
-    !text: tr('Cancel')
-    anchors.right: parent.right
-    anchors.bottom: parent.bottom
-    anchors.left: parent.horizontalCenter
-    margin-left: 5
-    @onClick: self:getParent():destroy()
+    TextEdit
+      id: openPrivateChannelWith
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin-bottom: 10
+      !placeholder: tr('Open new channel')
+
+    ButtonBlueSmall
+      id: buttonOpen
+      width: 115
+      !text: tr('Open')
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      anchors.right: parent.horizontalCenter
+      margin-right: 5
+      @onClick: self:getParent():getParent():onEnter()
+
+    ButtonRedSmall
+      id: buttonCancel
+      width: 115
+      !text: tr('Cancel')
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      anchors.left: parent.horizontalCenter
+      margin-left: 5
+      @onClick: self:getParent():getParent():destroy()
 
   VerticalScrollBar
     id: channelsScrollBar
     anchors.top: parent.top
-    anchors.bottom: openPrivateChannelWith.top
+    anchors.bottom: footerPanel.top
     anchors.right: parent.right
     margin-bottom: 10
     step: 14

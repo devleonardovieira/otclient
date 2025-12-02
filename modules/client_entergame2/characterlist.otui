@@ -68,7 +68,7 @@ CharacterBoxBase < UIWidget
     anchors.left: parent.left
     text-auto-resize: true
     margin-top: 4
-    color: #36f991
+  color: #1fbf6e
 
 
   UIWidget

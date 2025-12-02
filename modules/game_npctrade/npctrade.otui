@@ -114,7 +114,7 @@ NPCItemBox < UICheckBox
     background-color: #ffffff26
 
   $checked on:
-    background-color: #057FFA
+    background-color: #1fbf6e
 
   $!checked:
 

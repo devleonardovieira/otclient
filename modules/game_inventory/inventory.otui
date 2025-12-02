@@ -31,12 +31,12 @@ MiniWindow
     @onClick: modules.game_bank.showBank()
 
     $hover:
-      color: #69B2FC
-      icon-color: #69B2FC
+      color: #1aa562
+      icon-color: #1aa562
 
     $pressed:
-      color: #057FFA
-      icon-color: #057FFA
+      color: #128c4f
+      icon-color: #128c4f
 
     $on:
       icon-color: alpha
