@@ -325,3 +325,30 @@ function table.remove_if(t, fnc)
     end
     return t;
 end
+
+-- Ordena uma tabela por suas chaves (índices) e compacta em sequência numérica
+-- Modifica a tabela original para uma lista com índices 1..n na ordem crescente das chaves
+function table.indexSort(t)
+    if type(t) ~= 'table' then return t end
+    local keys = {}
+    for k, _ in pairs(t) do
+        table.insert(keys, k)
+    end
+    table.sort(keys, function(a, b)
+        local ta, tb = type(a), type(b)
+        if ta == 'number' and tb == 'number' then
+            return a < b
+        else
+            return tostring(a) < tostring(b)
+        end
+    end)
+    local ordered = {}
+    for _, k in ipairs(keys) do
+        table.insert(ordered, t[k])
+    end
+    table.clear(t)
+    for i = 1, #ordered do
+        t[i] = ordered[i]
+    end
+    return t
+end

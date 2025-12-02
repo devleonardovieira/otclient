@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_textmessage/textmessage.lua
+-- chunkname: @/modules/game_textmessage/textmessage.lua
 
 MessageSettings = {
 	none = {},
@@ -117,7 +117,7 @@ function displayMessage(mode, text)
 		return
 	end
 
-	local msgtype = MessageTypes[mode]
+local msgtype = MessageTypes[mode]
 
 	if not msgtype then
 		return
@@ -131,28 +131,53 @@ function displayMessage(mode, text)
 	--	modules.game_console.addText(text, msgtype, tr(msgtype.consoleTab))
 	end
 
-	if msgtype.screenTarget then
-		local label = messagesPanel:recursiveGetChildById(msgtype.screenTarget)
+  if msgtype.screenTarget and mode ~= MessageModes.Failure then
+    local label = messagesPanel:recursiveGetChildById(msgtype.screenTarget)
+    label:setMarginBottom(2)
+    label:setMultiColorText(text, msgtype.color)
+    label:setColor(msgtype.color)
+    label:setVisible(true)
+    removeEvent(label.hideEvent)
+    label.hideEvent = scheduleEvent(function()
+      label:setVisible(false)
+    end, calculateVisibleTime(text))
+  elseif mode == MessageModes.Failure then
+    -- Mostrar como "bolha" com barra de progresso (cooldown)
+    local bubble = messagesPanel:recursiveGetChildById('statusBubble')
+    local bar = bubble and bubble:getChildById('cooldownBar') or nil
+    local txt = bubble and bubble:getChildById('bubbleText') or nil
+    if not bubble or not bar or not txt then return end
 
-		if mode == MessageModes.Failure or mode == MessageModes.Status then
-			--[[ local movesBar = modules.game_pokemoves.getMovesBar()
-			local movesBarHeight = movesBar:isOn() and movesBar:isVisible() and movesBar:getHeight() or 0
-			local actionBarHeight = modules.game_actionbar.actionBottomPanel:isOn() and modules.game_actionbar.actionBottomPanel:getHeight() or 23
+    txt:setText(text)
+    txt:setColor(msgtype.color or TextColors.white)
+    bubble:setVisible(true)
+    bubble:raise()
 
-			label:setMarginBottom(movesBarHeight + actionBarHeight)
-		else ]]
-			label:setMarginBottom(2)
-		end
-
-		label:setMultiColorText(text, msgtype.color)
-		label:setColor(msgtype.color)
-		label:setVisible(true)
-		removeEvent(label.hideEvent)
-
-		label.hideEvent = scheduleEvent(function()
-			label:setVisible(false)
-		end, calculateVisibleTime(text))
-	end
+    local duration = calculateVisibleTime(text)
+    if bar.setPercent then bar:setPercent(100) end
+    removeEvent(bubble._progressEvent)
+    bubble._remainingMs = duration
+    local interval = 50
+    bubble._progressEvent = cycleEvent(function()
+      if not bubble or bubble:isDestroyed() then return end
+      bubble._remainingMs = math.max(0, bubble._remainingMs - interval)
+      if bar and bar.setPercent then
+        local p = math.floor((bubble._remainingMs / duration) * 100)
+        bar:setPercent(p)
+      end
+      if bubble._remainingMs <= 0 then
+        removeEvent(bubble._progressEvent)
+        bubble._progressEvent = nil
+        bubble:setVisible(false)
+      end
+    end, interval)
+    bubble.onDestroy = function()
+      if bubble and bubble._progressEvent then
+        removeEvent(bubble._progressEvent)
+        bubble._progressEvent = nil
+      end
+    end
+  end
 end
 
 function displayPrivateMessage(text)

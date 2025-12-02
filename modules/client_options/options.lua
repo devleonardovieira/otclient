@@ -178,6 +178,8 @@ function setup()
             setOption(k, g_settings.getString(k), true)
         end
     end
+
+    configureKeybindsPanel()
 end
 
 function toggle()
@@ -405,4 +407,87 @@ end
 
 function addButton(name, func, icon)
     optionsTabBar:addButton(name, func, icon)
+end
+
+function configureKeybindsPanel()
+    -- Safeguard: skip setup if hotkey panel UI is not present
+    if not hotkeyPanel or not hotkeyPanel.panel or not hotkeyPanel.panel.content then
+        return
+    end
+
+    hotkeyPanel.panel.content:destroyChildren()
+
+	for categoryIndex, categoryObject in pairs(KeybindManager:getCategories()) do
+		categoryObject:injectAsOption()
+
+		for keybindIndex, keybindObject in pairs(categoryObject.keybinds) do
+			keybindObject:injectAsOption()
+		end
+	end
+
+	local profilesPanel = hotkeyPanel.panel.profilesPanel
+	local profilePicker = profilesPanel.profilePicker
+
+	for _, profile in pairs(KeybindManager.profiles) do
+		profilePicker:addOption(profile:getName(), profile:getName())
+	end
+
+	profilePicker:setCurrentOption(KeybindManager.currentProfile:getName())
+
+	function profilePicker:onOptionChange()
+		KeybindManager:getProfileByName(self:getCurrentOption().text):activate()
+	end
+
+	function profilesPanel.createProfile.onClick()
+		modules.client_textedit.edit("", {
+			title = tr("Create profile")
+		}, function(text)
+			if text:trim():len() > 0 then
+				local profile = KeybindManager:createProfile(text)
+
+				if profile then
+					profile:activate()
+				end
+			end
+		end)
+	end
+
+	function profilesPanel.deleteProfile.onClick()
+		local currentProfileName = profilePicker:getCurrentOption().text
+
+		local function callbackCancel()
+			if confirmWindow then
+				confirmWindow:destroy()
+
+				confirmWindow = nil
+			end
+
+			profilePicker:enable()
+		end
+
+		local function callbackConfirm()
+			local profile = KeybindManager:getProfileByName(currentProfileName)
+
+			if profile:delete() then
+				profilePicker:removeOption(currentProfileName)
+			end
+
+			profilePicker:enable()
+		end
+
+		profilePicker:disable()
+
+		confirmWindow = displayConfirmBox(tr("Are you sure?"), tr("Are you sure you want to delete profile {%s|%s}?", "#e2bb5b", currentProfileName), callbackConfirm, callbackCancel)
+	end
+
+    KeybindManager:propagate()
+
+    if hotkeyPanel and hotkeyPanel.panel then
+        local resetAllButton = hotkeyPanel.panel:recursiveGetChildById("resetAllButton")
+        if resetAllButton then
+            function resetAllButton.onClick()
+                KeybindManager:resetToDefaults()
+            end
+        end
+    end
 end

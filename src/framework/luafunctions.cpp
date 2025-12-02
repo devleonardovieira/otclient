@@ -400,6 +400,9 @@ void Application::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_window", "hasFocus", &PlatformWindow::hasFocus, &g_window);
     g_lua.bindSingletonFunction("g_window", "getDisplayDensity", &PlatformWindow::getDisplayDensity, &g_window);
     g_lua.bindSingletonFunction("g_window", "setKeyDelay", &PlatformWindow::setKeyDelay, &g_window);
+    g_lua.bindSingletonFunction("g_window", "getPressedMouseButton", &PlatformWindow::getPressedMouseButton, &g_window);
+    g_lua.bindSingletonFunction("g_window", "getAutoRepeatTicks", &PlatformWindow::getAutoRepeatTicks, &g_window);
+    g_lua.bindSingletonFunction("g_window", "getPressedKey", &PlatformWindow::getPressedKey, &g_window);
 
     // Input
     g_lua.registerSingletonClass("g_mouse");

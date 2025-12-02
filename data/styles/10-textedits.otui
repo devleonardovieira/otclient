@@ -16,7 +16,7 @@ TextEdit < UITextEdit
     background-color: #7D7D7D
     change-cursor-image: false
 
-  Label-16px-Regular
+  UILabel
     id: placeholderLabel
     anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter

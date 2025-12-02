@@ -57,10 +57,29 @@ Menu.setup = function ()
 			icon = "IconMap",
 			-- Use a function reference so it runs on click, not during setup
 			callback = function()
-				print('[menu] clicou minimap')
 				modules.game_minimap.toggle()
 			end,
 			window = modules.game_minimap.minimapWindow 
+		},
+		{
+			name = "Hotkeys (%s)",
+			shortCut = "Ctrl + K",
+			icon = "IconHotkey",
+			-- Use a function reference so it runs on click, not during setup
+			callback = function()
+				modules.game_hotkeys.toggle()
+			end,
+			window = modules.game_hotkeys.hotkeysWindow 
+		},
+		{
+			name = "Inventory (%s)",
+			shortCut = "Ctrl + I",
+			icon = "IconInventory",
+			-- Use a function reference so it runs on click, not during setup
+			callback = function()
+				modules.game_inventory.toggle()
+			end,
+			window = modules.game_inventory.getInventoryWindow() 
 		},
 	
 		--[[ {

@@ -101,6 +101,11 @@ function disconnect(object, arg1, arg2)
         signalsAndSlots = arg1
     else
         perror(debug.traceback('unable to disconnect'))
+        return
+    end
+
+    if type(signalsAndSlots) ~= 'table' then
+        return
     end
 
     for signal, slot in pairs(signalsAndSlots) do

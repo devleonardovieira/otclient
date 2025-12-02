@@ -38,3 +38,37 @@ Panel
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     anchors.right: parent.right
+
+  PanelRounded
+    id: statusBubble
+    visible: false
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 8
+    padding: 8
+    image-border: 20
+    size: 280 0
+    layout:
+      type: verticalBox
+      fit-children: true
+      spacing: 6
+
+    ProgressBar
+      id: cooldownBar
+      height: 4
+      background-color: #3b5ea0
+      background-border: 0
+      width: 264
+      
+
+    Label
+      id: bubbleText
+      text: ""
+      color: #FFDA2B
+      width: 264
+      text-align: center
+      text-wrap: true
+      text-auto-resize: true
+      text-vertical-auto-resize: true
+      text-offset: 2 0
+      

@@ -241,7 +241,7 @@ OutfitPanel < UIWidget
 
 ShinMainWindow
   size: 700 490
-  focusable: false
+  focusable: true
   !text: tr('Select Outfit')
   @onEnter: modules.game_outfit.accept()
   @onEscape: modules.game_outfit.destroy()

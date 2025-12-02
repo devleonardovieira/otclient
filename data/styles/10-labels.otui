@@ -1,5 +1,5 @@
 Label < UILabel
-  font: montserrat regular 12
+  font: montserrat regularRounded 14
   color: #dfdfdf
 
   $disabled:

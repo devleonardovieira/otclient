@@ -118,6 +118,11 @@ public:
     Point getMousePosition() { return m_inputEvent.mousePos; }
     int getKeyboardModifiers() { return m_inputEvent.keyboardModifiers; }
 
+    // Input helpers for Lua bindings
+    Fw::MouseButton getPressedMouseButton();
+    Fw::Key getPressedKey();
+    int getAutoRepeatTicks();
+
     bool isKeyPressed(const Fw::Key keyCode) { return m_keyInfo[keyCode].state; }
     bool isMouseButtonPressed(const Fw::MouseButton mouseButton)
     { if (mouseButton == Fw::MouseNoButton) return m_mouseButtonStates != 0; return (m_mouseButtonStates & (1u << mouseButton)) == (1u << mouseButton); }

@@ -86,6 +86,47 @@ void PlatformWindow::updateUnmaximizedCoords()
     }
 }
 
+Fw::MouseButton PlatformWindow::getPressedMouseButton()
+{
+    if (m_mouseButtonStates == 0)
+        return Fw::MouseNoButton;
+
+    // Prefer the last event button if it remains pressed
+    const auto lastBtn = m_inputEvent.mouseButton;
+    if (lastBtn != Fw::MouseNoButton && isMouseButtonPressed(lastBtn))
+        return lastBtn;
+
+    // Fallback checks for common buttons
+    if (isMouseButtonPressed(Fw::MouseLeftButton))
+        return Fw::MouseLeftButton;
+    if (isMouseButtonPressed(Fw::MouseMidButton))
+        return Fw::MouseMidButton;
+    if (isMouseButtonPressed(Fw::MouseRightButton))
+        return Fw::MouseRightButton;
+
+    // Some platforms may use extended X buttons; indicate generically
+    return Fw::MouseXButton;
+}
+
+Fw::Key PlatformWindow::getPressedKey()
+{
+    const auto lastKey = m_inputEvent.keyCode;
+    if (lastKey != Fw::KeyUnknown && isKeyPressed(lastKey))
+        return lastKey;
+
+    // Fallback: return the first pressed key found
+    for (size_t keyCode = 0; keyCode < Fw::KeyLast; ++keyCode) {
+        if (m_keyInfo[keyCode].state)
+            return static_cast<Fw::Key>(keyCode);
+    }
+    return Fw::KeyUnknown;
+}
+
+int PlatformWindow::getAutoRepeatTicks()
+{
+    return m_inputEvent.autoRepeatTicks;
+}
+
 void PlatformWindow::processKeyDown(Fw::Key keyCode)
 {
     if (keyCode == Fw::KeyUnknown)

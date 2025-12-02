@@ -1,0 +1,314 @@
+ActionItem < UIItem
+  size: 34 34
+  image-source: /images/ui/item
+  font: verdana-11px-rounded
+  background-color: alpha
+  color: white
+  virtual: true
+  &selectable: true
+  &editable: false
+
+  $!on:
+    border: 0 alpha
+
+  $hover !on:
+    border: 1 white
+
+  $hover:
+    background-color: #ffffff65
+
+  $on:
+    border-width: 1
+
+  $disabled:
+    color: #646464
+
+ActionButtonBase < Panel
+  width: 34
+
+  ActionItem
+    id: item
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 4
+
+  Label-12px-Regular
+    id: hotkeyLabel
+    anchors.top: parent.top
+    anchors.horizontalCenter: prev.horizontalCenter
+    text-auto-resize: true
+    margin-top: -3
+    phantom: true
+
+  Label-12px-Regular
+    id: text
+    anchors.centerIn: item
+    text-auto-resize: true
+    text-wrap: true
+    phantom: true
+
+  UIProgressRect
+    id: cooldown
+    background: #585858AA
+    percent: 100
+    focusable: false
+    phantom: true
+    anchors.fill: parent
+    margin: 1 1 1 1
+    font: verdana-11px-rounded
+    color: white
+
+ActionButton < ActionButtonBase
+  font: cipsoftFont
+  anchors.top: parent.top
+  anchors.bottom: parent.bottom
+
+  $first:
+    anchors.left: parent.left
+
+  $!first:
+    anchors.left: prev.right
+    margin-left: 4
+
+ExtraSlot < ActionButtonBase
+
+ActionBottomPanel < Panel
+  id: actionBottomPanel
+  anchors.bottom: gameBottomPanel.bottom
+  anchors.horizontalCenter: parent.horizontalCenter
+  image-source: /images/ui/actionbar
+  image-border: 65
+  focusable: false
+  visible: true
+  height: 71
+  margin-bottom: -47
+  phantom: false
+
+  $on:
+    margin-bottom: 0
+
+  ExtraSlot
+    id: autoloot
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin: 10 0 8 14
+    @onSetup: |
+      self.item:hide()
+
+    UIButton
+      id: button
+      size: 24 24
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      image-source: /images/game/actionbar/icon_auto_loot
+      image-clip: 0 0 24 24
+      margin-bottom: 6
+      !tooltip: tr('Auto-loot')
+      change-cursor-image: true
+      cursor: pointer
+
+      $hover:
+        image-clip: 0 24 24 24
+
+      $pressed:
+        image-clip: 0 48 24 24
+
+      $on:
+        image-clip: 0 48 24 24
+
+  ExtraSlot
+    id: fishing
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.left: prev.right
+    margin-left: 4
+    @onSetup: |
+      self.item:hide()
+
+    UIButton
+      id: button
+      size: 24 24
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      image-source: /images/game/actionbar/icon_fish
+      image-clip: 0 0 24 24
+      margin-bottom: 6
+      !tooltip: tr('Fishing')
+      change-cursor-image: true
+      cursor: pointer
+
+      $hover:
+        image-clip: 0 24 24 24
+
+      $pressed:
+        image-clip: 0 48 24 24
+
+  ExtraSlot
+    id: pokedex
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.left: prev.right
+    margin-left: 4
+    @onSetup: |
+      self.item:hide()
+
+    UIButton
+      id: button
+      size: 14 28
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      image-source: /images/game/actionbar/icon_rotom_phone
+      image-clip: 0 0 14 28
+      margin-bottom: 6
+      !tooltip: tr('Pokedex')
+      change-cursor-image: true
+      cursor: pointer
+
+      $hover:
+        image-clip: 0 32 14 28
+
+      $pressed:
+        image-clip: 0 64 14 28
+
+  ExtraSlot
+    id: order
+    anchors.top: prev.top
+    anchors.bottom: prev.bottom
+    anchors.left: prev.right
+    margin-left: 4
+    @onSetup: |
+      self.item:hide()
+
+    UIButton
+      id: button
+      size: 20 24
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      image-source: /images/game/movesbar/icon_order
+      margin-bottom: 6
+      !tooltip: tr('Order')
+      change-cursor-image: true
+      cursor: pointer
+
+  Panel
+    id: area
+    height: 40
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: -20 200 0 200
+
+ActionBarPanel < Panel
+  id: actionBar
+  anchors.bottom: parent.bottom
+  anchors.right: parent.right
+  anchors.left: parent.left
+  focusable: false
+  margin: 8 12 0 12
+
+  $on:
+    height: 53
+    visible: true
+    
+  $!on:
+    height: 0
+    visible: false
+
+  ButtonPrevious
+    id: prevButton
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-bottom: 12
+    
+  Panel
+    id: tabBar
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.left: prev.right
+    anchors.right: next.left
+    margin-right: 3
+    clipping: true
+
+  ButtonNext
+    id: nextButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-bottom: 12
+
+  UIButton
+    id: arrow
+    size: 14 14
+    anchors.top: parent.top
+    anchors.right: parent.right
+    image-source: /images/game/actionbar/icon_arrow
+    image-clip: 0 0 14 14
+    margin-top: -3
+    image-color: #FFFFFF
+    change-cursor-image: true
+    cursor: pointer
+    @onClick: modules.client_options.toggleOption('actionBar1')
+
+    $hover:
+      image-color: #69B2FC
+
+    $pressed:
+      image-color: #057FFA
+
+    $disabled:
+      image-color: #8B8686
+      change-cursor-image: false
+
+    $on:
+      image-clip: 0 14 14 14
+
+ActionAssignWindow < MainHeadlessWindow
+  id: assignWindow
+  size: 450 220
+  !text: tr('Button Assign')
+
+  Label-16px-Regular
+    !text: tr('Please, press the key you wish to add onto your actionbar manager')
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: parent.top
+    text-auto-resize: true
+    text-align: center
+    text-wrap: true
+    margin: 0 12 12 12
+
+  Label-16px-Bold
+    id: comboPreview
+    !text: tr('Current action hotkey: %s', 'none')
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.top: prev.bottom
+    margin: 14 12 12 12
+    text-auto-resize: true
+
+  Label-14px-Medium
+    id: usingHotkey
+    !text: tr('This shortcut key is already in use')
+    anchors.horizontalCenter: parent.horizontalCenter
+    anchors.bottom: next.top
+    margin-bottom: 14
+    color: #FA605A
+    text-auto-resize: true
+    visible: false
+
+  ButtonBlueSmall
+    id: addButton
+    !text: tr('Add')
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    @onClick: modules.game_hotkeys.hotkeyCaptureOk(self:getParent(), self:getParent():getChildById('comboPreview').keyCombo)
+
+  ButtonRedSmall
+    id: cancelButton
+    !text: tr('Cancel')
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    anchors.left: parent.horizontalCenter
+    margin-left: 5
+    @onClick: self:getParent():destroy()

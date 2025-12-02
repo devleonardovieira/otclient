@@ -85,7 +85,7 @@ g_modules.ensureModuleLoaded('modulelib')
 g_modules.ensureModuleLoaded("startup")
 
 -- pre-load specific shaders if needed; defer broad 999 autoload to loader
-g_modules.ensureModuleLoaded('game_shaders') -- pre load
+--[[ g_modules.ensureModuleLoaded('game_shaders') -- pre load ]]
 
 local function loadModules()
     -- client modules 100-499

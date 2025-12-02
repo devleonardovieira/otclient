@@ -53,6 +53,11 @@ MouseNoButton                = 0
 MouseLeftButton              = 1
 MouseRightButton             = 2
 MouseMidButton               = 3
+MouseTouch                   = 4
+MouseTouch2                  = 5
+MouseTouch3                  = 6
+MouseButton4                 = 7
+MouseButton5                  = 8
 
 MouseNoWheel                 = 0
 MouseWheelUp                 = 1
@@ -199,6 +204,19 @@ ExtendedActivate             = 0
 ExtendedLocales              = 1
 ExtendedParticles            = 2
 
+MouseButtonDescs = {
+	[MouseNoButton] = "Unknown",
+	[MouseLeftButton] = "Mouse Left",
+	[MouseRightButton] = "Mouse Right",
+	[MouseMidButton] = "Mouse Middle",
+	[MouseButton4] = "Mouse X1",
+	[MouseButton5] = "Mouse X2"
+}
+ReverseMouseButtonDescs = {}
+
+for button, desc in pairs(MouseButtonDescs) do
+	ReverseMouseButtonDescs[desc] = button
+end
 -- @}
 
 KeyCodeDescs                 = {
@@ -319,6 +337,64 @@ KeyCodeDescs                 = {
     [KeyNumpad8] = 'Numpad8',
     [KeyNumpad9] = 'Numpad9'
 }
+
+SkipHotkeys = {
+	F8 = true,
+	F7 = true,
+	F6 = true,
+	F5 = true,
+	F4 = true,
+	F3 = true,
+	F2 = true,
+	F1 = true,
+	Plus = true,
+	Minus = true,
+	Application = true,
+	Menu = true,
+	Meta = true,
+	Alt = true,
+	Shift = true,
+	Ctrl = true,
+	CapsLock = true,
+	ScrollLock = true,
+	NumLock = true,
+	Right = true,
+	Left = true,
+	Down = true,
+	Up = true,
+	PageDown = true,
+	PageUp = true,
+	End = true,
+	Home = true,
+	PrintScreen = true,
+	Pause = true,
+	Delete = true,
+	Insert = true,
+	Enter = true,
+	Backspace = true,
+	Tab = true,
+	Escape = true,
+	["Mouse X2"] = true,
+	["Mouse X1"] = true,
+	["Mouse Middle"] = true,
+	["Mouse Right"] = true,
+	["Mouse Left"] = true,
+	Esc = true,
+	["Mouse X6"] = true,
+	["Mouse X5"] = true,
+	["Mouse X4"] = true,
+	["Mouse X3"] = true,
+	F12 = true,
+	F11 = true,
+	F10 = true,
+	F9 = true
+}
+
+ReverseKeyCodeDescs = {}
+
+for key, desc in pairs(KeyCodeDescs) do
+	ReverseKeyCodeDescs[desc] = key
+end
 
 NetworkMessageTypes          = {
     Boolean = 1,

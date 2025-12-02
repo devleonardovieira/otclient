@@ -22,4 +22,7 @@ Module
     dofile 'tile'
     dofile 'items'
     dofile 'spawns'
+    
+    -- Load keybinds library (profiles, categories, manager)
+    dofiles 'keybinds'
     dofiles 'ui'

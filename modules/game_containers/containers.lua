@@ -1,4 +1,4 @@
--- chunkname: @/modules/game_containers/containers.lua
+﻿-- chunkname: @/modules/game_containers/containers.lua
 
 local gameStart = 0
 
@@ -116,19 +116,15 @@ function refreshContainerPages(container)
 end
 
 function onContainerOpen(container, previousContainer)
-    local containerWindow
+	local containerWindow
 
-    if previousContainer then
-        containerWindow = previousContainer.window
-        previousContainer.window = nil
-        previousContainer.itemsPanel = nil
-    else
-        local parent = modules.game_interface.getContainerPanel()
-        if not parent then
-            parent = modules.game_interface.getRightPanel() or modules.game_interface.getRootPanel() or rootWidget
-        end
-        containerWindow = g_ui.createWidget("ContainerWindow", parent)
-    end
+	if previousContainer then
+		containerWindow = previousContainer.window
+		previousContainer.window = nil
+		previousContainer.itemsPanel = nil
+	else
+		containerWindow = g_ui.createWidget("ContainerWindow", modules.game_interface.getContainerPanel())
+	end
 
 	containerWindow:setId("container" .. container:getId())
 

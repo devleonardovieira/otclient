@@ -9,6 +9,7 @@ Module
     dofile 'math'
     dofile 'string'
     dofile 'table'
+    dofile 'base64'
     dofile 'bitwise'
     dofile 'struct'
 
@@ -22,6 +23,7 @@ Module
     dofile 'mouse'
     dofile 'net'
     dofile 'inputvalidation'
+    -- Keybind manager is loaded by gamelib/keybinds
 
     dofiles 'classes'
     dofiles 'ui'
@@ -33,6 +35,11 @@ Module
     dofile 'http'
     dofile 'objectpool'
 
-    Keybind.init()
+    if Keybind and Keybind.init then
+      Keybind.init()
+    end
   
-  @onUnload: Keybind.terminate()
+  @onUnload: |
+    if Keybind and Keybind.terminate then
+      Keybind.terminate()
+    end

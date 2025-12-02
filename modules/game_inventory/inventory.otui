@@ -1,0 +1,83 @@
+ButtonInventory < ButtonBlueBase
+  size: 34 34
+  icon: /images/game/icons/inventory
+
+MiniWindow
+  id: inventoryWindow
+  size: 192 92
+  &save: true
+  &autoOpen: true
+  image-color: alpha
+  border-color: alpha
+  @onSetup: |
+    self.miniwindowScrollBar:hide()
+
+  PanelRounded
+    id: balance
+    height: 31
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    font: montserrat regular 10
+    icon: /images/game/icons/cash_player
+    icon-offset: -45 0
+    !text: tr('Pokebank')
+    phantom: false
+    cursor: pointer
+    change-cursor-image: true
+    icon-color: #FFFFFF
+    color: #FFFFFF
+    @onClick: modules.game_bank.showBank()
+
+    $hover:
+      color: #69B2FC
+      icon-color: #69B2FC
+
+    $pressed:
+      color: #057FFA
+      icon-color: #057FFA
+
+    $on:
+      icon-color: alpha
+
+    $disabled:
+      change-cursor-image: false
+      color: #555555
+
+  PanelRounded
+    anchors.fill: parent
+    anchors.top: prev.bottom
+    margin: 2 0 2 0
+    padding: 14
+
+    ButtonInventory
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      icon-clip: 0 0 24 24
+      !tooltip: tr('Backpack')
+      @onClick: g_game.getLocalPlayer():doUsePokeBag()
+
+    ButtonInventory
+      anchors.left: prev.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 10
+      icon-clip: 0 72 24 24
+      !tooltip: tr('Pok�mon')
+      @onClick: modules.game_pokeinfo.toggle()
+
+    ButtonInventory
+      anchors.left: prev.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 10
+      icon-clip: 0 96 24 24
+      @onClick: modules.game_analytics.toggleAnalytics()
+      !tooltip: tr('Analytics')
+
+    ButtonInventory
+      anchors.left: prev.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 10
+      icon-clip: 0 24 24 24
+      enabled: false
+      !tooltip: tr('Supply')

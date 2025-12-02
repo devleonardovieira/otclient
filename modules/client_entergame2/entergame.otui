@@ -15,9 +15,11 @@ UIWindow
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     image-source: /images/ui/shin_logo
-    margin-top: -100
-    width: 400
-    height: 400
+
+    width: 300
+    height: 300
+    image-smooth: true
+
   
   Panel
     id: panel
