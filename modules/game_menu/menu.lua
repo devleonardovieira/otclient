@@ -45,17 +45,27 @@ end
 Menu.setup = function ()
 	Menu.modules = {
 		 {
+			name = "VipList (%s)",
+			shortCut = "Ctrl+P",
+			icon = "IconViplist",
+			callback = function()
+				modules.game_viplist.toggle()
+			end,
+			window = modules.game_viplist.vipWindow
+		},
+		 {
 			name = "Battle (%s)",
 			shortCut = "Ctrl+B",
-			icon = "IconCharacter",
-			callback = modules.game_battle.toggle,
+			icon = "IconInfusion",
+			callback = function()
+				modules.game_battle.toggle()
+			end,
 			window = modules.game_battle.battleWindow
-		}, 
+		},
 		{
 			name = "Minimap (%s)",
-			shortCut = "Ctrl+M",
+			shortCut = "Ctrl + M",
 			icon = "IconMap",
-			-- Use a function reference so it runs on click, not during setup
 			callback = function()
 				modules.game_minimap.toggle()
 			end,
@@ -63,7 +73,7 @@ Menu.setup = function ()
 		},
 		{
 			name = "Hotkeys (%s)",
-			shortCut = "Ctrl+K",
+			shortCut = "Ctrl + K",
 			icon = "IconHotkey",
 			-- Use a function reference so it runs on click, not during setup
 			callback = function()
@@ -73,7 +83,7 @@ Menu.setup = function ()
 		},
 		{
 			name = "Inventory (%s)",
-			shortCut = "Ctrl+I",
+			shortCut = "Ctrl + I",
 			icon = "IconInventory",
 			-- Use a function reference so it runs on click, not during setup
 			callback = function()
@@ -145,7 +155,7 @@ Menu.setup = function ()
 		end
 		widget.iconDescription = nameText
 		-- Versão colorida: deixa o atalho em verde e o restante branco
-  local coloredShortcut = d.shortCut and ("[color=#1fbf6e]" .. d.shortCut .. "[/color]") or nil
+  		local coloredShortcut = d.shortCut and ("[color=#1fbf6e]" .. d.shortCut .. "[/color]") or nil
 		local coloredText = coloredShortcut and string.format(d.name, coloredShortcut) or nameText
 		widget.iconDescriptionColored = coloredText
 

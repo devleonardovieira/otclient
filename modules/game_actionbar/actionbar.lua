@@ -211,7 +211,7 @@ end
 
 function online()
 	setupActionPanel(1, actionPanel1)
-	setupExtraAction()
+	--[[ setupExtraAction() ]]
 	show()
 end
 
@@ -269,7 +269,7 @@ function onExtraSkillChange(player, id, params)
 end
 
 function setupExtraAction()
-	local inventoryHotkeys = modules.game_inventory.getInventoryHotkeys()
+	local inventoryHotkeys = modules.game_inventory.getInventdoryHotkeys()
 
 	for i, name in pairs(extraAction) do
 		actionBottomPanel[name].hotkeyLabel:setText(translateHotkeyDesc(inventoryHotkeys[name].keyCombo))

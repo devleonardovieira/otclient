@@ -1,0 +1,188 @@
+IconButton < UICheckBox
+  size: 30 30
+  margin: 2
+  icon-source: /images/game/icons/icons_tree
+  icon-size: 20 20
+  icon-clip: 0 0 25 25
+  icon-offset: 3 6
+  icon-align: center
+  border: 1 #5c5b5b
+
+  $first:
+    margin-left: 0
+
+  $!checked:
+    border: 1 #5c5b5b
+
+  $hover !checked:
+    border: 1 #c7c7c7
+
+  $checked:
+    border: 1 #c7c7c7
+
+
+IconColorButton < UICheckBox
+  size: 30 30
+  margin: 2
+  border: 2 #3d3d3d
+
+  $first:
+    margin-left: 0
+
+  $!checked:
+    border: 2 #3d3d3d
+
+  $hover !checked:
+    border: 2 #c7c7c7
+
+  $checked:
+    border: 2 white
+
+MainHeadlessWindow
+  size: 325 310
+  !text: tr('Edit VIP list entry')
+
+  Label-14px-Medium
+    anchors.top: parent.top
+    anchors.left: parent.left
+    !text: tr('Icon')
+
+  UIWidget
+    layout: horizontalBox
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 34
+    margin-top: 2
+
+    IconButton
+      id: icon0
+      icon-source: ~
+      &iconColorId: 0
+
+    IconButton
+      id: icon1
+      icon-clip: 476 0 25 25
+      icon-color: #ff4000
+      &iconColorId: 3
+
+    IconButton
+      id: icon2
+      icon-clip: 75 0 25 25
+      icon-offset: 2 5
+      icon-color: #ffff18
+      &iconColorId: 2
+
+    IconButton
+      id: icon3
+      icon-clip: 101 0 21 21
+      icon-offset: 4 3
+      icon-color: #4cff4c
+      &iconColorId: 1
+
+    IconButton
+      id: icon4
+      icon-clip: 411 0 25 25
+      icon-color: #888888
+      &iconColorId: 8
+
+    IconButton
+      id: icon5
+      icon-clip: 435 0 24 24
+      icon-offset: 5 6
+      icon-color: #ff4000
+      &iconColorId: 3
+
+    IconButton
+      id: icon6
+      icon-clip: 321 0 24 24
+      icon-color: #389bff
+      &iconColorId: 5
+
+    IconButton
+      id: icon7
+      icon-clip: 344 0 24 24
+      icon-color: #c0835c
+      &iconColorId: 6
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    !text: tr('Cor')
+
+  UIWidget
+    layout: horizontalBox
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 33
+
+    IconColorButton
+      id: iconColor0
+      background-color: #ffffff
+
+    IconColorButton
+      id: iconColor1
+      background-color: #4cff4c
+
+    IconColorButton
+      id: iconColor2
+      background-color: #ffff18
+
+    IconColorButton
+      id: iconColor3
+      background-color: #ff4000
+
+    IconColorButton
+      id: iconColor4
+      background-color: #ff38b6
+
+    IconColorButton
+      id: iconColor5
+      background-color: #389bff
+
+    IconColorButton
+      id: iconColor6
+      background-color: #c0835c
+
+    IconColorButton
+      id: iconColor7
+      background-color: #888888
+
+  MultilineTextEdit
+    id: descriptionText
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: buttonOK.top
+    padding: 9 5 4 8
+    margin: 12 0 14 0
+    text-wrap: true
+    placeholder: Description..
+
+  CheckBox
+    id: checkBoxNotify
+    anchors.bottom: next.top
+    anchors.left: parent.left
+    !text: tr('Notify-Login') .. ':'
+    text-auto-resize: true
+    margin-bottom: 12
+    visible: false
+
+  ButtonBlueSmall
+    id: buttonOK
+    !text: tr('Ok')
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+
+  ButtonRedSmall
+    id: buttonCancel
+    !text: tr('Cancel')
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    anchors.left: parent.horizontalCenter
+    margin-left: 5

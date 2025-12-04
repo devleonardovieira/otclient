@@ -1,0 +1,28 @@
+VipListLabel < Label-13px-Bold
+  text-offset: 6 6
+  icon-source: /images/game/icons/icons_tree
+  icon-size: 22 22
+  icon-clip: 0 0 25 25
+  icon-align: center
+  text-auto-resize: true
+  phantom: false
+  padding: 2
+
+  $first:
+    margin-top: 4
+
+
+MiniWindow
+  id: vipWindow
+  visible: false
+  !text: tr('VIP List')
+  height: 100
+  icon: /images/ui/windows/menu/IconViplist
+  @onClose: modules.game_viplist.onMiniWindowClose()
+  &save: true
+  &autoOpen: false
+
+  MiniWindowContents
+    layout: verticalBox
+    padding: 0 8 0 8
+    &onMousePress: modules.game_viplist.onVipListMousePress

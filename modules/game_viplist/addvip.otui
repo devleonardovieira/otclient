@@ -1,0 +1,29 @@
+MainHeadlessWindow
+  size: 358 165
+  font: DMSans-20px-bold
+  !text: tr('Add to VIP list')
+  @onEnter: modules.game_viplist.addVip()
+  @onEscape: modules.game_viplist.destroyAddWindow()
+
+  TextEdit
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    !placeholder: tr('Nome do jogador') .. "..." 
+
+  ButtonBlueSmall
+    !text: tr('Ok')
+    anchors.right: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-right: 5
+    @onClick: modules.game_viplist.addVip()
+
+  ButtonRedSmall
+    !text: tr('Cancel')
+    anchors.left: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-left: 5
+    @onClick: modules.game_viplist.destroyAddWindow()

@@ -37,8 +37,8 @@ MenuIcon < UIWidget
   UIWidget
     id: logo
     anchors.centerIn: parent
-    image-source: /images/ui/windows/menu/RavendawnOnlineLogo
-    image-auto-resize: true
+    image-source: /images/clientIcon
+    image-size: 30 30
     phantom: true
 
 MenuMinimizeButton < UIWidget
