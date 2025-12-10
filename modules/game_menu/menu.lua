@@ -81,7 +81,7 @@ Menu.setup = function ()
 			end,
 			window = modules.game_hotkeys.hotkeysWindow 
 		},
-		{
+		--[[{
 			name = "Inventory (%s)",
 			shortCut = "Ctrl + I",
 			icon = "IconInventory",
@@ -92,7 +92,7 @@ Menu.setup = function ()
 			window = modules.game_inventory.getInventoryWindow() 
 		},
 	
-		--[[ {
+		 {
 			
 		{
 			name = "Map (M)",

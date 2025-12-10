@@ -127,9 +127,9 @@ local msgtype = MessageTypes[mode]
 		return
 	end
 
-	if msgtype.consoleTab ~= nil and (msgtype.consoleOption == nil or modules.client_options.getOption(msgtype.consoleOption)) then
-	--	modules.game_console.addText(text, msgtype, tr(msgtype.consoleTab))
-	end
+  if msgtype.consoleTab ~= nil and (msgtype.consoleOption == nil or modules.client_options.getOption(msgtype.consoleOption)) then
+    modules.game_console.addText(text, msgtype, tr(msgtype.consoleTab))
+  end
 
   if msgtype.screenTarget and mode ~= MessageModes.Failure then
     local label = messagesPanel:recursiveGetChildById(msgtype.screenTarget)
