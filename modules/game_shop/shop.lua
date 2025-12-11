@@ -26,6 +26,113 @@ local IMAGE_CATEGORY = {
 	Streamers = IMAGE_PATH .. "streamers"
 }
 
+-- Flag para habilitar dados mockados do Shop (somente interface)
+local USE_MOCK_SHOP = true
+
+local function buildMockStatus()
+    return {
+        points = "P-Bucks: 9999",
+        ad = {
+            text = "Promoção: Itens com 50% de desconto nesta semana!",
+            url = nil,
+            image = nil
+        },
+        buyUrl = nil
+    }
+end
+
+local function buildMockCategories()
+    -- Helper para criar ofertas simples
+    local function itemOffer(id, name, price, desc)
+        return {
+            id = id,
+            item = id,
+            name = name,
+            price = price,
+            description = desc or ("Pacote contendo o item " .. tostring(id))
+        }
+    end
+
+    local function imageOffer(id, name, price, desc)
+        return {
+            id = id,
+            image = "/images/ui/windows/menu/IconInventory", -- usa um ícone genérico disponível
+            name = name,
+            price = price,
+            description = desc or name
+        }
+    end
+
+    local function outfitOffer(id, name, price, outfit)
+        return {
+            id = id,
+            outfit = outfit,
+            name = name,
+            price = price,
+            description = name
+        }
+    end
+
+    local categories = {
+        { name = "Accounts", offers = {
+            imageOffer(1001, "Change Name", 50, "Altere o nome do personagem."),
+            imageOffer(1002, "Change Sex", 30, "Altere o sexo do personagem."),
+            imageOffer(1003, "Character Slot", 100, "Desbloqueia 1 novo slot de personagem."),
+            imageOffer(1004, "Premium 30d", 300, "Premium por 30 dias.")
+        }},
+        { name = "Items", offers = {
+            itemOffer(2160, "Crystal Coin x10", 25, "10 moedas cristal."),
+            itemOffer(2379, "Magic Sword", 120, "Espada mágica + crit."),
+            itemOffer(2393, "Giant Sword", 95, "Espada gigante."),
+            itemOffer(2195, "Boots of Haste", 80, "Aumenta velocidade.")
+        }},
+        { name = "Teams", offers = {
+            imageOffer(2001, "Team Banner: Wolves", 60, "Estandarte temático do time Wolves."),
+            imageOffer(2002, "Team Banner: Dragons", 60, "Estandarte temático do time Dragons."),
+            imageOffer(2003, "Team Emote Pack", 45, "Pacote com 10 emotes.")
+        }},
+        { name = "Outfits", offers = {
+            outfitOffer(3001, "Outfit: Citizen", 70, { type = 128, addons = 3, head = 78, body = 69, legs = 58, feet = 76 }),
+            outfitOffer(3002, "Outfit: Hunter", 90, { type = 129, addons = 3, head = 94, body = 86, legs = 66, feet = 75 }),
+            outfitOffer(3003, "Outfit: Mage", 110, { type = 130, addons = 3, head = 95, body = 87, legs = 67, feet = 77 })
+        }},
+        { name = "Addons", offers = {
+            imageOffer(4001, "Addon: Wings", 55, "Adiciona asas ao seu outfit."),
+            imageOffer(4002, "Addon: Aura", 65, "Adiciona aura brilhante."),
+            imageOffer(4003, "Addon: Cape", 45, "Adiciona capa estilosa.")
+        }},
+        { name = "Packs", offers = {
+            imageOffer(5001, "Starter Pack", 150, "Pacote inicial com recursos úteis."),
+            imageOffer(5002, "PvP Pack", 220, "Itens focados em PvP."),
+            imageOffer(5003, "Farmer Pack", 130, "Recursos para hunts.")
+        }},
+        { name = "Streamers", offers = {
+            imageOffer(6001, "Support Streamer A", 20, "Apoie nosso streamer A."),
+            imageOffer(6002, "Support Streamer B", 20, "Apoie nosso streamer B."),
+            imageOffer(6003, "Support Streamer C", 20, "Apoie nosso streamer C.")
+        }},
+    }
+
+    return categories
+end
+
+local function loadMockData()
+    otcv8shop = true
+    createShop()
+    processStatus(buildMockStatus())
+    processCategories(buildMockCategories())
+    -- histórico mock opcional
+    processHistory({
+        {
+            image = "/images/ui/windows/menu/IconInventory",
+            id = 9999,
+            name = "Compra teste",
+            description = "Entrada de histórico mock",
+            price = 123
+        }
+    })
+end
+
 local function sendAction(action, data)
 	if not g_game.getFeature(GameExtendedOpcode) then
 		return
@@ -110,11 +217,11 @@ function terminate()
 	})
 	ProtocolGame.unregisterExtendedJSONOpcode(SHOP_EXTENTED_OPCODE, onExtendedJSONOpcode)
 
-	if shopButton then
+--[[ 	if shopButton then
 		shopButton:destroy()
 
 		shopButton = nil
-	end
+	end ]]
 
 	if shop then
 		disconnect(shop.categories, {
@@ -131,9 +238,12 @@ function terminate()
 end
 
 function check()
-	otcv8shop = false
-
-	sendAction("init")
+    if USE_MOCK_SHOP then
+        loadMockData()
+        return
+    end
+    otcv8shop = false
+    sendAction("init")
 end
 
 function hide()
@@ -144,11 +254,11 @@ function hide()
 	hidePixWindow()
 	hideQrCodeWindow()
 	shop:hide()
-	shopButton:setOn(false)
+	--[[ shopButton:setOn(false) ]]
 end
 
 function show()
-	if not shop or not shopButton then
+	if not shop --[[ or not shopButton  ]]then
 		return
 	end
 
@@ -159,7 +269,7 @@ function show()
 	shop:show()
 	shop:raise()
 	shop:focus()
-	shopButton:setOn(true)
+	--[[ shopButton:setOn(true) ]]
 end
 
 function toggle()
@@ -185,9 +295,9 @@ function createShop()
 
 	shop:hide()
 
-	shopButton = modules.client_topmenu.addRightButton("shopButton", tr("Shop"), "/images/topbuttons/icon_store", toggle, false, 9)
+	--[[ shopButton = modules.client_topmenu.addRightButton("shopButton", tr("Shop"), "/images/topbuttons/icon_store", toggle, false, 9)
 
-	shopButton:setOn(false)
+	shopButton:setOn(false) ]]
 	connect(shop.categories, {
 		onChildFocusChange = changeCategory
 	})

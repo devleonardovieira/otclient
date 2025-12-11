@@ -81,18 +81,18 @@ Menu.setup = function ()
 			end,
 			window = modules.game_hotkeys.hotkeysWindow 
 		},
-		--[[{
-			name = "Inventory (%s)",
+		{
+			name = "Shop (%s)",
 			shortCut = "Ctrl + I",
 			icon = "IconInventory",
 			-- Use a function reference so it runs on click, not during setup
 			callback = function()
-				modules.game_inventory.toggle()
+				modules.game_shop.toggle()
 			end,
-			window = modules.game_inventory.getInventoryWindow() 
+			window = modules.game_shop.shop 
 		},
 	
-		 {
+		--[[ {
 			
 		{
 			name = "Map (M)",
