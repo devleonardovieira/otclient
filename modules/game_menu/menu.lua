@@ -45,6 +45,15 @@ end
 Menu.setup = function ()
 	Menu.modules = {
 		 {
+			name = "Logout (%s)",
+			shortCut = "Ctrl+P",
+			icon = "IconLogout",
+			callback = function()
+				modules.game_interface.tryLogout(false)
+			end,
+			window = nil
+		},
+		 {
 			name = "VipList (%s)",
 			shortCut = "Ctrl+P",
 			icon = "IconViplist",
@@ -90,6 +99,16 @@ Menu.setup = function ()
 				modules.game_shop.toggle()
 			end,
 			window = modules.game_shop.shop 
+		},
+		{
+			name = "Options (%s)",
+			shortCut = "Ctrl + O",
+			icon = "IconSettings",
+			-- Use a function reference so it runs on click, not during setup
+			callback = function()
+				modules.client_options.toggle()
+			end,
+			window = modules.client_options.optionsWindow 
 		},
 	
 		--[[ {

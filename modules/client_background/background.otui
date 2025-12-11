@@ -59,13 +59,10 @@ Panel
     on: true
     @onClick: modules.client_options.toggle()
   
-  ButtonBlueBase
+  ButtonRedSmall
     id: logoutButton
-    size: 40 40
-    margin-right: 12
-    !tooltip: tr('Logout account')
+    width: 115
     anchors.top: prev.top
     anchors.right: prev.left
-    icon: /images/game/icons/arrow_back
-    on: true
+    !text: tr('Logout')
     @onClick: modules.client_entergame2.CharacterList.hide(true)

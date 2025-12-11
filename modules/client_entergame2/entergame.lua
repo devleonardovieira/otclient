@@ -12,8 +12,7 @@ end
 function controller:onInit()
   EnterGameWindow = g_ui.loadUI('entergame', rootWidget)
   EnterGameWindow.onEscape = function()
-    EnterGameWindow:destroy()
-    EnterGameWindow = nil
+    EnterGameWindow:hide()
   end
   -- Initialize remember email checkbox and prefill state
   local rememberBox = EnterGameWindow and EnterGameWindow:recursiveGetChildById('rememberEmailBox') or nil
@@ -127,8 +126,7 @@ function EnterGame.show()
   if not EnterGameWindow then
     EnterGameWindow = g_ui.loadUI('entergame', rootWidget)
     EnterGameWindow.onEscape = function()
-      EnterGameWindow:destroy()
-      EnterGameWindow = nil
+      EnterGameWindow:hide()
     end
   end
   if isLoaderActive() then

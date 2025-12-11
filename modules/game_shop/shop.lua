@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_shop/shop.lua
+-- chunkname: @/modules/game_shop/shop.lua
 
 local SHOP_EXTENTED_OPCODE = 201
 
@@ -899,23 +899,26 @@ function showQrCodeWindow()
 end
 
 function onConfirm()
-	local canDonate = onInputCPF(pixWindow.cpfInput) and onInputAmount(pixWindow.amountInput, 10, 10000)
+    local canDonate = onInputCPF(pixWindow.cpfInput) and onInputAmount(pixWindow.amountInput, 10, 10000)
 
-	if not canDonate then
-		return
-	end
+    if not canDonate then
+        return
+    end
 
-	pixWindow:hide()
+    local cpf = pixWindow.cpfInput:getText()
+    local amount = pixWindow.amountInput:getText()
 
-	local function onConfirm()
-		showQrCodeWindow()
-		sendDonate(pixWindow.cpfInput:getText(), pixWindow.amountInput:getText())
-	end
+    pixWindow:hide()
 
-	local function onCancel()
-		pixWindow:show()
-		pixWindow:raise()
-	end
+    local function onConfirm()
+        showQrCodeWindow()
+        sendDonate(cpf, amount)
+    end
 
-	displayConfirmBox(tr("Confirm"), tr("Estas informa\xE7\xF5es est\xE3o corretas?\nCPF: %s\nQuantidade: %s", pixWindow.cpfInput:getText(), pixWindow.amountInput:getText()), onConfirm, onCancel)
+    local function onCancel()
+        pixWindow:show()
+        pixWindow:raise()
+    end
+
+    displayConfirmBox(tr("Confirm"), tr("Estas informa\xE7\xF5es est\xE3o corretas?\nCPF: %s\nQuantidade: %s", cpf, amount), onConfirm, onCancel)
 end
