@@ -19,13 +19,13 @@ ButtonCommunityBase < UIButton
   cursor: pointer
 
 ButtonBlueBase < ButtonBase
-  image-color: #0466C8
+  image-color: #1fbf6e
 
   $hover:
-    image-color: #057FFA
+    image-color: #1aa562
 
   $pressed:
-    image-color: #69B2FC
+    image-color: #128c4f
 
 ButtonBlueSmall < ButtonBlueBase
   size: 115 40
@@ -61,13 +61,13 @@ ButtonRedLarge < ButtonRedBase
   font: DMSans-16px-bold
 
 ButtonBlueCommunityBase < ButtonCommunityBase
-  image-color: #0466C8
+  image-color: #1fbf6e
 
   $hover:
-    image-color: #057FFA
+    image-color: #1aa562
 
   $pressed:
-    image-color: #69B2FC
+    image-color: #128c4f
 
   $disabled:
     image-color: #C4C4C4
@@ -121,10 +121,10 @@ ButtonPaginationBase < UIButton
   cursor: pointer
 
   $hover:
-    image-color: #69B2FC
+    image-color: #1aa562
 
   $pressed:
-    image-color: #057FFA
+    image-color: #128c4f
 
   $disabled:
     image-color: #8B8686
@@ -186,36 +186,36 @@ RadioButton < UICheckBox
 
   $checked:
     image-clip: 0 20 20 20
-    image-color: #0466C8
+    image-color: #1fbf6e
 
   $hover checked:
-    image-color: #69B2FC
+    image-color: #1aa562
     color: #FFFFFF
 
   $disabled:
     change-cursor-image: false
 
 ButtonLabel < UIButton
-  color: #0466C8
+  color: #1fbf6e
   cursor: pointer
   text-auto-resize: true
   change-cursor-image: true
 
   $hover:
-    color: #057FFA
+    color: #1aa562
 
   $pressed:
-    color: #69B2FC
+    color: #128c4f
 
   $disabled:
     change-cursor-image: false
     color: #555555
 
 TabButton < ButtonBlueSmall
-  image-color: #69B2FC
+  image-color: #1aa562
 
   $checked:
-    image-color: #0466C8
+    image-color: #1fbf6e
 
   $on:
     image-color: #2B2B2B

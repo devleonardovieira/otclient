@@ -31,7 +31,7 @@ EmblemMember = 4
 EmblemOther = 5
 
 VipIconFirst = 0
-VipIconLast = 10
+VipIconLast = 7
 
 Directions = {
     North = 0,

@@ -8,7 +8,7 @@ ComboBoxPopupScrollMenuButton < UIButton
   font: DMSans-13px-bold
 
   $hover !disabled:
-    background-color: #69B2FC
+    background-color: #1aa562
     border: 0 #444444
 
 ComboBoxPopupScrollMenu < UIPopupScrollMenu
@@ -45,7 +45,7 @@ ComboBoxPopupMenuButton < UIButton
   font: DMSans-13px-regular
 
   $hover:
-    background-color: #69B2FC
+    background-color: #1aa562
     border: 0 #444444
     color: #FFFFFF
 
@@ -79,14 +79,14 @@ ComboBoxPopupScrollMenuIcon < UIWidget
 
 ComboBoxGamePopupScrollMenuButton < UIButton
   height: 40
-  background-color: #0466C8
+  background-color: #1fbf6e
   text-align: left
   text-offset: 10 0
   color: #FFFFFF
   font: DMSans-13px-bold
 
   $hover !disabled:
-    background-color: #69B2FC
+    background-color: #1aa562
 
 ComboBoxGamePopupScrollMenu < UIPopupScrollMenu
   height: 40
@@ -115,11 +115,11 @@ ComboBoxGamePopupMenu < UIPopupMenu
 
 ComboBoxGamePopupMenuButton < UIButton
   height: 40
-  background-color: #0466C8
+  background-color: #1fbf6e
   text-align: left
   text-offset: 10 0
   color: #FFFFFF
   font: DMSans-13px-bold
 
   $hover !disabled:
-    background-color: #69B2FC
+    background-color: #1aa562

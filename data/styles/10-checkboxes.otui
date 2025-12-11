@@ -19,11 +19,11 @@ CheckBox < UICheckBox
 
   $checked:
     image-clip: 0 24 24 24
-    image-color: #0466C8
+    image-color: #1fbf6e
 
   $hover checked:
     image-clip: 0 24 24 24
-    image-color: #69B2FC
+    image-color: #1aa562
     color: #FFFFFF
 
   $disabled:

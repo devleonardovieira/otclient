@@ -20,23 +20,29 @@ function UIRadioGroup:destroy()
 end
 
 function UIRadioGroup:addWidget(widget)
-	if not table.contains(self.widgets, widget) then
-		table.insert(self.widgets, widget)
-	end
+    if not widget then
+        return
+    end
+    if not table.contains(self.widgets, widget) then
+        table.insert(self.widgets, widget)
+    end
 
-	function widget.onClick(widget)
-		self:selectWidget(widget)
-	end
+    function widget.onClick(widget)
+        self:selectWidget(widget)
+    end
 end
 
 function UIRadioGroup:removeWidget(widget)
-	if self.selectedWidget == widget then
-		self:selectWidget(nil)
-	end
+    if not widget then
+        return
+    end
+    if self.selectedWidget == widget then
+        self:selectWidget(nil)
+    end
 
-	widget.onClick = nil
+    widget.onClick = nil
 
-	table.removevalue(self.widgets, widget)
+    table.removevalue(self.widgets, widget)
 end
 
 function UIRadioGroup:selectWidget(selectedWidget, dontSignal)

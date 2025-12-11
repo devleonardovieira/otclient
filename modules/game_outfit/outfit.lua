@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_outfit/outfit.lua
+-- chunkname: @/modules/game_outfit/outfit.lua
 
 local OutfitWindow, outfits
 local maxperlist = 20
@@ -6,6 +6,29 @@ local currentpage = 1
 local maxpages = 1
 local selectedOutfit, selectedWidget, currentClotheButtonBox, currentColorBox
 local colorBoxes = {}
+
+-- Normaliza qualquer valor de outfit para a tabela esperada pelo binding C++
+local function toOutfitTable(o)
+  if type(o) == 'table' then
+    return {
+      type = o.type or o.id or 0,
+      auxType = o.auxType or o.auxId or 0,
+      addons = o.addons or 0,
+      head = o.head or 0,
+      body = o.body or 0,
+      legs = o.legs or 0,
+      feet = o.feet or 0,
+      mount = o.mount or 0,
+      familiar = o.familiar or 0,
+      wings = o.wings or 0,
+      effects = o.effects or 0,
+      auras = o.auras or 0,
+      shaders = o.shaders or ""
+    }
+  end
+  -- Quando vier um userdata incorreto, retorna uma tabela vazia segura
+  return { type = 0, auxType = 0, addons = 0, head = 0, body = 0, legs = 0, feet = 0 }
+end
 
 ignoreNextOutfitWindow = 0
 direction = 2
@@ -71,13 +94,13 @@ function create(creatureOutfit, outfitList, creatureMount, mountList)
 	outfits = outfitList
 	maxpages = math.ceil(#outfitList / maxperlist)
 
-	for num, out in ipairs(outfitList) do
+    for num, out in ipairs(outfitList) do
 		if selectedOutfit.type == out[1] then
 			currentpage = math.ceil(num / maxperlist)
 
 			OutfitWindow:getChildById("outfitPanel"):getChildById("confirm"):setEnabled(out[3])
-			OutfitWindow:getChildById("outfitPanel"):getChildById("outfit"):setOutfit(selectedOutfit)
-			OutfitWindow:getChildById("outfitPanel"):getChildById("name"):setText(out[2])
+            OutfitWindow:getChildById("outfitPanel"):getChildById("outfit"):setOutfit(toOutfitTable(selectedOutfit))
+            OutfitWindow:getChildById("outfitPanel"):getChildById("name"):setText(out[2])
 
 			break
 		end
@@ -121,19 +144,19 @@ function drawOutfitList()
 	for i = 1, 1 do
 		for num, out in ipairs(outfits) do
 			if math.ceil(num / maxperlist) == currentpage then
-				local ot = {
-					type = out[1],
-					head = selectedOutfit.head,
-					body = selectedOutfit.body,
-					legs = selectedOutfit.legs,
-					feet = selectedOutfit.feet
-				}
-				local widget = g_ui.createWidget("OutfitBox", OutfitWindow:getChildById("outfitList"))
+                local ot = {
+                    type = out[1],
+                    head = selectedOutfit.head,
+                    body = selectedOutfit.body,
+                    legs = selectedOutfit.legs,
+                    feet = selectedOutfit.feet,
+                    addons = out[3]
+                }
+                local widget = g_ui.createWidget("OutfitBox", OutfitWindow:getChildById("outfitList"))
 
-				widget.outfit:setOutfit(ot)
+                widget.outfit:setOutfit(toOutfitTable(ot))
 
-				ot.addons = out[3]
-				widget.ot = ot
+                widget.ot = ot
 
 				widget:setTooltip(out[2])
 				widget.lock:setVisible(not out[3])
@@ -144,17 +167,17 @@ function drawOutfitList()
 					widget:focus()
 				end
 
-				function widget.onClick()
-					selectedOutfit = ot
-					selectedWidget = widget
+                function widget.onClick()
+                    selectedOutfit = ot
+                    selectedWidget = widget
 
-					OutfitWindow:getChildById("outfitPanel"):getChildById("confirm"):setEnabled(out[3])
-					OutfitWindow:getChildById("outfitPanel"):getChildById("outfit"):setOutfit(ot)
-					OutfitWindow:getChildById("outfitPanel"):getChildById("name"):setText(out[2])
-				end
-			end
-		end
-	end
+                    OutfitWindow:getChildById("outfitPanel"):getChildById("confirm"):setEnabled(out[3])
+                    OutfitWindow:getChildById("outfitPanel"):getChildById("outfit"):setOutfit(toOutfitTable(ot))
+                    OutfitWindow:getChildById("outfitPanel"):getChildById("name"):setText(out[2])
+                end
+            end
+        end
+    end
 end
 
 local movementState = false -- guarda o estado já que não existe isAnimating()
@@ -259,20 +282,20 @@ function onColorCheckChange(colorBox)
 			selectedOutfit.feet = currentColorBox.colorId
 		end
 
-		currentColorBox:setBorderColor(getOutfitColor(currentColorBox.colorId))
-		OutfitWindow:getChildById("outfitPanel"):getChildById("outfit"):setOutfit(selectedOutfit)
+        currentColorBox:setBorderColor(getOutfitColor(currentColorBox.colorId))
+        OutfitWindow:getChildById("outfitPanel"):getChildById("outfit"):setOutfit(toOutfitTable(selectedOutfit))
 
-		for i, child in ipairs(OutfitWindow:getChildById("outfitList"):getChildren()) do
-			local out = child.ot
+        for i, child in ipairs(OutfitWindow:getChildById("outfitList"):getChildren()) do
+            local out = child.ot
 
 			out.head = selectedOutfit.head
 			out.body = selectedOutfit.body
 			out.legs = selectedOutfit.legs
 			out.feet = selectedOutfit.feet
 
-			child.outfit:setOutfit(out)
-		end
-	end
+            child.outfit:setOutfit(toOutfitTable(out))
+        end
+    end
 end
 
 function destroy()

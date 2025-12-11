@@ -77,6 +77,14 @@ function terminate()
 	end
 
 	if vipWindow then
+		-- Limpa callbacks associados ao vipWindow e seu painel de conteúdo
+		local contents = vipWindow:getChildById("contentsPanel")
+		if contents and contents.onMousePress then
+			contents.onMousePress = nil
+		end
+		if vipWindow.onClose then
+			vipWindow.onClose = nil
+		end
 		vipWindow:destroy()
 		vipWindow = nil
 	end
@@ -157,26 +165,50 @@ function createEditWindow(widget)
 
 	notifyCheckBox:setChecked(widget.notifyLogin)
 
-	local iconRadioGroup = UIRadioGroup.create()
+    local iconRadioGroup = UIRadioGroup.create()
 
-	for i = VipIconFirst, VipIconLast do
-		iconRadioGroup:addWidget(editVipWindow:recursiveGetChildById("icon" .. i))
-	end
+    for i = VipIconFirst, VipIconLast do
+        local iconWidget = editVipWindow:recursiveGetChildById("icon" .. i)
+        if iconWidget then
+            iconRadioGroup:addWidget(iconWidget)
+        end
+    end
+    local selectedIcon = editVipWindow:recursiveGetChildById("icon" .. widget.iconId) or iconRadioGroup:getFirstWidget()
+    if selectedIcon then
+        iconRadioGroup:selectWidget(selectedIcon)
+    end
 
-	iconRadioGroup:selectWidget(editVipWindow:recursiveGetChildById("icon" .. widget.iconId))
+    local iconColorRadioGroup = UIRadioGroup.create()
 
-	local iconColorRadioGroup = UIRadioGroup.create()
+    for i = VipIconFirst, VipIconLast do
+        local colorWidget = editVipWindow:recursiveGetChildById("iconColor" .. i)
+        if colorWidget then
+            iconColorRadioGroup:addWidget(colorWidget)
+        end
+    end
 
-	for i = VipIconFirst, VipIconLast do
-		iconColorRadioGroup:addWidget(editVipWindow:recursiveGetChildById("iconColor" .. i))
-	end
+    local function normalizeIconColorId(val)
+        local t = type(val)
+        if t == 'number' then
+            return val
+        elseif t == 'string' then
+            local n = tonumber(val)
+            return n or 0
+        else
+            return 0
+        end
+    end
+    local widgetIconColor = editVipWindow:recursiveGetChildById("iconColor" .. normalizeIconColorId(widget.iconColorId))
+    widgetIconColor = widgetIconColor or editVipWindow:recursiveGetChildById("iconColor0")
 
-	local widgetIconColor = editVipWindow:recursiveGetChildById("iconColor" .. widget.iconColorId)
-
-	widgetIconColor = widgetIconColor or editVipWindow:recursiveGetChildById("iconColor0")
-
-	iconColorRadioGroup:selectWidget(widgetIconColor)
-	iconRadioGroup:getSelectedWidget():setIconColor(iconColorRadioGroup:getSelectedWidget():getBackgroundColor())
+    if widgetIconColor then
+        iconColorRadioGroup:selectWidget(widgetIconColor)
+    end
+    local currentIcon = iconRadioGroup:getSelectedWidget()
+    local currentColor = iconColorRadioGroup:getSelectedWidget()
+    if currentIcon and currentColor then
+        currentIcon:setIconColor(currentColor:getBackgroundColor())
+    end
 
 	function iconColorRadioGroup:onSelectionChange(selectWidget)
 		local iconSelected = iconRadioGroup:getSelectedWidget()
@@ -194,11 +226,19 @@ function createEditWindow(widget)
 			editVipWindow.onEscape = nil
 			editVipWindow.onEnter = nil
 		end
+		-- Remover callbacks de grupos para evitar referências pendentes
+		if iconColorRadioGroup and iconColorRadioGroup.onSelectionChange then
+			iconColorRadioGroup.onSelectionChange = nil
+		end
+		-- Solta referência local antes de destruir a janela para evitar aviso
+		descriptionText = nil
 		if iconRadioGroup then iconRadioGroup:destroy() end
 		if iconColorRadioGroup then iconColorRadioGroup:destroy() end
 		if editVipWindow then editVipWindow:destroy() end
 		editVipWindow = nil
-		descriptionText = nil
+		-- Limpa variáveis dos grupos para liberar referências aos widgets
+		iconRadioGroup = nil
+		iconColorRadioGroup = nil
 	end
 
 	local function saveFunction()
@@ -217,8 +257,9 @@ function createEditWindow(widget)
 		local iconColorId = tonumber(iconRadioGroup:getSelectedWidget().iconColorId)
 		local notify = notifyCheckBox:isChecked()
 
-		if g_game.getFeature(GameAdditionalVipInfo) then
-			g_game.editVip(id, description, iconId, notify)
+        if g_game.getFeature(GameAdditionalVipInfo) then
+            -- Passa grupo vazio explicitamente para evitar cast de nil para std::vector<uint8_t>
+            g_game.editVip(id, description, iconId, notify, {})
 		elseif notify ~= false or #description > 0 or iconId > 0 then
 			vipInfo[id] = {
 				description = description,
@@ -239,11 +280,19 @@ function createEditWindow(widget)
 			editVipWindow.onEscape = nil
 			editVipWindow.onEnter = nil
 		end
+		-- Remover callbacks de grupos para evitar referências pendentes
+		if iconColorRadioGroup and iconColorRadioGroup.onSelectionChange then
+			iconColorRadioGroup.onSelectionChange = nil
+		end
+		-- Solta referência local antes de destruir a janela para evitar aviso
+		descriptionText = nil
 		if iconRadioGroup then iconRadioGroup:destroy() end
 		if iconColorRadioGroup then iconColorRadioGroup:destroy() end
 		if editVipWindow then editVipWindow:destroy() end
 		editVipWindow = nil
-		descriptionText = nil
+		-- Limpa variáveis dos grupos para liberar referências aos widgets
+		iconRadioGroup = nil
+		iconColorRadioGroup = nil
 	end
 
 	cancelButton.onClick = cancelFunction

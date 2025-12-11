@@ -6,7 +6,7 @@ ChannelListLabel < Label-16px-Regular
   text-offset: 4 6
 
   $focus:
-    background-color: #69B2FC
+    background-color: #1aa562
 
 
 MainHeadlessWindow

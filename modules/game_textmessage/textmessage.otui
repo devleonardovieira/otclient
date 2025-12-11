@@ -44,7 +44,7 @@ Panel
     visible: false
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-bottom: 8
+    margin-bottom: 85
     padding: 8
     image-border: 20
     size: 280 0

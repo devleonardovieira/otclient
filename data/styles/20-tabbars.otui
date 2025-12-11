@@ -25,7 +25,7 @@ MoveableTabBarButton < UIButton
 
   $checked:
     image-clip: 0 0 153 33
-    color: #9BCCFD
+    color: #128c4f
     image-color: #FFFFFF
 
   $on !checked:
@@ -106,7 +106,7 @@ TabBarVerticalButton < ButtonBlueSmall
   icon-offset-y: 5
   icon-color: #6b6b6b
   text-only-upper-case: true
-  image-color: #69B2FC
+  image-color: #1aa562
 
   $first:
     anchors.top: parent.top
@@ -122,7 +122,7 @@ TabBarVerticalButton < ButtonBlueSmall
     icon-color: #333333
 
   $checked:
-    image-color: #0466C8
+    image-color: #1fbf6e
     icon-color: #eeeeee
 
   $on !checked:
