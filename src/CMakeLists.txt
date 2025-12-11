@@ -26,7 +26,7 @@ option(SPEED_UP_BUILD_UNITY "Compile using build unity for speed up build" ON)
 # Cmake Features
 # *****************************************************************************
 set(GNUCXX_MINIMUM_VERSION 9)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -75,70 +75,11 @@ if (ANDROID OR WASM)
   set(FRAMEWORK_DEFINITIONS ${FRAMEWORK_DEFINITIONS} -DOPENGL_ES=2)
 endif()
 
-# Set for use precompiled header
-if(TOGGLE_PRE_COMPILED_HEADER)
-  # === PRECOMPILED HEADER ===
-  target_precompile_headers(${PROJECT_NAME} PRIVATE framework/pch.h)
-  message(STATUS "Use precompiled header: ON")
-else()
-  message(STATUS "Use precompiled header: OFF")
-endif(TOGGLE_PRE_COMPILED_HEADER)
-
-# === UNITY BUILD (compile time reducer) ===
-if(SPEED_UP_BUILD_UNITY)
-  set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ON)
-  log_option_enabled("Build unity for speed up compilation")
-endif(SPEED_UP_BUILD_UNITY)
-
 set(VERSION "1.0.0")
-
-# *****************************************************************************
-# Build flags
-# *****************************************************************************
-if (NOT MSVC)
-  if (CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(${PROJECT_NAME}  PRIVATE  -Wno-deprecated-declarations)
-  endif()
-endif()
-
-if(THREADS_HAVE_PTHREAD_ARG)
-  target_compile_options(${PROJECT_NAME} PUBLIC "-pthread")
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  add_definitions(-DNDEBUG)
-endif()
 
 # *****************************************************************************
 # Definitions code
 # *****************************************************************************
-
-
-# === ASAN ===
-if(ASAN_ENABLED)
-  log_option_enabled("asan")
-
-  if(MSVC)
-    string(REGEX REPLACE "/RTC(su|[1su])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    target_compile_options(${PROJECT_NAME} PUBLIC /fsanitize=address)
-    target_link_options(${PROJECT_NAME} PUBLIC /fsanitize=address)
-  else()
-    target_compile_options(${PROJECT_NAME} PUBLIC -fsanitize=address)
-    target_link_options(${PROJECT_NAME} PUBLIC -fsanitize=address)
-  endif()
-else()
-  log_option_disabled("asan")
-endif()
-
-
-# === DEBUG LOG ===
-# cmake -DDEBUG_LOG=ON ..
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE -DDEBUG_LOG=ON )
-  log_option_enabled("DEBUG LOG")
-else()
-  log_option_disabled("DEBUG LOG")
-endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 # *****************************************************************************
 # Sanity Check
@@ -213,12 +154,12 @@ if(NOT OPENSSL_FOUND)
   find_package(GMP REQUIRED)
 endif()
 if(ENABLE_DISCORD_RPC AND NOT ANDROID)
-	find_package(DiscordRPC REQUIRED)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_DISCORD_RPC=1)
-	log_option_enabled("Discord Rich Presence")
+        find_package(DiscordRPC REQUIRED)
+        set(OTCLIENT_ENABLE_DISCORD_RPC 1)
+        log_option_enabled("Discord Rich Presence")
 else()
-	target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_DISCORD_RPC=0)
-	log_option_disabled("Discord Rich Presence")
+        set(OTCLIENT_ENABLE_DISCORD_RPC 0)
+        log_option_disabled("Discord Rich Presence")
 endif()
 if(TOGGLE_DIRECTX)
   find_package(DirectX REQUIRED)
@@ -369,9 +310,6 @@ set(SOURCE_FILES
         client/uiminimap.cpp
         client/uiprogressrect.cpp
         client/uisprite.cpp
-
-        main.cpp
-        androidmain.cpp
 )
 
 if (TOGGLE_FRAMEWORK_GRAPHICS)
@@ -452,9 +390,79 @@ if (WASM)
   )
 endif()
 
+add_library(otclient_core STATIC ${SOURCE_FILES})
+if(NOT MSVC)
+  target_link_options(otclient_core PUBLIC -flto=auto)
+endif()
 
-target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})
-target_link_options(${PROJECT_NAME} PUBLIC -flto=auto)
+if(TOGGLE_PRE_COMPILED_HEADER)
+  # === PRECOMPILED HEADER ===
+  target_precompile_headers(otclient_core PRIVATE framework/pch.h)
+  message(STATUS "Use precompiled header: ON")
+else()
+  message(STATUS "Use precompiled header: OFF")
+endif(TOGGLE_PRE_COMPILED_HEADER)
+
+if(SPEED_UP_BUILD_UNITY)
+  set_target_properties(otclient_core PROPERTIES UNITY_BUILD ON)
+  log_option_enabled("Build unity for speed up compilation")
+endif(SPEED_UP_BUILD_UNITY)
+
+if(ANDROID)
+  target_sources(${PROJECT_NAME} PRIVATE androidmain.cpp)
+else()
+  target_sources(${PROJECT_NAME} PRIVATE main.cpp)
+endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE otclient_core)
+
+# *****************************************************************************
+# Build flags
+# *****************************************************************************
+if (NOT MSVC)
+  if (CMAKE_COMPILER_IS_GNUCXX)
+    target_compile_options(otclient_core PRIVATE -Wno-deprecated-declarations)
+  endif()
+endif()
+
+if(THREADS_HAVE_PTHREAD_ARG)
+  target_compile_options(otclient_core PUBLIC "-pthread")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  add_definitions(-DNDEBUG)
+endif()
+
+# *****************************************************************************
+# Definitions code
+# *****************************************************************************
+
+# === ASAN ===
+if(ASAN_ENABLED)
+  log_option_enabled("asan")
+
+  if(MSVC)
+    string(REGEX REPLACE "/RTC(su|[1su])" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    target_compile_options(otclient_core PUBLIC /fsanitize=address)
+    target_link_options(${PROJECT_NAME} PUBLIC /fsanitize=address)
+  else()
+    target_compile_options(otclient_core PUBLIC -fsanitize=address)
+    target_link_options(${PROJECT_NAME} PUBLIC -fsanitize=address)
+  endif()
+else()
+  log_option_disabled("asan")
+endif()
+
+# === DEBUG LOG ===
+# cmake -DDEBUG_LOG=ON ..
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+  target_compile_definitions(otclient_core PRIVATE -DDEBUG_LOG=ON )
+  log_option_enabled("DEBUG LOG")
+else()
+  log_option_disabled("DEBUG LOG")
+endif(CMAKE_BUILD_TYPE MATCHES Debug)
+
+target_compile_definitions(otclient_core PRIVATE ENABLE_DISCORD_RPC=${OTCLIENT_ENABLE_DISCORD_RPC})
 
 # *****************************************************************************
 # Includes and librarys
@@ -462,13 +470,13 @@ target_link_options(${PROJECT_NAME} PUBLIC -flto=auto)
 if(MSVC)
 
   # Set variables to have Windows Vista Value so httplib will build 'inet_pton'
-  target_compile_definitions(${PROJECT_NAME}
-          PRIVATE
+  target_compile_definitions(otclient_core
+          PUBLIC
           NTDDI_VERSION=0x06000000
           _WIN32_WINNT=0x0600
   )
 
-  target_compile_options(${PROJECT_NAME} PUBLIC /MP /FS /Zf /EHsc /bigobj)
+  target_compile_options(otclient_core PUBLIC /MP /FS /Zf /EHsc /bigobj)
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     string(REPLACE "/Zi" "/Z7" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -488,15 +496,24 @@ if(MSVC)
     if(ANDROID)
       find_package(Vorbis CONFIG REQUIRED)
     endif()
-    set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    foreach(msvc_target IN ITEMS otclient_core ${PROJECT_NAME})
+      if(TARGET ${msvc_target})
+        set_property(TARGET ${msvc_target} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+      endif()
+    endforeach()
     set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "")
   else()
     log_option_disabled("STATIC_LIBRARY")
     set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "")
+    foreach(msvc_target IN ITEMS otclient_core ${PROJECT_NAME})
+      if(TARGET ${msvc_target})
+        set_property(TARGET ${msvc_target} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+      endif()
+    endforeach()
   endif()
 
-  target_include_directories(${PROJECT_NAME}
-          PRIVATE
+  target_include_directories(otclient_core
+          PUBLIC
           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
           ${LUAJIT_INCLUDE_DIR}
@@ -510,8 +527,8 @@ if(MSVC)
           ${CPPCODEC_INCLUDE_DIRS}
           ${FFMPEG_INCLUDE_DIRS}
   )
-  target_link_libraries(${PROJECT_NAME}
-          PRIVATE
+  target_link_libraries(otclient_core
+          PUBLIC
           ${LUAJIT_LIBRARY}
           ${CMAKE_THREAD_LIBS_INIT}
           ${PHYSFS_LIBRARY}
@@ -541,8 +558,8 @@ if(MSVC)
           ${FFMPEG_LIBRARIES}
   )
 elseif(ANDROID)
-  target_include_directories(${PROJECT_NAME}
-          PRIVATE
+  target_include_directories(otclient_core
+          PUBLIC
           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
           ${LUAJIT_INCLUDE_DIR}
@@ -557,8 +574,8 @@ elseif(ANDROID)
           ${MINIZIP_INCLUDE_DIR}
           ${CPPCODEC_INCLUDE_DIRS}
   )
-  target_link_libraries(${PROJECT_NAME}
-          PRIVATE
+  target_link_libraries(otclient_core
+          PUBLIC
           ${LUA_LIBRARY}
           ${LUAJIT_LIBRARY}
           ${PHYSFS_LIBRARY}
@@ -588,11 +605,12 @@ elseif(ANDROID)
           log
           pugixml::pugixml
           fmt::fmt-header-only
+          utf8cpp::utf8cpp
   )
 
 elseif(WASM)
-  target_include_directories(${PROJECT_NAME}
-          PRIVATE
+  target_include_directories(otclient_core
+          PUBLIC
           ${CMAKE_SOURCE_DIR}/src
           ${CMAKE_THREAD_LIBS_INIT}
           ${Protobuf_INCLUDE_DIRS}
@@ -605,8 +623,8 @@ elseif(WASM)
           ${BROWSER_INCLUDE_DIR}
           ${CPPCODEC_INCLUDE_DIRS}
   )
-  target_link_libraries(${PROJECT_NAME}
-          PRIVATE
+  target_link_libraries(otclient_core
+          PUBLIC
           ${LUA_LIBRARY}
           ${PHYSFS_LIBRARY}
           ${ZLIB_LIBRARY}
@@ -640,6 +658,7 @@ elseif(WASM)
           OpenSSL::Crypto
           httplib::httplib
           fmt::fmt
+          utf8cpp::utf8cpp
           Ogg::ogg
           Vorbis::vorbisfile
           Vorbis::vorbis
@@ -649,7 +668,7 @@ elseif(WASM)
   get_property(linkflags TARGET ${PROJECT_NAME} PROPERTY LINK_FLAGS)
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(${PROJECT_NAME}
+    target_compile_options(otclient_core
             PRIVATE
             -Wall -Wextra -Wpedantic
     )
@@ -675,8 +694,8 @@ elseif(WASM)
   set(VCPKG_TARGET_TRIPLET "wasm32-emscripten" CACHE STRING "")
 
 else() # Linux
-  target_include_directories(${PROJECT_NAME}
-          PRIVATE
+  target_include_directories(otclient_core
+          PUBLIC
           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/>
           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
           ${LUAJIT_INCLUDE_DIR}
@@ -690,8 +709,8 @@ else() # Linux
           ${OPENSSL_INCLUDE_DIR}
           ${CPPCODEC_INCLUDE_DIRS}
   )
-  target_link_libraries(${PROJECT_NAME}
-          PRIVATE
+  target_link_libraries(otclient_core
+          PUBLIC
           ${LUAJIT_LIBRARY}
           ${PHYSFS_LIBRARY}
           ${ZLIB_LIBRARY}
@@ -724,13 +743,14 @@ else() # Linux
           OpenSSL::Crypto
           httplib::httplib
           fmt::fmt-header-only
+          utf8cpp::utf8cpp
           Ogg::ogg
           Vorbis::vorbisfile
           Vorbis::vorbis
   )
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(${PROJECT_NAME}
+    target_compile_options(otclient_core
             PRIVATE
             -Wall -Wextra -Wpedantic
     )
@@ -738,7 +758,7 @@ else() # Linux
 
 endif()
 if(ENABLE_DISCORD_RPC AND NOT ANDROID)
-	target_link_libraries(${PROJECT_NAME} PRIVATE ${DISCORDRPC_LIBRARY})
+        target_link_libraries(otclient_core PUBLIC ${DISCORDRPC_LIBRARY})
 endif()
 
 # *****************************************************************************

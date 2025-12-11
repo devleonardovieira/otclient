@@ -22,6 +22,10 @@ function UIGameMap:onDragEnter(mousePos)
         return false
     end
 
+    if thing:isItem() and not thing:isNotMoveable() then
+        UIDragIcon:display(thing)
+    end
+
     self.currentDragThing = thing
     -- Disponibiliza a 'thing' arrastada globalmente como fallback para handlers que não recebem a origem
     g_ui.draggedThing = thing
@@ -38,6 +42,7 @@ function UIGameMap:onDragLeave(droppedWidget, mousePos)
         g_ui.draggedThing = nil
     end
     g_mouse.popCursor('target')
+    UIDragIcon:hide()
     return true
 end
 
@@ -73,6 +78,7 @@ function UIGameMap:onDrop(widget, mousePos)
         g_game.move(thing, toPos, 1)
     end
 
+    UIDragIcon:hide()
     return true
 end
 

@@ -37,6 +37,19 @@
 
 const static TexturePtr m_textureNull;
 
+namespace {
+    std::string_view categoryName(const ThingCategory category)
+    {
+        switch (category) {
+            case ThingCategoryItem: return "item";
+            case ThingCategoryCreature: return "creature";
+            case ThingCategoryEffect: return "effect";
+            case ThingCategoryMissile: return "missile";
+            default: return "unknown";
+        }
+    }
+}
+
 void ThingType::unserializeAppearance(const uint16_t clientId, const ThingCategory category, const appearances::Appearance& appearance)
 {
     m_null = false;
@@ -619,20 +632,31 @@ void ThingType::drawWithFrameBuffer(const TexturePtr& texture, const Rect& scree
 
 void ThingType::draw(const Point& dest, const int layer, const int xPattern, const int yPattern, const int zPattern, const int animationPhase, const Color& color, const bool drawThings, LightView* lightView)
 {
-    if (m_null)
+    // items:
+    // layer - item layer (example: in old clients, a modified dat file was using this to show which tiles could be fished)
+    // xPattern - ground pattern 1 / count or fluid based coordinate
+    // yPattern - ground pattern 2 / count or fluid based coordinate
+    // zPattern - ground pattern 3 (eg. zaoan roofs)
+
+    // outfits:
+    // layer = outfit layer (normal / mask)
+    // xPattern = direction
+    // yPattern = addon layer
+    // zPattern = mounted state
+
+    if (m_null || m_animationPhases == 0)
         return;
 
-    if (animationPhase >= m_animationPhases)
-        return;
+    // outfits like 126 and 127 don't have animation
+    // this line fixes a bug that makes them disappear while moving
+    int animationFrameId = animationPhase % m_animationPhases;
 
-    TexturePtr texture;
-    if (g_drawPool.getCurrentType() != DrawPoolType::LIGHT) {
-        texture = getTexture(animationPhase); // texture might not exists, neither its rects.
-        if (!texture)
-            return;
+    const auto& texture = getTexture(animationFrameId);
+    if (!texture) {
+        return; // texture might not exists, neither its rects.
     }
 
-    const auto& textureData = m_textureData[animationPhase];
+    const auto& textureData = m_textureData[animationFrameId];
 
     const uint32_t frameIndex = getTextureIndex(layer, xPattern, yPattern, zPattern);
     if (frameIndex >= textureData.pos.size())
@@ -665,26 +689,25 @@ const TexturePtr& ThingType::getTexture(const int animationPhase)
 
     auto& textureData = m_textureData[animationPhase];
 
-    auto& animationPhaseTexture = textureData.source;
-
-    if (animationPhaseTexture) return animationPhaseTexture;
-
-    bool async = g_app.isLoadingAsyncTexture();
-    if (g_game.isUsingProtobuf() && g_drawPool.getCurrentType() == DrawPoolType::FOREGROUND)
-        async = false;
-
-    if (!async) {
-        loadTexture(animationPhase);
+    if (textureData.source)
         return textureData.source;
-    }
 
-    if (!m_loading) {
-        m_loading = true;
+    bool expected = false;
+    if (m_loading.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
+        bool async = g_app.isLoadingAsyncTexture();
+        if (g_game.isUsingProtobuf() && g_drawPool.getCurrentType() == DrawPoolType::FOREGROUND)
+            async = false;
+
+        if (!async) {
+            loadTexture(animationPhase);
+            m_loading.store(false, std::memory_order_release);
+            return textureData.source;
+        }
 
         auto action = [this] {
             for (int_fast8_t i = -1; ++i < m_animationPhases;)
                 loadTexture(i);
-            m_loading = false;
+            m_loading.store(false, std::memory_order_release);
         };
 
         g_asyncDispatcher.detach_task(std::move(action));
@@ -770,17 +793,23 @@ void ThingType::loadTexture(const int animationPhase)
                                 bool isLoading = false;
                                 const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
 
-                                if (isLoading)
+                            if (isLoading)
+                                return;
+
+                            if (!spriteImage) {
+                                if (spriteId != 0) {
+                                    g_logger.error("Failed to fetch sprite id {} for thing {} ({}, {}), layer {}, pattern {}x{}x{}, frame {}", spriteId, m_name, m_id, categoryName(m_category), l, x, y, z, animationPhase);
                                     return;
+                                }
+                            } else {
                                 // verifies that the first block in the lower right corner is transparent.
-                                if (!spriteImage || spriteImage->hasTransparentPixel()) {
+                                if (spriteImage->hasTransparentPixel()) {
                                     fullImage->setTransparentPixel(true);
                                 }
 
-                                if (spriteImage) {
-                                    if (spriteMask) {
-                                        spriteImage->overwriteMask(maskColors[(l - 1)]);
-                                    }
+                                if (spriteMask) {
+                                    spriteImage->overwriteMask(maskColors[(l - 1)]);
+                                }
 
                                     fullImage->blit(framePos + Point(m_size.width() - w - 1, m_size.height() - h - 1) * g_gameConfig.getSpriteSize(), spriteImage);
                                 }
@@ -793,55 +822,65 @@ void ThingType::loadTexture(const int animationPhase)
                                     const uint32_t spriteIndex = getSpriteIndex(w, h, spriteMask ? 1 : l, x, y, z, animationPhase);
                                     const auto spriteId = m_spritesIndex[spriteIndex];
                                     bool isLoading = false;
-                                   const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
-                                    if (isLoading) return;
-                                    if (!spriteImage || spriteImage->hasTransparentPixel()) fullImage->setTransparentPixel(true);
-                                    if (spriteImage) {
-                                        if (spriteMask) spriteImage->overwriteMask(maskColors[(l - 1)]);
-                                        fullImage->blit(framePos + Point(m_size.width() - w - 1, m_size.height() - h - 1) * g_gameConfig.getSpriteSize(), spriteImage);
+                                    const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
+
+                                    if (isLoading)
+                                        return;
+
+                                    if (!spriteImage) {
+                                        if (spriteId != 0) {
+                                            g_logger.error("Failed to fetch sprite id {} for thing {} ({}, {}), layer {}, pattern {}x{}x{}, frame {}, offset {}x{}", spriteId, m_name, m_id, categoryName(m_category), l, x, y, z, framePos, w, h);
+                                            return;
+                                        }
+                                    } else {
+                                        // verifies that the first block in the lower right corner is transparent.
+                                        if (h == 0 && w == 0 && spriteImage->hasTransparentPixel()) {
+                                            fullImage->setTransparentPixel(true);
+                                        }
+
+                                        if (spriteMask) {
+                                            spriteImage->overwriteMask(maskColors[(l - 1)]);
+                                        }
+
+                                        const Point& spritePos = Point(m_size.width() - w - 1, m_size.height() - h - 1) * g_gameConfig.getSpriteSize();
+                                        fullImage->blit(framePos + spritePos, spriteImage);
                                     }
                                 }
                             }
-                        } else {
-                            // Macro-sprite composition (one big image per frame/pattern/layer)
-                            const uint32_t spriteIndex = getSpriteIndex(-1, -1, spriteMask ? 1 : l, x, y, z, animationPhase);
-                            if (spriteIndex < m_spritesIndex.size()) {
-                                const auto spriteId = m_spritesIndex[spriteIndex];
-                                bool isLoading = false;
-                                const auto& spriteImage = g_sprites.getSpriteImage(spriteId, isLoading);
-                                if (isLoading) return;
-                                if (!spriteImage || spriteImage->hasTransparentPixel()) fullImage->setTransparentPixel(true);
-                                if (spriteImage) {
-                                    if (spriteMask) spriteImage->overwriteMask(maskColors[(l - 1)]);
-                                    const Size pxSize = spriteImage->getSize();
-                                    const int tile = g_gameConfig.getSpriteSize();
-                                    const Size tilesSize((pxSize.width() + tile - 1) / tile, (pxSize.height() + tile - 1) / tile);
-                                    const Point spritePos = Point(cellSizeInTiles.width() - tilesSize.width(), cellSizeInTiles.height() - tilesSize.height()) * tile;
-                                    fullImage->blit(framePos + spritePos, spriteImage);
-                                }
-                            }
                         }
-                     }
+                    }
 
-                    // Initialize position entry and set defaults
-                    textureData.pos[frameIndex] = TextureData::Pos();
-                    textureData.pos[frameIndex].offsets = Point(0);
-                    // Base rects for logical m_size (may be overridden by cell size below)
-                    textureData.pos[frameIndex].rects = Rect(framePos, m_size * g_gameConfig.getSpriteSize());
-                    textureData.pos[frameIndex].originRects = Rect(framePos, m_size * g_gameConfig.getSpriteSize());
-                    // Adjust offsets so that drawing anchors to logical m_size even if cell size is bigger
-                    const Point anchorOffset = Point((m_size.width() - cellSizeInTiles.width()) * g_gameConfig.getSpriteSize(), (m_size.height() - cellSizeInTiles.height()) * g_gameConfig.getSpriteSize());
-                    textureData.pos[frameIndex].offsets = anchorOffset;
-                    // Final rects/originRects reflect actual cell size in the atlas
-                    textureData.pos[frameIndex].rects = Rect(framePos, cellSizeInTiles * g_gameConfig.getSpriteSize());
-                    textureData.pos[frameIndex].originRects = Rect(framePos, cellSizeInTiles * g_gameConfig.getSpriteSize());
-                 }
-             }
-         }
-     }
- 
-     textureData.source = std::make_shared<Texture>(fullImage);
- }
+                    auto& posData = textureData.pos[frameIndex];
+                    posData.rects = { framePos + Point(m_size.width(), m_size.height()) * g_gameConfig.getSpriteSize() - Point(1), framePos };
+                    for (int fx = framePos.x; fx < framePos.x + m_size.width() * g_gameConfig.getSpriteSize(); ++fx) {
+                        for (int fy = framePos.y; fy < framePos.y + m_size.height() * g_gameConfig.getSpriteSize(); ++fy) {
+                            const uint8_t* p = fullImage->getPixel(fx, fy);
+                            if (p[3] == 0x00)
+                                continue;
+
+                            posData.rects.setTop(std::min<int>(fy, posData.rects.top()));
+                            posData.rects.setLeft(std::min<int>(fx, posData.rects.left()));
+                            posData.rects.setBottom(std::max<int>(fy, posData.rects.bottom()));
+                            posData.rects.setRight(std::max<int>(fx, posData.rects.right()));
+                        }
+                    }
+
+                    posData.originRects = Rect(framePos, Size(m_size.width(), m_size.height()) * g_gameConfig.getSpriteSize());
+                    posData.offsets = posData.rects.topLeft() - framePos;
+                }
+            }
+        }
+    }
+
+    if (m_opacity < 1.0f)
+        fullImage->setTransparentPixel(true);
+
+    if (m_opaque == -1)
+        m_opaque = !fullImage->hasTransparentPixel();
+
+    textureData.source = std::make_shared<Texture>(fullImage, true, false);
+    textureData.source->allowAtlasCache();
+}
 
 Size ThingType::getBestTextureDimension(int w, int h, const int count)
 {
