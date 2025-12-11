@@ -5,7 +5,7 @@ MoveableTabBarButton < UIButton
   size: 153 33
   anchors.top: parent.top
   anchors.left: parent.left
-  font: montserrat regular 14
+  font: DMSans-14px-medium
   color: #FFFFFF
   image-source: /images/ui/tabbar_button
   image-clip: 0 53 153 33
@@ -25,7 +25,7 @@ MoveableTabBarButton < UIButton
 
   $checked:
     image-clip: 0 0 153 33
-    color: #1fbf6e
+    color: #9BCCFD
     image-color: #FFFFFF
 
   $on !checked:
@@ -101,14 +101,12 @@ TabBarVerticalButton < ButtonBlueSmall
   anchors.right: parent.right
   text-align: left
   text-offset: 10 2
-  font: montserrat medium 16
+  font: DMSans-13px-bold
   icon-align: top
   icon-offset-y: 5
   icon-color: #6b6b6b
   text-only-upper-case: true
-  image-color: #1fbf6e
-  
-  // default state color
+  image-color: #69B2FC
 
   $first:
     anchors.top: parent.top
@@ -124,7 +122,7 @@ TabBarVerticalButton < ButtonBlueSmall
     icon-color: #333333
 
   $checked:
-    image-color: #128c4f
+    image-color: #0466C8
     icon-color: #eeeeee
 
   $on !checked:
@@ -159,7 +157,7 @@ TabBarHorizontalButton < UIButton
   size: 48 48
   color: #aaaaaa
   anchors.top: parent.top
-  font: montserrat regularRounded 16
+  font: righteous-12px-rounded-solid
   text-align: bottom
   icon-align: top
   icon-offset-y: -6

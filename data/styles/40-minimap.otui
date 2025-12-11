@@ -111,7 +111,6 @@ FilterCheckBox < CheckBox
   image-size: 15 15
   image-border: 3
   margin-bottom: 6
-  font: montserrat regular 14
   color: #EAEAEA
   text-auto-resize: true
   padding-left: 6
@@ -191,7 +190,6 @@ Minimap < UIMinimap
         
       Label
         !text: tr('Modo:')
-        font: montserrat regular 14
         color: #FFFFFF
         margin-right: 8
 
@@ -218,7 +216,6 @@ Minimap < UIMinimap
         
         Label
           !text: tr('Ações:')
-          font: montserrat regular 14
           color: #FFFFFF
           margin-right: 8
 
@@ -239,7 +236,6 @@ Minimap < UIMinimap
       // Lista de filtros
       Label
         !text: tr('Filtros')
-        font: montserrat regular 14
         color: #FFFFFF
         margin-top: 8
 

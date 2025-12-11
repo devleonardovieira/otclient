@@ -38,7 +38,7 @@ game
     min-static-text-duration: 3000
 
 font
-  widget: montserrat boldRounded 20
+  widget: verdana-11px-antialised
   static-text: verdana-11px-rounded
   animated-text: verdana-11px-rounded
-  creature-text: montserrat boldRounded 20
+  creature-text: verdana-11px-rounded

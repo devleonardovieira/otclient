@@ -7,7 +7,7 @@ CheckBox < UICheckBox
   text-auto-resize: true
   text-align: left
   text-offset: 29 3
-  font: montserrat bold 13
+  font: DMSans-13px-bold
   color: #CCCCCC
   change-cursor-image: true
   cursor: pointer
@@ -19,11 +19,11 @@ CheckBox < UICheckBox
 
   $checked:
     image-clip: 0 24 24 24
-    image-color: #1fbf6e
+    image-color: #0466C8
 
   $hover checked:
     image-clip: 0 24 24 24
-    image-color: #1aa562
+    image-color: #69B2FC
     color: #FFFFFF
 
   $disabled:
@@ -46,7 +46,7 @@ ColorBox < UICheckBox
     change-cursor-image: false
 
 ButtonBox < UICheckBox
-  font: montserrat bold 16
+  font: damas
   color: #a8a8a8
   size: 106 23
   text-offset: 0 0

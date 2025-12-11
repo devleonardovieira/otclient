@@ -1,63 +1,50 @@
 Label < UILabel
-  font: montserrat regularRounded 14
+  font: damas
   color: #dfdfdf
 
   $disabled:
     color: #dfdfdf88
-
-FlatLabel < UILabel
-  font: montserrat regular 12
-  color: #dfdfdf
-  size: 86 20
-  text-offset: 3 3
-  image-source: /images/ui/panel
-  image-border: 1
-
-  $disabled:
-    color: #dfdfdf88
-
-MenuLabel < Label
 
 GameLabel < UILabel
-  font: montserrat regular 12
+  font: righteous-12px-rounded-solid
   color: #dfdfdf
 
 Label-12px-Regular < UILabel
-  font: montserrat regular 12
+  font: DMSans-12px-regular
   color: #FFFFFF
 
 Label-13px-Bold < UILabel
-  font:  montserrat bold 14
+  font: DMSans-13px-bold
   color: #FFFFFF
 
 Label-13px-Regular < UILabel
-  font: montserrat regular 13
+  font: DMSans-13px-regular
   color: #FFFFFF
 
 Label-14px-Medium < UILabel
-  font: montserrat medium 14
+  font: DMSans-14px-medium
   color: #FFFFFF
 
 Label-14px-Regular < UILabel
-  font: montserrat regular 14
+  font: DMSans-14px-regular
   color: #FFFFFF
 
 Label-16px-Bold < UILabel
-  font: montserrat bold 16
+  font: DMSans-16px-bold
   color: #FFFFFF
 
 Label-16px-Regular < UILabel
-  font: montserrat regular 16
+  font: DMSans-16px-regular
   color: #FFFFFF
 
 Label-20px-Bold < UILabel
-  font: montserrat bold 20
-  color: red
+  font: DMSans-20px-bold
+  color: #FFFFFF
 
 Label-26px-Bold < UILabel
-  font: montserrat bold 26
+  font: DMSans-26px-bold
   color: #FFFFFF
 
 Label-30px-Bold < UILabel
-  font: montserrat bold 30
+  font: DMSans-30px-bold
   color: #FFFFFF

@@ -8,6 +8,7 @@ ConsolePhantom < ScrollablePanel
     align-bottom: true
 
 ConsoleLabel < UITextEdit
+  font: righteous-12px-rounded
   height: 14
   color: yellow
   margin-left: 2
@@ -22,16 +23,15 @@ ConsoleLabel < UITextEdit
   selectable: false
   focusable: false
   border: 0 white
-  font: montserrat regular 14
 
 ConsolePhantomLabel < UILabel
+  font: righteous-12px-rounded
   height: 14
   color: yellow
   text-wrap: true
   text-auto-resize: true
   selection-color: #111416
   selection-background-color: #999999
-  font: montserrat regular 14
 
 ConsoleTabBar < MoveableTabBar
 
@@ -170,7 +170,7 @@ ConsolePanel < Panel
     @onClick: sayModeChange()
     visible: false
 
-  UITextEdit
+  TextEdit
     id: consoleTextEdit
     height: 30
     anchors.left: parent.left
@@ -181,9 +181,10 @@ ConsolePanel < Panel
     shift-navigation: true
     max-length: 255
     text-auto-submit: true
-    font: montserrat regular 14
-    text-offset: 4 0
+    font: DMSans-13px-regular
     !placeholder: tr('Digite aqui...')
+    @onSetup: |
+      self.placeholderLabel:setMarginTop(1)
 
   UICheckBox
     id: toggleChat

@@ -63,7 +63,7 @@ HotkeyListLabel < Label-16px-Regular
       end
 
 
-ShinMainWindow
+MainWindow
   id: hotkeysWindow
   !text: tr('Hotkeys')
   size: 493 420
@@ -139,10 +139,8 @@ ShinMainWindow
     anchors.left: parent.left
     anchors.right: prev.left
     anchors.verticalCenter: prev.verticalCenter
-    font: montserrat regular 16
     margin-right: 6
     placeholder: Edit hotkey text
-    placeholder-font: montserrat bold 16
     placeholder-align: center
     placeholder-color: white
 

@@ -3,7 +3,7 @@ TexturizedProgressBarTextWidget < UIWidget
   anchors.fill: parent
   focusable: false
   phantom: true
-  font: montserrat regularRounded 16
+  font: righteous-12px-rounded-solid
   text-offset: 0 2
 
 TexturizedProgressBarFrontWidget < UIWidget

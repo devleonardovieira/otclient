@@ -8,7 +8,6 @@ CreateCharacterWindow < HeadlessWindow
   anchors.left: parent.left
   anchors.bottom: parent.bottom
   padding: 120 30 45 30
-  font: montserrat bold 30
   phantom: false
   text-align: top
   text-offset: 0 40

@@ -8,7 +8,6 @@ TextEditVerification < UITextEdit
   border: 0 alpha
   color: #FFFFFF
   cursor-color: #FFFFFF
-  font: montserrat bold 20
   padding: 15 0 4 21
   selection-color: #3C3C3C
   selection-background-color: #dfdfdf
@@ -75,7 +74,6 @@ AccountValidationWindow < MainHeadlessWindow
     anchors.bottom: next.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-bottom: 10
-    font: montserrat medium 14
     !text: tr('Reenviar c�digo')
     @onClick: modules.game_accounts.onCodeEmail()
 
@@ -87,7 +85,6 @@ AccountValidationWindow < MainHeadlessWindow
   ButtonLabel
     anchors.bottom: parent.bottom
     anchors.left: parent.horizontalCenter
-    font: montserrat regular 14
     margin-left: 3
     !text: tr('Entre em contato')
 

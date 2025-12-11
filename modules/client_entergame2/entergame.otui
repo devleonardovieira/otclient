@@ -40,7 +40,6 @@ UIWindow
       anchors.left: parent.left
       anchors.right: parent.right
       margin-top: 7
-      font: montserrat regularRounded 22
 
       ButtonEye
         id: viewEmail
@@ -68,7 +67,6 @@ UIWindow
       anchors.left: parent.left
       anchors.right: parent.right
       margin-top: 7
-      font: montserrat regularRounded 22
 
       ButtonEye
         id: viewPassword
@@ -90,7 +88,6 @@ UIWindow
       text-auto-resize: true
       !text: tr('Remember email')
       !tooltip: tr('Remember account email when starts client')
-      font: montserrat regular 16
   
   ButtonBlueLarge
     anchors.top: prev.bottom
@@ -111,13 +108,11 @@ UIWindow
       anchors.left: parent.left
       text-auto-resize: true
       !text: tr("Don't have an account?")
-      font: montserrat regularRounded 22
       
 
     ButtonLabel
       anchors.top: parent.top
       anchors.left: prev.right
-      font: montserrat regularRounded 22
       margin-left: 6
       !text: tr('Create account')
       @onClick: modules.game_accounts.showAccountPanel()
@@ -127,4 +122,3 @@ UIWindow
       anchors.horizontalCenter: parent.horizontalCenter
       !text: tr('Forgot your password?')
       @onClick: modules.game_accounts.showRecoverPanel()
-      font: montserrat regularRounded 22

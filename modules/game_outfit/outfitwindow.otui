@@ -3,7 +3,7 @@ OutfitButtonBox < UICheckBox
   color: #616161
   text-align: center
   image-source: /images/game/outfits/button_color
-  font: montserrat bold 13
+  font: DMSans-13px-bold
 
   $hover !disabled:
     color: #FFFFFF

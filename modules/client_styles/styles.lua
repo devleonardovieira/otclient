@@ -20,8 +20,9 @@ function init()
     local device = g_platform.getDevice()
     importResources("styles", "otui", device)
     importResources("fonts", "otfont", device)
-    importResources("fonts", "ttf", device)
-    importResources("fonts", "otf", device)
+    -- Desativado: não importar TTF/OTF
+    -- importResources("fonts", "ttf", device)
+    -- importResources("fonts", "otf", device)
     importResources("particles", "otps", device)
 
     g_mouse.loadCursors('/cursors/cursors')

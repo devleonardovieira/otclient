@@ -17,7 +17,7 @@ OptionScrollbar < HorizontalScrollBar
   step: 1
   @onValueChange: modules.client_options.setOption(self:getId(), self:getValue())
 
-ShinMainWindow
+MainWindow
   id: optionsWindow
   !text: tr('Options')
   size: 480 500

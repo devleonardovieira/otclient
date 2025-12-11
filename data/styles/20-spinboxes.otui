@@ -7,7 +7,7 @@ SpinBox < TextEdit
   border: 2 #444444
   cursor-color: #FFFFFF
   background-color: #242424
-  font: montserrat regular 18
+  font: DMSans-16px-regular
   padding: 10 5 4 8
   selection-color: #3C3C3C
   selection-background-color: #dfdfdf

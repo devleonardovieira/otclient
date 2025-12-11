@@ -1,7 +1,7 @@
 ProgressBar < UIProgressBar
   height: 16
   background-color: red
-  font: montserrat semibold 15
+  font: righteous-12px-rounded-solid
   text-offset: 0 1
   border: 1 #394042
 
@@ -15,7 +15,7 @@ LifeProgressBar < UIProgressBar
   height: 16
   background-color: green
   border: 1 black
-  font: montserrat regularRounded 16
+  font: righteous-12px-rounded-solid
   text-offset: 0 2
   margin: 2
   
@@ -24,7 +24,7 @@ ProgressRect < UIProgressRect
   phantom: true
   color: white
   background-color: #00000088
-  font: montserrat regularRounded 16
+  font: righteous-12px-rounded-solid
 
 HealthBar < ProgressBar
   background-color: #ff4444

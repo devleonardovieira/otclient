@@ -1,10 +1,9 @@
 WaitPanel < PanelRounded
   size: 404 61
   anchors.centerIn: parent
-  font: montserrat regular 16
   !text: tr('Wait') .. '...'
 
-AccountCreateWindow < ShinMainWindow
+AccountCreateWindow < MainWindow
   id: window
   size: 542 540
   !text: tr('Create Account')
@@ -168,7 +167,6 @@ AccountCreateWindow < ShinMainWindow
     phantom: false
     text-align: left
     text: teste
-    font: montserrat bold 20
     @onSetup: self:setMultiColorText(tr("I accept {#1B80E5|Shin Online terms and rules}"))
     @onClick: modules.game_accounts.showTermsPanel()
 

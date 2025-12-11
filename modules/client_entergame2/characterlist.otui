@@ -147,7 +147,6 @@ CharacterList < HeadlessWindow
   anchors.left: parent.left
   anchors.bottom: parent.bottom
   padding: 120 30 45 30
-  font: montserrat bold 20
   text-align: top
   text-offset: 0 40
   draggable: false

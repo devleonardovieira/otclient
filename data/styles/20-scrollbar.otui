@@ -7,7 +7,7 @@ HorizontalScrollBarValueLabel < Label
   text-align: center
   text-offset: 0 -6
   visible: false
-  font: montserrat regular 16
+  font: DMSans-13px-regular
   color: #FFFFFFFF
 
 ScrollBarSlider < UIButton
@@ -17,15 +17,13 @@ ScrollBarSlider < UIButton
   image-source: /images/ui/scrollbar
   image-clip: 4 0 9 13
   image-border: 6
-  image-color: #1fbf6e
-  
-  // green palette
-// base: #1fbf6e, hover: #1aa562, pressed: #128c4f
+  image-color: #0466C8
+
   $hover:
-    image-color: #1aa562
+    image-color: #69B2FC
 
   $pressed:
-    image-color: #128c4f
+    image-color: #0466C8
 
   $disabled:
     image-color: #6E6E6E
@@ -37,13 +35,13 @@ HorizontalScrollBarSlider < UIButton
   image-source: /images/ui/scrollbar
   image-clip: 16 0 25 13
   image-border: 12
-  image-color: #1fbf6e
+  image-color: #0466C8
 
   $hover:
-    image-color: #1aa562
+    image-color: #69B2FC
 
   $pressed:
-    image-color: #128c4f
+    image-color: #0466C8
 
   $disabled:
     image-color: #6E6E6E
@@ -90,7 +88,7 @@ VerticalScrollBar < UIScrollBar
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     image-border: 13
-  image-color: #b8fee7
+    image-color: #9BCCFD
 
   UIButton
     id: incrementButton
@@ -157,7 +155,7 @@ HorizontalScrollBar < UIScrollBar
     image-source: /images/ui/scrollbar
     image-clip: 0 67 53 13
     image-border: 8
-  image-color: #b8fee7
+    image-color: #9BCCFD
 
   UIButton
     id: incrementButton
