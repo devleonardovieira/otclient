@@ -1,0 +1,319 @@
+ShopCategory < Panel
+  height: 112
+  focusable: true
+  text-align: topleft
+  text-offset: 10 10
+  font: DMSans-20px-bold
+  opacity: 0.8
+
+  $!first:
+    margin-top: 10
+
+  $hover:
+    opacity: 1
+
+  $focus:
+    opacity: 1
+
+ShopCategory < UIWidget
+  size: 267 112
+  text-align: topleft
+  text-offset: 10 10
+  font: DMSans-20px-bold
+  image-color: #454545
+  change-cursor-image: true
+  cursor: pointer
+
+  $!first:
+    margin-top: 10
+
+  $hover:
+    opacity: 1
+    image-color: #FFFFFF
+
+  $focus:
+    opacity: 1
+    image-color: #FFFFFF
+
+ShopOffer < PanelRoundedSolid
+  height: 373
+  padding: 10
+  image-color: #474646
+  phantom: false
+  focusable: true
+  @onHoverChange: |
+    function(self, hovered)
+      if hovered and self.tooltip and not g_mouse.isPressed() then
+        g_tooltip.display(self.tooltip)
+      else
+        g_tooltip.hide()
+      end
+      self.outline:setVisible(hovered)
+    end
+
+  Panel
+    id: image
+    size: 226 174
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin: -10
+
+  PanelRoundedSolid
+    anchors.fill: parent
+    anchors.top: parent.verticalCenter
+    image-color: #3C3C3C
+    margin: -10
+
+  Label-20px-Bold
+    id: title
+    anchors.top: prev.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-align: center
+    text-wrap: true
+    margin-top: 18
+
+  Label-13px-Regular
+    id: description
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: next.top
+    text-auto-resize: true
+    text-wrap: true
+    text-align: center
+
+  ButtonBlueMedium
+    id: buy
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    @onHoverChange: |
+      function(self, hovered)
+        self:getParent().outline:setVisible(hovered)
+      end
+
+  PanelOutline
+    id: outline
+    anchors.fill: parent
+    margin: -10
+    image-clip: 0 60 170 60
+    visible: false
+
+ShopOfferItem < ShopOffer
+
+  UIItem
+    id: item
+    size: 45 45
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 23
+    virtual: true
+    phantom: true
+
+ShopOfferCreature < ShopOffer
+
+  UICreature
+    id: creature
+    size: 68 68
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 32
+    phantom: true
+
+ShopOfferImage < ShopOffer
+
+MainWindow
+  id: shopWindow
+  !text: tr('Shop')
+  size: 1110 650 
+  @onEscape: modules.game_shop.hide()
+  @onClose: modules.game_shop.hide()
+
+  PanelRoundedSolid
+    id: infoPanel
+    size: 310 95
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    margin-top: 18
+    image-color: #525252
+    padding: 8
+
+    UIItem
+      size: 34 34
+      item-id: 17614
+      anchors.top: parent.top
+      anchors.left: parent.left
+      virtual: true
+
+    Label-16px-Bold
+      id: points
+      anchors.left: prev.right
+      anchors.verticalCenter: prev.verticalCenter
+      text-auto-resize: true
+      margin-left: 10
+      text: 0
+
+    ButtonBlueSmall
+      id: pix
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.horizontalCenter
+      margin-right: 5
+      !text: tr('Pix')
+      icon: /images/game/icons/icon_pix
+      icon-align: left
+      icon-offset: 10 0
+      @onClick: modules.game_shop.showPixWindow()
+
+    ButtonBlueSmall
+      id: buy
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      anchors.left: parent.horizontalCenter
+      margin-left: 5
+      !text: tr('Donate')
+
+    UIButton
+      anchors.right: next.left
+      anchors.top: parent.top
+      image-source: /images/game/shop/icons/withdraw
+      margin-right: 10
+      change-cursor-image: true
+      cursor: pointer
+      !tooltip: tr('Withdraw')
+      @onClick: modules.game_shop.showWithdrawWindow()
+
+    UIButton
+      anchors.right: parent.right
+      anchors.top: parent.top
+      image-source: /images/game/icons/icon_historic
+      change-cursor-image: true
+      cursor: pointer
+      !tooltip: tr('Historic')
+      @onClick: modules.game_shop.showHistory()
+
+  Panel
+    id: adPanel
+    anchors.top: parent.top
+    anchors.left: infoPanel.right
+    anchors.right: parent.right
+    margin-left: 10
+    height: 0
+    visible: false
+
+    Label
+      id: ad
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      text-auto-resize: true
+      text-wrap: true
+      text-align: center
+      font: sans-bold-16px
+
+  PanelRoundedSolid
+    image-color: #525252
+    anchors.top: infoPanel.bottom
+    anchors.left: parent.left
+    anchors.right: infoPanel.right
+    anchors.bottom: parent.bottom
+    margin-top: 12
+    font: DMSans-26px-bold
+    text-align: top
+    text-offset: 0 10
+    !text: tr('Categories')
+
+  TextList    
+    id: categories
+    vertical-scrollbar: categoriesScrollBar
+    anchors.fill: prev
+    focusable: false
+    padding: 65 14 14 14
+
+  VerticalScrollBar
+    id: categoriesScrollBar
+    anchors.top: categories.top
+    anchors.bottom: categories.bottom
+    anchors.right: categories.right
+    step: 50
+    pixels-scroll: true
+    visible: false
+
+  TextEdit
+    id: editSearch
+    width: 301
+    anchors.top: infoPanel.top
+    anchors.right: parent.right
+    margin-right: 18
+    !placeholder: tr('Search') .. "..."
+    @onTextChange: |
+      function(self, text)
+        self.placeholderLabel:setVisible(text:len() == 0)
+        modules.game_shop.searchShopOffer(text)
+      end
+
+  HorizontalSeparator
+    id: separator
+    anchors.top: prev.bottom
+    anchors.right: prev.right
+    anchors.left: infoPanel.right
+    margin: 14 0 0 34
+
+  VerticalScrollBar
+    id: offersScrollBar
+    anchors.top: prev.bottom
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-top: 14
+    step: 65
+    pixels-scroll: true
+
+  ScrollablePanel
+    id: offers
+    vertical-scrollbar: offersScrollBar
+    anchors.top: prev.top
+    anchors.left: separator.left
+    anchors.right: prev.left
+    anchors.bottom: parent.bottom
+    background: alpha
+    border: 0 alpha
+    focusable: false
+    layout:
+      type: grid
+      cell-size: 228 373
+      cell-spacing: 16
+      flow: true
+
+  MainHeadlessWindow
+    id: withdrawWindow
+    size: 355 165
+    !text: tr("Withdraw")
+    visible: false
+
+    TextEdit
+      id: withdrawTextEdit
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      !placeholder: tr('Enter a value') .. "..." 
+      @onSetup: self:setValidCharacters('0123456789')
+
+    ButtonRedSmall
+      id: closeButton
+      !text: tr("Close")
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      anchors.left: parent.horizontalCenter
+      margin-left: 5
+      @onClick: modules.game_shop.shop.withdrawWindow:hide()
+    
+    ButtonBlueSmall
+      id: withdrawButton
+      !text: tr("Withdraw")
+      anchors.left: parent.left
+      anchors.bottom: parent.bottom
+      anchors.right: parent.horizontalCenter
+      margin-right: 5
+      @onClick: modules.game_shop.requestWithdraw()

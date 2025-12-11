@@ -762,6 +762,18 @@ function hideCharPanel()
         end
     end
 
+    -- Limpa foco e referência global se o nameInput estiver ativo
+    if charPanel and charPanel.nameInput then
+        -- Evita novas validações após esconder
+        charPanel.nameInput.onTextChange = nil
+        if charPanel.nameInput.clearFocus then
+            charPanel.nameInput:clearFocus()
+        end
+        if rootWidget and rootWidget.currentTextEdit == charPanel.nameInput then
+            rootWidget.currentTextEdit = nil
+        end
+    end
+
     -- Libera referências do grupo de rádio antes de destruir os widgets filhos
     if genderGroup then
         genderGroup:destroy()
@@ -1137,10 +1149,13 @@ end
 -- Validação remota do nome do personagem
 function onNameTyping(input)
     local txt = input:getText()
-    local helper = charPanel and charPanel.helperNameInput
     debounceField('charName', function()
         accounts:validateCharacter(txt, function(data, err)
-            updateHelperFromErrors(helper, 'name', data, tr("Nome v\xE1lido"))
+            -- Obtém helper dinamicamente para evitar manter referência após destruir UI
+            local helper = charPanel and charPanel.helperNameInput
+            if helper then
+                updateHelperFromErrors(helper, 'name', data, tr("Nome v\xE1lido"))
+            end
         end)
     end)
 end

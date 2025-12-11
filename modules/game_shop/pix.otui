@@ -1,0 +1,174 @@
+CardDonate < Panel
+  size: 194 65
+  image-source: /images/game/icons/card_donate
+
+PixQRCodeWindow < MainWindow
+  size: 430 460
+  !text: tr('Donate Pix')
+  @onSetup: |
+    self.closeButton:hide()
+
+  Label-14px-Regular
+    anchors.top: prev.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    margin-top: 18
+    color: #9AFF80
+    !text: tr('Use o aplicativo de seu banco para escanear este QR Code')
+
+  UIWidget
+    id: image
+    anchors.fill: parent
+    anchors.top: prev.bottom
+    anchors.bottom: next.top
+    margin: 18 78
+    font: DMSans-20px-bold
+    !text: tr('Loading...')
+
+  TextEdit
+    id: pixInput
+    anchors.bottom: next.bottom
+    anchors.left: parent.left
+    anchors.right: next.left
+    margin: 0 8 -4 0
+
+  ButtonCopyPast
+    id: copyPix
+    anchors.bottom: next.top
+    anchors.right: parent.right
+    margin-bottom: 17
+    !tooltip: tr("Copy")
+
+  ButtonBlueSmall
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    !text: tr("Ok")
+    @onClick: modules.game_shop.hideQrCodeWindow()
+
+  ButtonRedSmall
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    anchors.left: parent.horizontalCenter
+    margin-left: 5
+    !text: tr("Cancel")
+    @onClick: modules.game_shop.hideQrCodeWindow()
+
+  PanelRoundedSolid
+    id: loading
+    anchors.fill: parent
+    anchors.top: closeButton.bottom
+    margin: 18 -2 0 -2
+    text-auto-resize: true
+    font: DMSans-20px-bold
+    image-color: #242424
+    !text: tr('Loading...')
+
+PixWindow < MainWindow
+  size: 430 430
+  !text: tr('Donate Pix')
+  @onSetup: |
+    self.closeButton:hide()
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 18
+    text-auto-resize: true
+    !text: tr("CPF")
+
+  TextEdit
+    id: cpfInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onSetup: self:setValidCharacters('0123456789')
+    @onTextChange: |
+      function(self, text)
+        onInputCPF(self)
+      end
+
+  Label-13px-Regular
+    id: helperCpfInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    margin-top: 4
+    !text: tr("Amount")
+
+  TextEdit
+    id: amountInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    @onSetup: self:setValidCharacters('0123456789')
+    @onTextChange: |
+      function(self, text)
+        onInputAmount(self, 10, 10000)
+      end
+
+  Label-13px-Regular
+    id: helperAmountInput
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-auto-resize: true
+    text-wrap: true
+    margin-top: 2
+
+  CardDonate
+    anchors.bottom: next.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    image-clip: 0 0 194 65
+
+  CardDonate
+    anchors.bottom: next.top
+    anchors.right: parent.right
+    anchors.left: parent.horizontalCenter
+    margin: 0 0 10 5
+    image-clip: 0 65 194 65
+
+  CardDonate
+    anchors.bottom: next.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    image-clip: 0 130 194 65
+
+  CardDonate
+    anchors.bottom: next.top
+    anchors.right: parent.right
+    anchors.left: parent.horizontalCenter
+    margin: 0 0 12 5
+    image-clip: 0 195 194 65
+
+  ButtonBlueSmall
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-right: 5
+    !text: tr('Confirm')
+    @onClick: modules.game_shop.onConfirm()
+
+  ButtonRedSmall
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    anchors.left: parent.horizontalCenter
+    margin-left: 5
+    !text: tr('Cancel')
+    @onClick: modules.game_shop.hideQrCodeWindow() modules.game_shop.hidePixWindow()

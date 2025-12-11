@@ -36,5 +36,6 @@ Module
     - game_actionbar
     - game_battle
     - game_viplist
+    - game_shop
   @onLoad: init()
   @onUnload: terminate()

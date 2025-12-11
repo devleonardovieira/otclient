@@ -232,6 +232,13 @@ function createEditWindow(widget)
 		end
 		-- Solta referência local antes de destruir a janela para evitar aviso
 		descriptionText = nil
+		-- Limpa referência global de TextEdit focado, se apontando para descriptionText
+		if rootWidget and rootWidget.currentTextEdit and not rootWidget.currentTextEdit:isDestroyed() then
+			local id = rootWidget.currentTextEdit:getId()
+			if id == 'descriptionText' then
+				rootWidget.currentTextEdit = nil
+			end
+		end
 		if iconRadioGroup then iconRadioGroup:destroy() end
 		if iconColorRadioGroup then iconColorRadioGroup:destroy() end
 		if editVipWindow then editVipWindow:destroy() end
@@ -286,6 +293,13 @@ function createEditWindow(widget)
 		end
 		-- Solta referência local antes de destruir a janela para evitar aviso
 		descriptionText = nil
+		-- Limpa referência global de TextEdit focado, se apontando para descriptionText
+		if rootWidget and rootWidget.currentTextEdit and not rootWidget.currentTextEdit:isDestroyed() then
+			local id = rootWidget.currentTextEdit:getId()
+			if id == 'descriptionText' then
+				rootWidget.currentTextEdit = nil
+			end
+		end
 		if iconRadioGroup then iconRadioGroup:destroy() end
 		if iconColorRadioGroup then iconColorRadioGroup:destroy() end
 		if editVipWindow then editVipWindow:destroy() end

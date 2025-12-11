@@ -192,39 +192,25 @@ function bindKeys()
     g_keyboard.bindKeyPress('Ctrl+-', function()
         gameMapPanel:zoomOut()
     end, gameRootPanel)
-
-    Keybind.new("Movement", "Stop All Actions", "Escape", "", true)
-    Keybind.bind("Movement", "Stop All Actions", {
-        {
-            type = KEY_PRESS,
-            callback = function()
-                if lastStopAction + 50 > g_clock.millis() then return end
-                lastStopAction = g_clock.millis()
-                g_game.cancelAttackAndFollow()
-            end,
-        }
-    }, gameRootPanel)
-
-    Keybind.new("Misc", "Logout", "Ctrl+L", "Ctrl+Q")
-    Keybind.bind("Misc", "Logout", {
-        {
-            type = KEY_PRESS,
-            callback = function() tryLogout(false) end,
-        }
-    }, gameRootPanel)
-
-    Keybind.new("UI", "Clear All Texts", "Ctrl+W", "")
-    Keybind.bind("UI", "Clear All Texts", {
-        {
-            type = KEY_DOWN,
-            callback = function()
-                g_map.cleanTexts()
-                modules.game_textmessage.clearMessages()
-            end,
-        }
-    }, gameRootPanel)
+    g_keyboard.bindKeyPress("Escape", function()
+		if lastStopAction + 50 > g_clock.millis() then
+			return
+		end
+		lastStopAction = g_clock.millis()
+		g_game.cancelAttackAndFollow()
+	end, gameRootPanel)
 
     g_keyboard.bindKeyDown('Ctrl+.', nextViewMode, gameRootPanel)
+    g_keyboard.bindKeyDown("Ctrl+Q", function()
+		tryLogout(false)
+	end, gameRootPanel)
+	g_keyboard.bindKeyDown("Ctrl+L", function()
+		tryLogout(false)
+	end, gameRootPanel)
+	g_keyboard.bindKeyDown("Ctrl+W", function()
+		g_map.cleanTexts()
+		modules.game_textmessage.clearMessages()
+	end, gameRootPanel)
 end
 
 function terminate()
