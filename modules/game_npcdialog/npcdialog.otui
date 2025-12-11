@@ -1,4 +1,4 @@
-ShinMainWindow
+MainWindow
   id: npcDialogWindow
   anchors.centerIn: parent
   size: 360 220

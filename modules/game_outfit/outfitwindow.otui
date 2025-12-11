@@ -239,7 +239,7 @@ OutfitPanel < UIWidget
     !text: tr('Use')
     @onClick: modules.game_outfit.accept()
 
-ShinMainWindow
+MainWindow
   size: 700 490
   focusable: true
   !text: tr('Select Outfit')

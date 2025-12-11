@@ -123,7 +123,7 @@ CharacterBoxBase < UIWidget
 CharacterBoxCreate < CharacterBoxBase
   &createCharacter: true
   image-clip: 0 0 467 164
-  image-source: /images/game/icons/icon_default_32px
+  image-source: /images/game/characters/create
   @onClick: modules.game_accounts.showCharPanel()
 
   $hover:

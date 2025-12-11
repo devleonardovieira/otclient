@@ -363,7 +363,7 @@ function CharacterList.createList(characters)
 		widget.clan:setImageSource("/images/game/icons/" .. (info.clan and iconsClan[tonumber(math.floor(info.clan))] or "icon_no_clan_20px"))
 		connect(widget, {
 			onDoubleClick = function()
-				CharacterList.doLogin()
+				CharacterList.doLogin() 
 				return true
 			end
 		})
