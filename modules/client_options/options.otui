@@ -1,7 +1,16 @@
 OptionCheckBox < CheckBox
-  @onCheckChange: modules.client_options.setOption(self:getId(), self:isChecked())
-  height: 16
-
+  height: 19
+  text-offset: 0 0
+  font: DMSans-14px-medium
+  image-source: ~
+  @onCheckChange: |
+    self.toggle:setChecked(self:isChecked())
+    modules.client_options.setOption(self:getId(), self:isChecked())
+  @onHoverChange: |
+    function(self, hovered)
+      self.toggle:setOn(hovered)
+    end
+  
   $first:
     anchors.left: parent.left
     anchors.right: parent.right
@@ -13,6 +22,26 @@ OptionCheckBox < CheckBox
     anchors.top: prev.bottom
     margin-top: 2
 
+  $on:
+    color: #FFFFFF  
+
+  ToggleButton
+    id: toggle
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    @onCheckChange: self:getParent():setChecked(self:isChecked())
+    @onHoverChange: |
+      function(self, hovered)
+        self:getParent():setOn(hovered)
+      end
+
+    $checked on:
+      image-clip: 0 54 40 18
+
+    $!checked on:
+      image-clip: 0 18 40 18
+
+
 OptionScrollbar < HorizontalScrollBar
   step: 1
   @onValueChange: modules.client_options.setOption(self:getId(), self:getValue())
@@ -20,18 +49,20 @@ OptionScrollbar < HorizontalScrollBar
 MainWindow
   id: optionsWindow
   !text: tr('Options')
-  size: 480 500
+  size: 655 426
 
   @onEnter: modules.client_options.hide()
   @onEscape: modules.client_options.hide()
 
   TabBarVertical
     id: optionsTabBar
+    width: 150
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.bottom: parent.bottom
+    margin-top: 50
 
-  Panel
+  TabBarVertical
     id: optionsTabContent
     anchors.top: optionsTabBar.top
     anchors.left: optionsTabBar.right

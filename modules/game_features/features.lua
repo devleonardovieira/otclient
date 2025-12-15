@@ -12,7 +12,7 @@ controller:registerEvents(g_game, {
         g_game.enableFeature(GameAllowPreWalk)
         g_game.enableFeature(GameMapCache)
          g_game.enableFeature(GameSmoothWalkElevation)
-      --[[    g_game.enableFeature(GameColorizedLootValue) ]]
+         g_game.enableFeature(GameExtendedOpcode)
          g_game.enableFeature(GameTileAddThingWithStackpos)
          g_game.enableFeature(GameContainerFilter)
 

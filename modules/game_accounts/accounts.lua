@@ -431,7 +431,6 @@ function showActivePanel()
 			local prevInput = panel:getChildBefore(self)
 			local nextInput = panel:getChildAfter(self)
 			local textLength = text:trim():len()
-				print('textLength', textLength, 'text', text)
 			if textLength > 1 then
 				self:clearText()
 
@@ -447,7 +446,6 @@ function showActivePanel()
 			end
 
 			local enableSendButton = i == #childrens and self:isEnabled() and textLength > 0
-			print('enableSendButton', enableSendButton)
 			sendButton:setEnabled(enableSendButton)
 		end
 
@@ -503,6 +501,17 @@ function showAccountPanel()
             setHelperFeedback(w.helperConfirmPassword, false, nil, tr("Preencha este campo."))
         end
     end
+    addEvent(function()
+        if accountPanel and accountPanel.window then
+            local w = accountPanel.window
+            local parent = accountPanel
+            w:breakAnchors()
+            local centerX = math.floor((parent:getWidth() - w:getWidth()) / 2)
+            local centerY = math.floor((parent:getHeight() - w:getHeight()) / 2)
+            w:setPosition({ x = -w:getWidth(), y = centerY })
+            g_effects.moveToPosition(w, { x = -w:getWidth(), y = centerY }, { x = centerX, y = centerY }, 280, Easing.easeOutBack)
+        end
+    end)
 end
 
 function showWaitPanel()
@@ -539,6 +548,16 @@ function showCharPanel()
         CharacterList.hide()
     end
     genderGroup:selectWidget(genderGroup:getFirstWidget())
+
+    addEvent(function()
+        if charPanel then
+            local w = charPanel
+            local finalPos = w:getPosition()
+            w:breakAnchors()
+            w:setPosition({ x = -w:getWidth(), y = finalPos.y })
+            g_effects.moveToPosition(w, { x = -w:getWidth(), y = finalPos.y }, finalPos, 280, Easing.easeOutBack)
+        end
+    end)
 end
 
 function showDeletePanel(name)
@@ -678,6 +697,25 @@ function showRecoverPanel()
             end
         end
     end
+
+    addEvent(function()
+        if recoverPanel then
+            local w = nil
+            if recoverPanel.window and recoverPanel.window:isVisible() then
+                w = recoverPanel.window
+            elseif recoverPanel.windowEmail then
+                w = recoverPanel.windowEmail
+            end
+            if w then
+                local parent = recoverPanel
+                w:breakAnchors()
+                local centerX = math.floor((parent:getWidth() - w:getWidth()) / 2)
+                local centerY = math.floor((parent:getHeight() - w:getHeight()) / 2)
+                w:setPosition({ x = -w:getWidth(), y = centerY })
+                g_effects.moveToPosition(w, { x = -w:getWidth(), y = centerY }, { x = centerX, y = centerY }, 280, Easing.easeOutBack)
+            end
+        end
+    end)
 end
 
 function showTermsPanel()
@@ -738,11 +776,26 @@ function hideCreatePanel()
         end
     end
     hideTermsPanel()
-    hide(accountPanel)
-    accountPanel = nil
-    -- Evita tentar acessar módulo não carregado durante unload
-    if modules.client_entergame2 and modules.client_entergame2.toggle then
-        modules.client_entergame2.toggle()
+    if accountPanel and accountPanel.window then
+        local w = accountPanel.window
+        local parent = accountPanel
+        local centerY = math.floor((parent:getHeight() - w:getHeight()) / 2)
+        local target = { x = -w:getWidth(), y = centerY }
+        local from = w:getPosition()
+        w:breakAnchors()
+        g_effects.moveToPosition(w, from, target, 220, Easing.easeIn, function()
+            hide(accountPanel)
+            accountPanel = nil
+            if modules.client_entergame2 and modules.client_entergame2.toggle then
+                modules.client_entergame2.toggle()
+            end
+        end)
+    else
+        hide(accountPanel)
+        accountPanel = nil
+        if modules.client_entergame2 and modules.client_entergame2.toggle then
+            modules.client_entergame2.toggle()
+        end
     end
 end
 
@@ -752,7 +805,6 @@ function hideWaitPanel()
 end
 
 function hideCharPanel()
-    -- Cancela valida es pendentes para evitar referencias de widgets destrudos
     if validationEvents then
         for k, ev in pairs(validationEvents) do
             if ev then
@@ -780,10 +832,24 @@ function hideCharPanel()
         genderGroup = nil
     end
 
-    hide(charPanel)
-    charPanel = nil
-    if CharacterList and CharacterList.show then
-        CharacterList.show()
+    if charPanel then
+        local w = charPanel
+        local from = w:getPosition()
+        local target = { x = -w:getWidth(), y = from.y }
+        w:breakAnchors()
+        g_effects.moveToPosition(w, from, target, 220, Easing.easeIn, function()
+            hide(charPanel)
+            charPanel = nil
+            if CharacterList and CharacterList.show then
+                CharacterList.show()
+            end
+        end)
+    else
+        hide(charPanel)
+        charPanel = nil
+        if CharacterList and CharacterList.show then
+            CharacterList.show()
+        end
     end
 end
 
@@ -854,8 +920,28 @@ function hideRecoverPanel()
         removeEvent(recoverPanel.event)
         recoverPanel.event = nil
     end
-    hide(recoverPanel)
-    recoverPanel = nil
+    if recoverPanel then
+        local w = nil
+        if recoverPanel.window and recoverPanel.window:isVisible() then
+            w = recoverPanel.window
+        elseif recoverPanel.windowEmail then
+            w = recoverPanel.windowEmail
+        end
+        if w then
+            local parent = recoverPanel
+            local centerY = math.floor((parent:getHeight() - w:getHeight()) / 2)
+            local target = { x = -w:getWidth(), y = centerY }
+            local from = w:getPosition()
+            w:breakAnchors()
+            g_effects.moveToPosition(w, from, target, 220, Easing.easeIn, function()
+                hide(recoverPanel)
+                recoverPanel = nil
+            end)
+        else
+            hide(recoverPanel)
+            recoverPanel = nil
+        end
+    end
 end
 
 function hideTermsPanel()

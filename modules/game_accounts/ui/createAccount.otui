@@ -1,11 +1,12 @@
 WaitPanel < PanelRounded
-  size: 404 61
+  size: 354 61
   anchors.centerIn: parent
+  font: DMSans-16px-regular
   !text: tr('Wait') .. '...'
 
 AccountCreateWindow < MainWindow
   id: window
-  size: 542 540
+  size: 542 500
   !text: tr('Create Account')
   draggable: false
   @onSetup: |
@@ -27,13 +28,12 @@ AccountCreateWindow < MainWindow
     margin-top: 4
     @onTextChange: |
       function(self, text)
-        modules.game_accounts.onEmailTyping(self)
-        modules.game_accounts.onConfirmEmailTyping(self:getParent().confirmEmailInput)
+        onInputEmail(self)
+        onInputConfirmEmail(self, self:getParent().confirmEmailInput)
       end
 
   Label-13px-Regular
     id: helperEmailInput
-    hight: 14
     anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
@@ -42,19 +42,11 @@ AccountCreateWindow < MainWindow
     margin-top: 2
 
   Label-14px-Medium
-    id: helperEmail
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 1
-    text-auto-resize: true
-
-  Label-14px-Medium
     anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     text-auto-resize: true
-    margin-top: 15
+    margin-top: 8
     !text: tr("Confirm e-mail")
 
   TextEdit
@@ -65,7 +57,7 @@ AccountCreateWindow < MainWindow
     margin-top: 4
     @onTextChange: |
       function(self, text)
-        modules.game_accounts.onConfirmEmailTyping(self)
+        onInputConfirmEmail(self:getParent().emailInput, self)
       end
 
   Label-13px-Regular
@@ -76,21 +68,13 @@ AccountCreateWindow < MainWindow
     text-auto-resize: true
     text-wrap: true
     margin-top: 2
-  
-  Label-14px-Medium
-    id: helperConfirmEmail
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 1
-    text-auto-resize: true
 
   Label-14px-Medium
     anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     text-auto-resize: true
-    margin-top: 15
+    margin-top: 8
     !text: tr("Password")
 
   TextEditPassword
@@ -101,8 +85,8 @@ AccountCreateWindow < MainWindow
     margin-top: 4
     @onTextChange: |
       function(self, text)
-        modules.game_accounts.onPasswordTyping(self)
-        modules.game_accounts.onConfirmPasswordTyping(self:getParent().confirmPasswordInput)
+        onInputPassword(self)
+        onInputConfirmPassword(self, self:getParent().confirmPasswordInput)
       end
 
   Label-13px-Regular
@@ -113,21 +97,13 @@ AccountCreateWindow < MainWindow
     text-auto-resize: true
     text-wrap: true
     margin-top: 2
-  
-  Label-14px-Medium
-    id: helperPassword
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 1
-    text-auto-resize: true
 
   Label-14px-Medium
     anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     text-auto-resize: true
-    margin-top: 15
+    margin-top: 8
     !text: tr("Confirm password")
 
   TextEditPassword
@@ -138,7 +114,7 @@ AccountCreateWindow < MainWindow
     margin-top: 4
     @onTextChange: |
       function(self, text)
-        modules.game_accounts.onConfirmPasswordTyping(self)
+        onInputConfirmPassword(self:getParent().passwordInput, self)
       end
 
   Label-13px-Regular
@@ -149,15 +125,7 @@ AccountCreateWindow < MainWindow
     text-auto-resize: true
     text-wrap: true
     margin-top: 2
-  
-  Label-14px-Medium
-    id: helperConfirmPassword
-    anchors.top: prev.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 1
-    text-auto-resize: true
-  
+
   ButtonLabel
     anchors.left: next.right
     anchors.right: parent.right
@@ -165,16 +133,16 @@ AccountCreateWindow < MainWindow
     text-auto-resize: true
     margin: 3 0 0 2
     phantom: false
+    font: DMSans-13px-bold
     text-align: left
-    text: teste
-    @onSetup: self:setMultiColorText(tr("I accept {#1B80E5|Shin Online terms and rules}"))
+    @onSetup: self:setMultiColorText(tr("I accept {#1fbf6e|ShinOnline terms and rules}"))
     @onClick: modules.game_accounts.showTermsPanel()
 
   CheckBox
     id: acceptTerm
     anchors.bottom: next.top
     anchors.left: parent.left
-    margin-bottom: 12
+    margin-bottom: 22
     @onChecked: g_settings.set('acceptTermAndRules', self:isChecked()) 
 
   ButtonBlueSmall

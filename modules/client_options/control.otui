@@ -22,8 +22,9 @@ Panel
     !tooltip: tr('You will have more precision over the character walking,\nbut it can feel more abrupt or unnatural')
     @onCheckChange: g_game.setScheduleLastWalk(not self:isChecked())
 
-  Label
+  Label-14px-Medium
     id: turnDelayLabel
+    text-auto-resize: true
     !text: tr('Turn delay: %sms', 30)
     anchors.left: parent.left
     anchors.right: parent.right
@@ -42,8 +43,9 @@ Panel
     minimum: 30
     maximum: 250
 
-  Label
+  Label-14px-Medium
     id: hotkeyDelayLabel
+    text-auto-resize: true
     !text: tr('Hotkey delay: %dms', 30)
     anchors.left: parent.left
     anchors.right: parent.right

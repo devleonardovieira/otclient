@@ -50,7 +50,7 @@ Panel
     !text: tr('Async texture loading')
     !tooltip: tr('This option makes textures load asynchronously and uses less RAM.')
 
-  Label
+  Label-14px-Medium
     id: floorViewModeLabel
     !text: tr('Floor View Mode')..':'
     phantom: false
@@ -67,13 +67,14 @@ Panel
     margin-left: 5
     mouse-scroll: false
 
-  Label
+  Label-14px-Medium
     id: antialiasingModeLabel
     !text: tr('Antialiasing Mode')..':'
     phantom: false
     anchors.left: floorViewModeLabel.left
     anchors.top: prev.bottom
     margin-top: 13
+    text-auto-resize: true
 
   ComboBox
     id: antialiasingMode
@@ -84,8 +85,9 @@ Panel
     margin-left: 5
     mouse-scroll: false
 
-  Label
+  Label-14px-Medium
     id: ambientLightLabel
+    text-auto-resize: true
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: antialiasingModeLabel.top
@@ -103,8 +105,9 @@ Panel
     minimum: 0
     maximum: 100
 
-  Label
+  Label-14px-Medium
     id: shadowFloorIntensityLevel
+    text-auto-resize: true
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: prev.bottom
@@ -122,7 +125,7 @@ Panel
     minimum: 0
     maximum: 100
 
-  Label
+  Label-14px-Medium
     id: floorFadingLabel
     anchors.left: parent.left
     anchors.right: parent.right
@@ -141,7 +144,7 @@ Panel
     minimum: 0
     maximum: 1000
 
-  Label
+  Label-14px-Medium
     id: backgroundFrameRateLabel
     !text: tr('Game framerate limit: %s', 'max')
     anchors.left: parent.left

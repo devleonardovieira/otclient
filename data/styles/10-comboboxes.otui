@@ -22,6 +22,7 @@ ComboBox < UIComboBox
   text-align: left
   text-offset: 10 0
   font: DMSans-13px-bold
+  image-color: #1fbf6e
 
   $hover !disabled:
     image-clip: 0 40 400 40

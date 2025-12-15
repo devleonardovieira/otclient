@@ -153,6 +153,7 @@ ToggleButton < UICheckBox
   image-rect: 0 0 40 18
   change-cursor-image: true
   cursor: pointer
+  image-color: #1fbf6e
 
   $hover:
     image-clip: 0 18 40 18

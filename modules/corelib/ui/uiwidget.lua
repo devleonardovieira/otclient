@@ -23,7 +23,13 @@ function UIWidget:setMultiColorText(text, defaultColor)
 	local highlightData = getHighlightedText(text, defaultColor or "white")
 
 	if #highlightData > 2 then
-		self:setColoredText(highlightData)
+		local result = ""
+		for i = 1, #highlightData, 2 do
+			local content = highlightData[i] or ""
+			local color = highlightData[i + 1] or (defaultColor or "white")
+			result = result .. "{" .. content .. ", " .. color .. "}"
+		end
+		self:setColoredText(result)
 	else
 		self:setText(text)
 	end

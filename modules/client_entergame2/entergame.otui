@@ -100,19 +100,18 @@ UIWindow
     size: 234 50
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-bottom: 80
-    margin-left: -45
+    margin-bottom: 40
 
-    Label
+    Label-16px-Bold
       anchors.top: parent.top
       anchors.left: parent.left
       text-auto-resize: true
       !text: tr("Don't have an account?")
-      
 
     ButtonLabel
       anchors.top: parent.top
       anchors.left: prev.right
+      font: DMSans-16px-bold
       margin-left: 6
       !text: tr('Create account')
       @onClick: modules.game_accounts.showAccountPanel()
@@ -121,4 +120,5 @@ UIWindow
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       !text: tr('Forgot your password?')
+      font: DMSans-16px-bold
       @onClick: modules.game_accounts.showRecoverPanel()

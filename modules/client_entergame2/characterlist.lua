@@ -514,9 +514,15 @@ function CharacterList.show()
     return
   end
 
-  charactersWindow:show()
-  charactersWindow:raise()
-  charactersWindow:focus()
+  local w = charactersWindow
+  local finalPos = w:getPosition()
+  w:breakAnchors()
+  w:setPosition({ x = -w:getWidth(), y = finalPos.y })
+  w:show()
+  w:raise()
+  g_effects.moveToPosition(w, { x = -w:getWidth(), y = finalPos.y }, finalPos, 280, Easing.easeOutBack, function()
+    w:focus()
+  end)
   CharacterList.showInfoPanel()
   -- Mostrar botão de logout somente enquanto a lista de personagens está visível
   local bg = modules.client_background.getBackground()
@@ -529,20 +535,41 @@ end
 function CharacterList.hide(showLogin)
   showLogin = showLogin or false
 
+  if charactersWindow and charactersWindow:isVisible() then
+    local w = charactersWindow
+    local finalPos = w:getPosition()
+    local target = { x = -w:getWidth(), y = finalPos.y }
+    local from = finalPos
+    w:breakAnchors()
+    g_effects.moveToPosition(w, from, target, 220, Easing.easeIn, function()
+      w:hide()
+      CharacterList.hideInfoPanel()
+      modules.game_accounts.hideDeletePanel()
+      modules.game_accounts.hideCancelDeletePanel()
+      local bg = modules.client_background.getBackground()
+      if bg then
+        local logoutButton = bg:getChildById('logoutButton')
+        if logoutButton then logoutButton:hide() end
+      end
+      if showLogin and EnterGame and not g_game.isOnline() then
+        EnterGame.show()
+      end
+    end)
+    return
+  end
+
   charactersWindow:hide()
   CharacterList.hideInfoPanel()
   modules.game_accounts.hideDeletePanel()
   modules.game_accounts.hideCancelDeletePanel()
-  -- Oculta botão de logout quando sair da lista de personagens
   local bg = modules.client_background.getBackground()
   if bg then
     local logoutButton = bg:getChildById('logoutButton')
     if logoutButton then logoutButton:hide() end
   end
-
-	if showLogin and EnterGame and not g_game.isOnline() then
-		EnterGame.show()
-	end
+  if showLogin and EnterGame and not g_game.isOnline() then
+    EnterGame.show()
+  end
 end
 
 function CharacterList.showAgain()

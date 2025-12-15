@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/client_textedit/textedit.lua
+-- chunkname: @/modules/client_textedit/textedit.lua
 
 local activeWindow
 
@@ -18,6 +18,9 @@ end
 
 function destroyWindow()
 	if activeWindow then
+		if rootWidget and rootWidget.currentTextEdit and activeWindow.text and rootWidget.currentTextEdit == activeWindow.text then
+			rootWidget.currentTextEdit = nil
+		end
 		activeWindow:destroy()
 
 		activeWindow = nil
@@ -80,6 +83,9 @@ function show(text, options, callback)
 	end
 
 	local function destroy()
+		if rootWidget and rootWidget.currentTextEdit and window.text and rootWidget.currentTextEdit == window.text then
+			rootWidget.currentTextEdit = nil
+		end
 		window:destroy()
 	end
 

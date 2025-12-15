@@ -81,19 +81,19 @@ function init()
     g_keyboard.bindKeyDown('Ctrl+N', toggleDisplays)
 
     generalPanel = g_ui.loadUI('general')
-    optionsTabBar:addTab(tr('General'), generalPanel, '/images/optionstab/game')
+    optionsTabBar:addTab(tr('General'), generalPanel)
 
     controlPanel = g_ui.loadUI('control')
-    optionsTabBar:addTab(tr('Control'), controlPanel, '/images/optionstab/controls')
+    optionsTabBar:addTab(tr('Control'), controlPanel)
 
     consolePanel = g_ui.loadUI('console')
-    optionsTabBar:addTab(tr('Console'), consolePanel, '/images/optionstab/console')
+    optionsTabBar:addTab(tr('Console'), consolePanel)
 
     graphicsPanel = g_ui.loadUI('graphics')
-    optionsTabBar:addTab(tr('Graphics'), graphicsPanel, '/images/optionstab/graphics')
+    optionsTabBar:addTab(tr('Graphics'), graphicsPanel)
 
     soundPanel = g_ui.loadUI('audio')
-    optionsTabBar:addTab(tr('Audio'), soundPanel, '/images/optionstab/audio')
+    optionsTabBar:addTab(tr('Audio'), soundPanel)
 
   --[[   optionsButton = modules.client_topmenu.addLeftButton('optionsButton', tr('Options'), '/images/topbuttons/options',
                                                          toggle)
