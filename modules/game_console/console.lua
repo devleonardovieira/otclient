@@ -19,7 +19,7 @@ SpeakTypesSettings = {
 		speakType = MessageModes.GamemasterBroadcast
 	},
 	private = {
-		color = "#5FF7F7",
+		color = "#1fbf6e",
 		private = true,
 		speakType = MessageModes.PrivateTo
 	},
@@ -29,18 +29,18 @@ SpeakTypesSettings = {
 		speakType = MessageModes.GamemasterTo
 	},
 	privatePlayerToPlayer = {
-		color = "#9F9DFD",
+		color = "#1fbf6e",
 		private = true,
 		speakType = MessageModes.PrivateTo
 	},
 	privatePlayerToNpc = {
-		color = "#9F9DFD",
+		color = "#1fbf6e",
 		npcChat = true,
 		private = true,
 		speakType = MessageModes.NpcTo
 	},
 	privateNpcToPlayer = {
-		color = "#5FF7F7",
+		color = "#1fbf6e",
 		npcChat = true,
 		private = true,
 		speakType = MessageModes.NpcFrom
@@ -240,6 +240,25 @@ function init()
 	g_keyboard.bindKeyDown("Ctrl+O", g_game.requestChannels, gameRootPanel)
 	g_keyboard.bindKeyDown("Ctrl+E", removeCurrentTab, gameRootPanel)
 	g_keyboard.bindKeyDown("Ctrl+H", openHelp, gameRootPanel)
+	local function quickEnter()
+		if not g_game.isOnline() then
+			return
+		end
+		local chatVisible = not consoleToggleChat:isChecked() and consoleTextEdit:isVisible()
+		local inputFocused = consoleTextEdit:isFocused()
+		if chatVisible then
+			if inputFocused then
+				sendCurrentMessage()
+			else
+				disableChat(true)
+			end
+		else
+			enableChat(true)
+			visibleConsolePanel(true)
+		end
+	end
+	g_keyboard.bindKeyDown("Enter", quickEnter, gameRootPanel)
+	-- focus-related enter binds removed per request
 
 	consoleToggleChat = consolePanel:getChildById("toggleChat")
 
@@ -288,9 +307,15 @@ function addConsolePhatomLine(text, color)
 	end
 
 	local tmpLabel = g_ui.createWidget("ConsolePhantomLabel", consolePhantom)
-
-	tmpLabel:setText(text)
-	tmpLabel:setColor(color)
+	-- Suporte a texto colorido no phantom: se vier em formato {texto, #cor}, usar setColoredText
+	if type(text) == "string" and text:find("{") then
+		tmpLabel:setColoredText(text)
+	else
+		tmpLabel:setText(text)
+		if color then
+			tmpLabel:setColor(color)
+		end
+	end
 
 	local function destroyCallback()
 		tmpLabel:destroy()
@@ -353,6 +378,9 @@ function visibleConsolePanel(state)
 			currentTab.tabPanel:getChildById("consoleBuffer"):setOn(state)
 			currentTab.tabPanel:getChildById("consoleScrollBar"):setVisible(state)
 		end
+		if state and isChatEnabled() then
+			consoleTextEdit:focus()
+		end
 	end)
 end
 
@@ -362,7 +390,7 @@ function enableChat(temporarily)
 	end
 
 	if consoleToggleChat:isChecked() then
-		return consoleToggleChat:setChecked(false)
+		consoleToggleChat:setChecked(false)
 	end
 
 	if not temporarily then
@@ -405,7 +433,7 @@ function disableChat(temporarily)
 	end
 
 	if not consoleToggleChat:isChecked() then
-		return consoleToggleChat:setChecked(true)
+		consoleToggleChat:setChecked(true)
 	end
 
 	if not temporarily then
@@ -414,6 +442,7 @@ function disableChat(temporarily)
 
 	consoleTextEdit:setVisible(false)
 	consoleTextEdit:setText("")
+	visibleConsolePanel(false)
 
 	local function quickFunc()
 		if not g_game.isOnline() then
@@ -489,6 +518,7 @@ function terminate()
   g_keyboard.unbindKeyDown("Ctrl+O", gameRootPanel)
   g_keyboard.unbindKeyDown("Ctrl+E", gameRootPanel)
   g_keyboard.unbindKeyDown("Ctrl+H", gameRootPanel)
+  -- focus-related enter unbinds removed per request
   saveCommunicationSettings()
 
   if channelsWindow then
@@ -565,6 +595,9 @@ function onTabChange(tabBar, tab)
         if not currentTab then return end
         currentTab.tabPanel:getChildById("consoleBuffer"):setOn(isChatEnabled())
         currentTab.tabPanel:getChildById("consoleScrollBar"):setVisible(isChatEnabled())
+		if isChatEnabled() then
+			consoleTextEdit:focus()
+		end
     end)
 end
 
@@ -574,6 +607,38 @@ function clear()
 	local playerName = g_game.getCharacterName()
 	local savedChannels = {}
 	local set = false
+
+	-- Desativar mudanças de aba para evitar referências penduradas durante limpeza
+	if consoleTabBar then
+		consoleTabBar.onTabChange = nil
+	end
+
+	if consoleTabBar then
+		if defaultTab then
+			consoleTabBar:selectTab(defaultTab)
+			clearChannel(consoleTabBar)
+		end
+		if serverTab then
+			consoleTabBar:selectTab(serverTab)
+			clearChannel(consoleTabBar)
+		end
+		local npcTab = consoleTabBar:getTab("NPCs")
+		if npcTab then
+			consoleTabBar:selectTab(npcTab)
+			clearChannel(consoleTabBar)
+		end
+		for _, channelName in pairs(channels) do
+			local tab = consoleTabBar:getTab(channelName)
+			if tab then
+				consoleTabBar:selectTab(tab)
+				clearChannel(consoleTabBar)
+			end
+		end
+		if violationReportTab then
+			consoleTabBar:selectTab(violationReportTab)
+			clearChannel(consoleTabBar)
+		end
+	end
 
 	for channelId, channelName in pairs(channels) do
 		if type(channelId) == "number" then
@@ -626,6 +691,11 @@ function clear()
 		consoleTabBar:removeTab(violationReportTab)
 
 		violationReportTab = nil
+	end
+
+	-- Garantir que todas as abas internas sejam descartadas
+	if consoleTabBar and consoleTabBar.clearTabs then
+		protectedcall(function() consoleTabBar:clearTabs() end)
 	end
 
 	consoleTextEdit:clearText()
@@ -734,6 +804,9 @@ function clearChannel(consoleTabBar)
     end
   end)
 
+  -- Unhook buffer-level handlers that capture the currentTab upvalue
+  consoleBuffer.onMouseRelease = nil
+
   -- Destroy each label safely to avoid lingering references
   for _, child in pairs(consoleBuffer:getChildren()) do
     destroyConsoleLabelSafely(child)
@@ -798,6 +871,7 @@ function addTab(name, focus)
 		end
 	else
 		tab = consoleTabBar:addTab(name, nil, processChannelTabMenu)
+		tab:setColor("#1fbf6e")
 	end
 
 	if focus then
@@ -1227,10 +1301,34 @@ function addTabText(text, speaktype, tab, creatureName)
 	end
 
 	label = label or g_ui.createWidget("ConsoleLabel", consoleBuffer)
-
 	label:setId("consoleLabel" .. consoleBuffer:getChildCount())
-	label:setText(text)
-	label:setColor(speaktype.color)
+	local tabText = tab:getText()
+	-- Cor padrão para nome do canal
+	local channelColor = "#1fbf6e"
+	local ts, rest = text:match("^(%d%d:%d%d)%s+(.*)$")
+	rest = rest or text
+	-- Linha visível (sem prefixo do canal)
+	local coloredStr = ""
+	if ts then
+		coloredStr = coloredStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
+	end
+	local namePart, body = rest:match("^(.-):%s*(.*)$")
+	if namePart then
+		local nOnly, lvl = namePart:match("^(.-)%s*%((%d+)%)$")
+		if not lvl then
+			nOnly, lvl = namePart:match("^(.-)%s*%[(%d+)%]$")
+		end
+		if nOnly and lvl then
+			coloredStr = coloredStr .. "{" .. nOnly .. ", " .. "#1fbf6e" .. "}"
+			coloredStr = coloredStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
+		else
+			coloredStr = coloredStr .. "{" .. namePart .. ": " .. ", " .. "#1fbf6e" .. "}"
+		end
+		coloredStr = coloredStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
+	else
+		coloredStr = coloredStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
+	end
+	label:setColoredText(coloredStr)
 	consoleTabBar:blinkTab(tab)
 
 	if table.contains({
@@ -1256,9 +1354,28 @@ function addTabText(text, speaktype, tab, creatureName)
 		end
 	end
 
-	local tmpText = string.format("[%s]: %s", tab:getText(), text)
-
-	addConsolePhatomLine(tmpText, speaktype.color)
+	-- Linha no phantom (com prefixo do canal em verde)
+	local phantomStr = ""
+	phantomStr = phantomStr .. "{" .. "(" .. tabText .. ") " .. ", " .. channelColor .. "}"
+	if ts then
+		phantomStr = phantomStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
+	end
+	if namePart then
+		local nOnly, lvl = namePart:match("^(.-)%s*%((%d+)%)$")
+		if not lvl then
+			nOnly, lvl = namePart:match("^(.-)%s*%[(%d+)%]$")
+		end
+		if nOnly and lvl then
+			phantomStr = phantomStr .. "{" .. nOnly .. ", " .. "#1f9ffe" .. "}"
+			phantomStr = phantomStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
+		else
+			phantomStr = phantomStr .. "{" .. namePart .. ": " .. ", " .. "#1f9ffe" .. "}"
+		end
+		phantomStr = phantomStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
+	else
+		phantomStr = phantomStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
+	end
+	addConsolePhatomLine(phantomStr, speaktype.color)
 
 	label.name = creatureName
 
@@ -1409,7 +1526,9 @@ function processChannelTabMenu(tab, mousePos, mouseButton)
 			clearChannel(consoleTabBar)
 		end)
 		menu:addOption(tr("Save Messages"), function()
-			local panel = consoleTabBar:getTabPanel(tab)
+			local current = consoleTabBar:getCurrentTab()
+			if not current then return end
+			local panel = consoleTabBar:getTabPanel(current)
 			local consoleBuffer = panel:getChildById("consoleBuffer")
 			local lines = {}
 
@@ -1512,7 +1631,9 @@ function processMessageMenu(mousePos, mouseButton, creatureName, text, label, ta
 		end
 
 		menu:addOption(tr("Select all"), function()
-			selectAll(tab.tabPanel:getChildById("consoleBuffer"))
+			local current = consoleTabBar:getCurrentTab()
+			if not current then return end
+			selectAll(current.tabPanel:getChildById("consoleBuffer"))
 		end)
 
 		if tab.violations and creatureName then
@@ -2441,6 +2562,11 @@ function online()
 	scheduleEvent(function()
 		consoleTabBar:selectTab(defaultTab)
 	end, 500)
+	scheduleEvent(function()
+		if isChatEnabled() then
+			consoleTextEdit:focus()
+		end
+	end, 550)
 	scheduleEvent(function()
 		ignoredChannels = {}
 	end, 3000)

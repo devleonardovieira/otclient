@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_shop/shop.lua
+-- chunkname: @/modules/game_shop/shop.lua
 
 local SHOP_EXTENTED_OPCODE = 201
 
@@ -748,6 +748,7 @@ end
 
 function hidePixWindow()
 	if pixWindow then
+		pixWindow:onVisibilityChange(false)
 		pixWindow:destroy()
 
 		pixWindow = nil
@@ -756,6 +757,7 @@ end
 
 function hideQrCodeWindow()
 	if qrCodeWindow then
+		qrCodeWindow:onVisibilityChange(false)
 		qrCodeWindow:destroy()
 
 		qrCodeWindow = nil

@@ -1,11 +1,13 @@
 -- chunkname: @/modules/game_outfit/outfit.lua
 
 local OutfitWindow, outfits
-local maxperlist = 20
+local maxperlist = 15
 local currentpage = 1
 local maxpages = 1
 local selectedOutfit, selectedWidget, currentClotheButtonBox, currentColorBox
 local colorBoxes = {}
+
+-- applySelection precisa ter acesso a toOutfitTable; defina após ela
 
 -- Normaliza qualquer valor de outfit para a tabela esperada pelo binding C++
 local function toOutfitTable(o)
@@ -28,6 +30,19 @@ local function toOutfitTable(o)
   end
   -- Quando vier um userdata incorreto, retorna uma tabela vazia segura
   return { type = 0, auxType = 0, addons = 0, head = 0, body = 0, legs = 0, feet = 0 }
+end
+
+local function applySelection(ot, outInfo)
+  selectedOutfit = ot
+  if OutfitWindow and OutfitWindow:getChildById("outfitPanel") then
+    local panel = OutfitWindow:getChildById("outfitPanel")
+    local confirm = panel:getChildById("confirm")
+    local outfitPreview = panel:getChildById("outfit")
+    local nameLabel = panel:getChildById("name")
+    if confirm then confirm:setEnabled(outInfo and outInfo[3] or false) end
+    if outfitPreview then outfitPreview:setOutfit(toOutfitTable(ot)) end
+    if nameLabel and outInfo and outInfo[2] then nameLabel:setText(outInfo[2]) end
+  end
 end
 
 ignoreNextOutfitWindow = 0
@@ -94,6 +109,17 @@ function create(creatureOutfit, outfitList, creatureMount, mountList)
 	outfits = outfitList
 	maxpages = math.ceil(#outfitList / maxperlist)
 
+    do
+        local unlocked = 0
+        for _, out in ipairs(outfitList) do
+            if out[3] then unlocked = unlocked + 1 end
+        end
+        local unlockedLabel = OutfitWindow and OutfitWindow:recursiveGetChildById("unlockedLabel") or nil
+        if unlockedLabel then
+            unlockedLabel:setText(tr("%d/%d Desbloqueados", unlocked, #outfitList))
+        end
+    end
+
     for num, out in ipairs(outfitList) do
 		if selectedOutfit.type == out[1] then
 			currentpage = math.ceil(num / maxperlist)
@@ -138,45 +164,57 @@ function create(creatureOutfit, outfitList, creatureMount, mountList)
 end
 
 function drawOutfitList()
-	OutfitWindow:getChildById("pagePanel"):getChildById("page"):setText(tr("%s de %s", string.format("%02d", currentpage), string.format("%02d", maxpages)))
+	OutfitWindow:getChildById("pagePanel"):getChildById("page"):setText(tr("P\xE1gina: %d/%d", currentpage, maxpages))
 	OutfitWindow:getChildById("outfitList"):destroyChildren()
 
-	for i = 1, 1 do
-		for num, out in ipairs(outfits) do
-			if math.ceil(num / maxperlist) == currentpage then
-                local ot = {
-                    type = out[1],
-                    head = selectedOutfit.head,
-                    body = selectedOutfit.body,
-                    legs = selectedOutfit.legs,
-                    feet = selectedOutfit.feet,
-                    addons = out[3]
-                }
-                local widget = g_ui.createWidget("OutfitBox", OutfitWindow:getChildById("outfitList"))
+	local firstWidget = nil
+	local selectedMatch = nil
+	for num, out in ipairs(outfits) do
+		if math.ceil(num / maxperlist) == currentpage then
+            local ot = {
+                type = out[1],
+                head = selectedOutfit.head,
+                body = selectedOutfit.body,
+                legs = selectedOutfit.legs,
+                feet = selectedOutfit.feet,
+                addons = out[3]
+            }
+            local widget = g_ui.createWidget("OutfitBox", OutfitWindow:getChildById("outfitList"))
 
-                widget.outfit:setOutfit(toOutfitTable(ot))
+            widget.outfit:setOutfit(toOutfitTable(ot))
 
-                widget.ot = ot
+            widget.ot = ot
 
-				widget:setTooltip(out[2])
-				widget.lock:setVisible(not out[3])
+			widget:setTooltip(out[2])
+			widget.lock:setVisible(not out[3])
 
-				if selectedOutfit.type == out[1] then
-					selectedWidget = widget
+            if not firstWidget then firstWidget = widget end
 
-					widget:focus()
-				end
+			if selectedOutfit.type == out[1] then
+				selectedWidget = widget
 
-                function widget.onClick()
-                    selectedOutfit = ot
-                    selectedWidget = widget
+				widget:focus()
+                selectedMatch = { widget = widget, ot = ot, outInfo = out }
+			end
 
-                    OutfitWindow:getChildById("outfitPanel"):getChildById("confirm"):setEnabled(out[3])
-                    OutfitWindow:getChildById("outfitPanel"):getChildById("outfit"):setOutfit(toOutfitTable(ot))
-                    OutfitWindow:getChildById("outfitPanel"):getChildById("name"):setText(out[2])
-                end
+            function widget.onClick()
+                selectedWidget = widget
+                applySelection(ot, out)
+            end
+
+            function widget.onFocus()
+                selectedWidget = widget
+                applySelection(ot, out)
             end
         end
+    end
+
+    -- Garante que o painel de detalhes reflita a seleção atual na abertura
+    if selectedMatch then
+        applySelection(selectedMatch.ot, selectedMatch.outInfo)
+    elseif firstWidget then
+        firstWidget:focus()
+        applySelection(firstWidget.ot, { firstWidget.ot.type, firstWidget:getTooltip(), true })
     end
 end
 
@@ -362,6 +400,17 @@ function firstPage()
 
 	updatePageButtons()
 	drawOutfitList()
+    local list = OutfitWindow:getChildById("outfitList")
+    if list then
+        for i = 1, list:getChildCount() do
+            local child = list:getChildByIndex(i)
+            if child and child.unlocked then
+                child:focus()
+                applySelection(child.ot, { child.ot.type, child:getTooltip(), true })
+                break
+            end
+        end
+    end
 end
 
 function lastPage()
@@ -369,6 +418,17 @@ function lastPage()
 
 	updatePageButtons()
 	drawOutfitList()
+    local list = OutfitWindow:getChildById("outfitList")
+    if list then
+        for i = 1, list:getChildCount() do
+            local child = list:getChildByIndex(i)
+            if child and child.unlocked then
+                child:focus()
+                applySelection(child.ot, { child.ot.type, child:getTooltip(), true })
+                break
+            end
+        end
+    end
 end
 
 function prevPage()
@@ -376,6 +436,17 @@ function prevPage()
 
 	updatePageButtons()
 	drawOutfitList()
+    local list = OutfitWindow:getChildById("outfitList")
+    if list then
+        for i = 1, list:getChildCount() do
+            local child = list:getChildByIndex(i)
+            if child and child.unlocked then
+                child:focus()
+                applySelection(child.ot, { child.ot.type, child:getTooltip(), true })
+                break
+            end
+        end
+    end
 end
 
 function nextPage()
@@ -383,6 +454,17 @@ function nextPage()
 
 	updatePageButtons()
 	drawOutfitList()
+    local list = OutfitWindow:getChildById("outfitList")
+    if list then
+        for i = 1, list:getChildCount() do
+            local child = list:getChildByIndex(i)
+            if child and child.unlocked then
+                child:focus()
+                applySelection(child.ot, { child.ot.type, child:getTooltip(), true })
+                break
+            end
+        end
+    end
 end
 
 function updatePageButtons()

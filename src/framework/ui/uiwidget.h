@@ -715,6 +715,7 @@ protected:
     Fw::AlignmentFlag m_iconAlign{ Fw::AlignNone };
     EdgeGroup<Color> m_borderColor;
     EdgeGroup<> m_borderWidth;
+    int m_borderRadius{ 0 };
     EdgeGroup<> m_margin;
     EdgeGroup<> m_padding;
     bool m_marginLeftAuto{ false };
@@ -777,6 +778,7 @@ public:
     void setBorderColorRight(const Color& color) { m_borderColor.right = color; repaint(); }
     void setBorderColorBottom(const Color& color) { m_borderColor.bottom = color; repaint(); }
     void setBorderColorLeft(const Color& color) { m_borderColor.left = color; repaint(); }
+    void setBorderRadius(const int radius) { m_borderRadius = std::max(0, radius); repaint(); }
     void setMargin(const int margin) { m_margin.set(margin); m_marginLeftAuto = m_marginRightAuto = false; updateParentLayout(); }
     void setMarginHorizontal(const int margin) { m_margin.right = m_margin.left = margin; m_marginLeftAuto = m_marginRightAuto = false; updateParentLayout(); }
     void setMarginVertical(const int margin) { m_margin.bottom = m_margin.top = margin; updateParentLayout(); }
@@ -837,6 +839,7 @@ public:
     int getBorderRightWidth() { return m_borderWidth.right; }
     int getBorderBottomWidth() { return m_borderWidth.bottom; }
     int getBorderLeftWidth() { return m_borderWidth.left; }
+    int getBorderRadius() { return m_borderRadius; }
     int getMarginTop() { return m_margin.top; }
     int getMarginRight() { return m_margin.right; }
     int getMarginBottom() { return m_margin.bottom; }

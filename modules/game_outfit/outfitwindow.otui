@@ -59,18 +59,18 @@ OutfitBox < PanelRoundedSolid
 
 OutfitList < Panel
   id: outfitList
-  anchors.top: prev.top
+  anchors.top: leftHeader.bottom
   anchors.bottom: next.top
   anchors.left: parent.left
   anchors.right: parent.horizontalCenter
-  margin: 32 10 12 0
+  margin: 8 10 12 10
 
   layout:
     type: grid
-    cell-size: 63 80
+    cell-size: 70 84
     cell-spacing: 2
     flow: true
-    num-columns: 3
+    num-columns: 5
     num-lines: 3
 
 PagePanel < UIWidget
@@ -116,7 +116,7 @@ PagePanel < UIWidget
 OutfitPanel < UIWidget
   id: outfitPanel
   width: 316
-  anchors.top: prev.bottom
+  anchors.top: rightHeader.bottom
   anchors.bottom: parent.bottom
   anchors.right: parent.right
   anchors.left: parent.horizontalCenter
@@ -134,7 +134,7 @@ OutfitPanel < UIWidget
     visible: false
     !tooltip: tr('Addon')
 
-  Label-13px-Bold
+  Label-14px-Medium
     id: name
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
@@ -143,14 +143,14 @@ OutfitPanel < UIWidget
   UICreature
     id: outfit
     size: 75 75
-    anchors.bottom: next.top
+    anchors.top: name.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-    margin: 0 15 28 0
+    margin-top: 10
 
   ButtonBlueBase
     size: 28 28
-    anchors.left: next.right
-    anchors.bottom: next.bottom
+    anchors.left: outfit.right
+    anchors.top: outfit.top
     icon: /images/game/icons/pokeinfo
     icon-clip: 0 44 22 22
     icon-color: #FFFFFF
@@ -163,19 +163,19 @@ OutfitPanel < UIWidget
 
   ButtonBlueBase
     size: 28 28
-    anchors.left: next.right
-    anchors.bottom: next.bottom
+    anchors.left: prev.left
+    anchors.top: prev.bottom
     icon: /images/game/outfits/icon_random
-    margin-left: 8
+    margin-left: 0
     !tooltip: tr('Randomize')
     @onClick: modules.game_outfit.randomize()
 
   ButtonBlueBase
     size: 28 28
-    anchors.left: next.left
-    anchors.bottom: next.top
+    anchors.left: prev.left
+    anchors.top: prev.bottom
     icon: /images/game/outfits/icon_rotate
-    margin-bottom: 14
+    margin-top: 8
     !tooltip: tr('Rotate')
     @onClick: modules.game_outfit.setOutfitRotate()
 
@@ -231,22 +231,63 @@ OutfitPanel < UIWidget
       num-columns: 19
       num-lines: 7
 
-  ButtonBlueSmall
+  ButtonBlueLarge
     id: confirm
     anchors.bottom: parent.bottom
-    anchors.right: parent.right
-    anchors.left: parent.left
-    !text: tr('Use')
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 260
+    !text: tr('Confirmar')
     @onClick: modules.game_outfit.accept()
+
+TopBar < Panel
+  id: topBar
+  height: 44
+  anchors.top: parent.top
+  anchors.left: parent.left
+  anchors.right: parent.right
+  padding: 10 10 0 10
+
+SectionHeaderLeft < ScrollablePanelFlat
+  id: leftHeader
+  height: 28
+  anchors.top: topBar.bottom
+  anchors.left: parent.left
+  anchors.right: parent.horizontalCenter
+  padding: 0 10 0 10
+
+  Label-16px-Bold 
+    id: outfitsLabel
+    anchors.centerIn: parent
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: true
+    !text: tr('Outfits')
+
+SectionHeaderRight < ScrollablePanelFlat
+  id: rightHeader
+  height: 28
+  anchors.top: topBar.bottom
+  anchors.left: parent.horizontalCenter
+  anchors.right: parent.right
+  padding: 0 10 0 10
+
+  Label-16px-Bold 
+    id: detailsLabel
+    anchors.centerIn: parent
+    anchors.verticalCenter: parent.verticalCenter
+    text-auto-resize: true
+    !text: tr('Detalhes')
 
 MainWindow
   size: 700 490
   focusable: true
-  !text: tr('Select Outfit')
+  !text: 'Customise Shinobi'
   @onEnter: modules.game_outfit.accept()
   @onEscape: modules.game_outfit.destroy()
   @onClose: modules.game_outfit.destroy()
 
+  TopBar
+  SectionHeaderLeft
+  SectionHeaderRight
   OutfitPanel
   OutfitList
   PagePanel

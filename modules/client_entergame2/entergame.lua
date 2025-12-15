@@ -206,39 +206,28 @@ function EnterGame.doLogin()
   G.requestId = math.random(1)
 
   local http = LoginHttp.create()
-  -- Anima saída da janela de login para a esquerda antes de exibir o loading
+  -- Cria imediatamente o loading para evitar corrida com o retorno do login
+  if EnterGame.loadBox then EnterGame.destroyLoadBox() end
+  EnterGame.loadBox = displayCancelBox(tr('Please wait'), tr('Connecting to login server...'))
+  connect(EnterGame.loadBox, {
+    onCancel = function()
+      if http and http.cancel then http:cancel() end
+      EnterGame.destroyLoadBox()
+      if EnterGameWindow then
+        EnterGameWindow:show()
+        EnterGameWindow:raise()
+        EnterGameWindow:focus()
+      end
+    end
+  })
+  -- Anima saída da janela de login para a esquerda em paralelo ao loading
   if EnterGameWindow and EnterGameWindow:isVisible() then
     local w = EnterGameWindow
     local finalPos = w:getPosition()
     w:breakAnchors()
     g_effects.moveToPosition(w, finalPos, { x = -w:getWidth(), y = finalPos.y }, 220, Easing.easeIn, function()
       w:hide()
-      EnterGame.loadBox = displayCancelBox(tr('Please wait'), tr('Connecting to login server...'))
-      connect(EnterGame.loadBox, {
-        onCancel = function()
-          if http and http.cancel then http:cancel() end
-          EnterGame.destroyLoadBox()
-          if EnterGameWindow then
-            EnterGameWindow:show()
-            EnterGameWindow:raise()
-            EnterGameWindow:focus()
-          end
-        end
-      })
     end)
-  else
-    EnterGame.loadBox = displayCancelBox(tr('Please wait'), tr('Connecting to login server...'))
-    connect(EnterGame.loadBox, {
-      onCancel = function()
-        if http and http.cancel then http:cancel() end
-        EnterGame.destroyLoadBox()
-        if EnterGameWindow then
-          EnterGameWindow:show()
-          EnterGameWindow:raise()
-          EnterGameWindow:focus()
-        end
-      end
-    })
   end
 
   -- Definir apiKey apenas quando SITE_API_KEY não estiver presente no ambiente

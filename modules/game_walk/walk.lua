@@ -12,6 +12,10 @@ local keys = {
     { "Right",   East },
     { "Down",    South },
     { "Left",    West },
+    { "W",       North, true },
+    { "D",       East,  true },
+    { "S",       South, true },
+    { "A",       West,  true },
     { "Numpad8", North },
     { "Numpad9", NorthEast },
     { "Numpad6", East },
@@ -200,7 +204,7 @@ end
 local function bindKeys()
     modules.game_interface.getRootPanel():setAutoRepeatDelay(200)
 
-    for _, keyDir in ipairs(keys) do bindWalkKey(keyDir[1], keyDir[2]) end
+    for _, keyDir in ipairs(keys) do bindWalkKey(keyDir[1], keyDir[2], keyDir[3]) end
     for _, keyDir in ipairs(turnKeys) do bindTurnKey(keyDir[1], keyDir[2]) end
 end
 
@@ -283,20 +287,31 @@ function WalkController:onGameEnd()
 end
 
 --- Utility functions for binding and unbinding keys.
-function bindWalkKey(key, dir)
+function bindWalkKey(key, dir, gated)
     local gameRootPanel = modules.game_interface.getRootPanel()
 
     g_keyboard.bindKeyDown(key, function()
+        if gated and modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+            return
+        end
         g_keyboard.setKeyDelay(key, 1)
         changeWalkDir(dir)
     end, gameRootPanel, true)
 
     g_keyboard.bindKeyUp(key, function()
+        if gated and modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+            return
+        end
         g_keyboard.setKeyDelay(key, 30)
         changeWalkDir(dir, true)
     end, gameRootPanel, true)
 
-    g_keyboard.bindKeyPress(key, function() smartWalk(dir) end, gameRootPanel)
+    g_keyboard.bindKeyPress(key, function()
+        if gated and modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+            return
+        end
+        smartWalk(dir)
+    end, gameRootPanel)
 end
 
 function bindTurnKey(key, dir)

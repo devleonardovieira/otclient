@@ -63,7 +63,7 @@ MenuDivisorBar < UIWidget
   focusable: false
 
 MenuWidgetIcon < UIWidget
-  focusable: true
+  focusable: false
   UIWidget
     id: icon
     anchors.centerIn: parent

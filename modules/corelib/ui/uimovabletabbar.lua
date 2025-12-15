@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/corelib/ui/uimovabletabbar.lua
+-- chunkname: @/modules/corelib/ui/uimovabletabbar.lua
 
 UIMoveableTabBar = extends(UIWidget, "UIMoveableTabBar")
 
@@ -412,7 +412,7 @@ function UIMoveableTabBar:removeTab(tab)
 	if self.currentTab == tab then
 		self:selectPrevTab()
 
-		if #self.tabs == 1 then
+		if #self.tabs == 0 then
 			self.currentTab = nil
 		end
 	end

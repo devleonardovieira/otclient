@@ -169,6 +169,8 @@ function init()
     gameLeftPanel.onClick = toggleInternalFocus
     gameBottomPanel.onClick = toggleInternalFocus
 
+ 
+
     showTopMenuButton = gameMapPanel:getChildById('showTopMenuButton')
     showTopMenuButton.onClick = function()
         modules.client_topmenu.toggle()
@@ -207,10 +209,21 @@ function bindKeys()
 	g_keyboard.bindKeyDown("Ctrl+L", function()
 		tryLogout(false)
 	end, gameRootPanel)
-	g_keyboard.bindKeyDown("Ctrl+W", function()
-		g_map.cleanTexts()
-		modules.game_textmessage.clearMessages()
-	end, gameRootPanel)
+    g_keyboard.bindKeyDown("Ctrl+W", function()
+        g_map.cleanTexts()
+        modules.game_textmessage.clearMessages()
+    end, gameRootPanel)
+    g_keyboard.bindKeyDown("Enter", function()
+        if not g_game.isOnline() then return end
+        if modules.game_console and modules.game_console.disableChat and modules.game_console.isChatEnabled then
+            if modules.game_console.isChatEnabled() then
+                modules.game_console.disableChat(true)
+            else
+                modules.game_console.enableChat(true)
+                modules.game_console.visibleConsolePanel(true)
+            end
+        end
+    end, gameRootPanel)
 end
 
 function terminate()

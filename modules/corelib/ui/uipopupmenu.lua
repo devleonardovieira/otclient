@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/corelib/ui/uipopupmenu.lua
+-- chunkname: @/modules/corelib/ui/uipopupmenu.lua
 
 UIPopupMenu = extends(UIWidget, "UIPopupMenu")
 
@@ -66,6 +66,7 @@ function UIPopupMenu:display(pos)
 	end
 
 	rootWidget:addChild(self)
+	self._prevFocused = rootWidget:getFocusedChild()
 	self:setPosition(pos)
 	self:grabMouse()
 	self:focus()
@@ -152,6 +153,9 @@ function UIPopupMenu:onDestroy()
 	end
 
 	self:ungrabMouse()
+	if self._prevFocused and not self._prevFocused:isDestroyed() then
+		self._prevFocused:focus()
+	end
 end
 
 function UIPopupMenu:onMousePress(mousePos, mouseButton)

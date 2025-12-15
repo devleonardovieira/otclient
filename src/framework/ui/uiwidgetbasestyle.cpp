@@ -20,6 +20,8 @@
  * THE SOFTWARE.
  */
 #include <framework/graphics/drawpoolmanager.h>
+#include <framework/graphics/coordsbuffer.h>
+#include <cmath>
 
 #include "uianchorlayout.h"
 #include "uigridlayout.h"
@@ -224,6 +226,142 @@ namespace {
         widget->setFlexShrink(shrink);
         widget->setFlexBasis(basis);
     }
+
+    inline int clampRadius(const Rect& r, int radius) {
+        const int maxR = std::max(0, std::min(r.width(), r.height()) / 2);
+        return std::clamp(radius, 0, maxR);
+    }
+
+    CoordsBufferPtr makeRoundedRect(const Rect& r, int radius) {
+        auto buf = std::make_shared<CoordsBuffer>();
+        if (r.isEmpty())
+            return buf;
+
+        radius = clampRadius(r, radius);
+
+        if (radius == 0) {
+            buf->addRect(r);
+            return buf;
+        }
+
+        const int x = r.left();
+        const int y = r.top();
+        const int w = r.width();
+        const int h = r.height();
+
+        const int cx1 = x + radius;
+        const int cy1 = y + radius;
+        const int cx2 = x + w - radius;
+        const int cy2 = y + h - radius;
+
+        const int segments = 10;
+
+        const Rect centerRect(x + radius, y + radius, w - radius * 2, h - radius * 2);
+        if (centerRect.width() > 0 && centerRect.height() > 0)
+            buf->addRect(centerRect);
+
+        const Rect topStrip(x + radius, y, w - radius * 2, radius);
+        if (topStrip.width() > 0)
+            buf->addRect(topStrip);
+
+        const Rect bottomStrip(x + radius, y + h - radius, w - radius * 2, radius);
+        if (bottomStrip.width() > 0)
+            buf->addRect(bottomStrip);
+
+        const Rect leftStrip(x, y + radius, radius, h - radius * 2);
+        if (leftStrip.height() > 0)
+            buf->addRect(leftStrip);
+
+        const Rect rightStrip(x + w - radius, y + radius, radius, h - radius * 2);
+        if (rightStrip.height() > 0)
+            buf->addRect(rightStrip);
+
+        auto addQuarter = [&](int cx, int cy, float startDeg) {
+            for (int i = 0; i < segments; ++i) {
+                const float a1 = (startDeg + (90.f * i) / segments) * (3.14159265f / 180.f);
+                const float a2 = (startDeg + (90.f * (i + 1)) / segments) * (3.14159265f / 180.f);
+                const Point p1(cx + static_cast<int>(std::round(radius * std::cos(a1))),
+                               cy + static_cast<int>(std::round(radius * std::sin(a1))));
+                const Point p2(cx + static_cast<int>(std::round(radius * std::cos(a2))),
+                               cy + static_cast<int>(std::round(radius * std::sin(a2))));
+                const Point c(cx, cy);
+                buf->addTriangle(c, p1, p2);
+            }
+        };
+
+        addQuarter(cx1, cy1, 180.f);
+        addQuarter(cx2, cy1, 270.f);
+        addQuarter(cx2, cy2, 0.f);
+        addQuarter(cx1, cy2, 90.f);
+
+        return buf;
+    }
+
+    CoordsBufferPtr makeRoundedRectRing(const Rect& r, int radius, int bw) {
+        auto buf = std::make_shared<CoordsBuffer>();
+        if (r.isEmpty() || bw <= 0)
+            return buf;
+
+        radius = clampRadius(r, radius);
+        if (radius == 0) {
+            const Rect topStrip(r.left(), r.top(), r.width(), bw);
+            buf->addRect(topStrip);
+            const Rect bottomStrip(r.left(), r.bottom() - bw + 1, r.width(), bw);
+            buf->addRect(bottomStrip);
+            const Rect leftStrip(r.left(), r.top() + bw, bw, r.height() - 2 * bw);
+            buf->addRect(leftStrip);
+            const Rect rightStrip(r.right() - bw + 1, r.top() + bw, bw, r.height() - 2 * bw);
+            buf->addRect(rightStrip);
+            return buf;
+        }
+
+        const int x = r.left();
+        const int y = r.top();
+        const int w = r.width();
+        const int h = r.height();
+
+        const int segments = 10;
+        const int orad = radius;
+        const int irad = std::max(0, radius - bw);
+
+        const int cx1 = x + orad;
+        const int cy1 = y + orad;
+        const int cx2 = x + w - orad;
+        const int cy2 = y + h - orad;
+
+        const Rect topStrip(x + orad, y, w - orad * 2, bw);
+        if (topStrip.width() > 0) buf->addRect(topStrip);
+        const Rect bottomStrip(x + orad, y + h - bw, w - orad * 2, bw);
+        if (bottomStrip.width() > 0) buf->addRect(bottomStrip);
+        const Rect leftStrip(x, y + orad, bw, h - orad * 2);
+        if (leftStrip.height() > 0) buf->addRect(leftStrip);
+        const Rect rightStrip(x + w - bw, y + orad, bw, h - orad * 2);
+        if (rightStrip.height() > 0) buf->addRect(rightStrip);
+
+        auto addQuarterRing = [&](int cx, int cy, float startDeg) {
+            for (int i = 0; i < segments; ++i) {
+                const float a1 = (startDeg + (90.f * i) / segments) * (3.14159265f / 180.f);
+                const float a2 = (startDeg + (90.f * (i + 1)) / segments) * (3.14159265f / 180.f);
+                const Point po1(cx + static_cast<int>(std::round(orad * std::cos(a1))),
+                                cy + static_cast<int>(std::round(orad * std::sin(a1))));
+                const Point po2(cx + static_cast<int>(std::round(orad * std::cos(a2))),
+                                cy + static_cast<int>(std::round(orad * std::sin(a2))));
+                const Point pi1(cx + static_cast<int>(std::round(irad * std::cos(a1))),
+                                cy + static_cast<int>(std::round(irad * std::sin(a1))));
+                const Point pi2(cx + static_cast<int>(std::round(irad * std::cos(a2))),
+                                cy + static_cast<int>(std::round(irad * std::sin(a2))));
+                buf->addTriangle(po1, po2, pi1);
+                buf->addTriangle(pi1, po2, pi2);
+            }
+        };
+
+        addQuarterRing(cx1, cy1, 180.f);
+        addQuarterRing(cx2, cy1, 270.f);
+        addQuarterRing(cx2, cy2, 0.f);
+        addQuarterRing(cx1, cy2, 90.f);
+
+        return buf;
+    }
 } // namespace
 
 void UIWidget::initBaseStyle()
@@ -416,6 +554,8 @@ void UIWidget::parseBaseStyle(const OTMLNodePtr& styleNode)
             setBorderColorBottom(node->value<Color>());
         else if (node->tag() == "border-color-left")
             setBorderColorLeft(node->value<Color>());
+        else if (node->tag() == "border-radius")
+            setBorderRadius(stdext::to_number(node->value<std::string>()));
         else if (node->tag() == "top" || node->tag() == "bottom" || node->tag() == "left" || node->tag() == "right") {
             auto v = node->value<std::string>();
             stdext::trim(v);
@@ -538,6 +678,7 @@ void UIWidget::parseBaseStyle(const OTMLNodePtr& styleNode)
             else if (v == "both") clear = ClearType::Both;
             else if (v == "inline-start") clear = ClearType::InlineStart;
             else if (v == "inline-end") clear = ClearType::InlineEnd;
+            setClear(clear);
         } else if (node->tag() == "justify-items") {
             auto v = node->value<std::string>();
             JustifyItemsType justify = JustifyItemsType::Normal;
@@ -731,10 +872,11 @@ void UIWidget::parseBaseStyle(const OTMLNodePtr& styleNode)
                         throw OTMLException(node, "invalid anchor target edge");
 
                     addAnchor(anchoredEdge, hookedWidgetId, hookedEdge);
-                }
             }
         }
     }
+}
+
 }
 
 void UIWidget::drawBackground(const Rect& screenCoords) const
@@ -746,7 +888,12 @@ void UIWidget::drawBackground(const Rect& screenCoords) const
             drawRect.resize(m_backgroundRect.size());
 
         g_drawPool.setDrawOrder(m_backgroundDrawOrder);
-        g_drawPool.addFilledRect(drawRect, m_backgroundColor);
+        if (m_borderRadius > 0) {
+            const auto& buf = makeRoundedRect(drawRect, m_borderRadius);
+            g_drawPool.addTexturedCoordsBuffer(nullptr, buf, m_backgroundColor);
+        } else {
+            g_drawPool.addFilledRect(drawRect, m_backgroundColor);
+        }
         g_drawPool.resetDrawOrder();
     }
 }
@@ -755,25 +902,33 @@ void UIWidget::drawBorder(const Rect& screenCoords) const
 {
     g_drawPool.setDrawOrder(m_borderDrawOrder);
 
-    // top
-    if (m_borderWidth.top > 0) {
-        const Rect borderRect(screenCoords.topLeft(), screenCoords.width(), m_borderWidth.top);
-        g_drawPool.addFilledRect(borderRect, m_borderColor.top);
-    }
-    // right
-    if (m_borderWidth.right > 0) {
-        const Rect borderRect(screenCoords.topRight() - Point(m_borderWidth.right - 1, 0), m_borderWidth.right, screenCoords.height());
-        g_drawPool.addFilledRect(borderRect, m_borderColor.right);
-    }
-    // bottom
-    if (m_borderWidth.bottom > 0) {
-        const Rect borderRect(screenCoords.bottomLeft() - Point(0, m_borderWidth.bottom - 1), screenCoords.width(), m_borderWidth.bottom);
-        g_drawPool.addFilledRect(borderRect, m_borderColor.bottom);
-    }
-    // left
-    if (m_borderWidth.left > 0) {
-        const Rect borderRect(screenCoords.topLeft(), m_borderWidth.left, screenCoords.height());
-        g_drawPool.addFilledRect(borderRect, m_borderColor.left);
+    const bool uniformWidth = m_borderWidth.top == m_borderWidth.right &&
+                              m_borderWidth.top == m_borderWidth.bottom &&
+                              m_borderWidth.top == m_borderWidth.left;
+    const bool uniformColor = m_borderColor.top == m_borderColor.right &&
+                              m_borderColor.top == m_borderColor.bottom &&
+                              m_borderColor.top == m_borderColor.left;
+
+    if (m_borderRadius > 0 && uniformWidth && uniformColor && m_borderWidth.top > 0) {
+        const auto& ring = makeRoundedRectRing(screenCoords, m_borderRadius, m_borderWidth.top);
+        g_drawPool.addTexturedCoordsBuffer(nullptr, ring, m_borderColor.top);
+    } else {
+        if (m_borderWidth.top > 0) {
+            const Rect borderRect(screenCoords.topLeft(), screenCoords.width(), m_borderWidth.top);
+            g_drawPool.addFilledRect(borderRect, m_borderColor.top);
+        }
+        if (m_borderWidth.right > 0) {
+            const Rect borderRect(screenCoords.topRight() - Point(m_borderWidth.right - 1, 0), m_borderWidth.right, screenCoords.height());
+            g_drawPool.addFilledRect(borderRect, m_borderColor.right);
+        }
+        if (m_borderWidth.bottom > 0) {
+            const Rect borderRect(screenCoords.bottomLeft() - Point(0, m_borderWidth.bottom - 1), screenCoords.width(), m_borderWidth.bottom);
+            g_drawPool.addFilledRect(borderRect, m_borderColor.bottom);
+        }
+        if (m_borderWidth.left > 0) {
+            const Rect borderRect(screenCoords.topLeft(), m_borderWidth.left, screenCoords.height());
+            g_drawPool.addFilledRect(borderRect, m_borderColor.left);
+        }
     }
     g_drawPool.resetDrawOrder();
 }

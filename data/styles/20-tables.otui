@@ -33,6 +33,7 @@ TableHeaderRow < Label
 
 TableHeaderColumn < UITableHeaderColumn
   font: righteous-12px-rounded-solid
+  border: 30 red
   background-color: alpha
   color: #dfdfdfff
   height: 23

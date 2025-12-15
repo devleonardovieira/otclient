@@ -12,7 +12,7 @@ MessageSettings = {
 	},
 	consoleBlue = {
 		consoleTab = "Default",
-		color = TextColors.blue
+		color = TextColors.green
 	},
 	centerRed = {
 		screenTarget = "lowCenterLabel",

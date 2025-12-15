@@ -671,6 +671,7 @@ void Application::registerLuaFunctions()
     g_lua.bindClassMemberFunction<UIWidget>("setBorderColorRight", &UIWidget::setBorderColorRight);
     g_lua.bindClassMemberFunction<UIWidget>("setBorderColorBottom", &UIWidget::setBorderColorBottom);
     g_lua.bindClassMemberFunction<UIWidget>("setBorderColorLeft", &UIWidget::setBorderColorLeft);
+    g_lua.bindClassMemberFunction<UIWidget>("setBorderRadius", &UIWidget::setBorderRadius);
     g_lua.bindClassMemberFunction<UIWidget>("setMargin", &UIWidget::setMargin);
     g_lua.bindClassMemberFunction<UIWidget>("setMarginHorizontal", &UIWidget::setMarginHorizontal);
     g_lua.bindClassMemberFunction<UIWidget>("setMarginVertical", &UIWidget::setMarginVertical);
@@ -734,6 +735,7 @@ void Application::registerLuaFunctions()
     g_lua.bindClassMemberFunction<UIWidget>("getBorderRightWidth", &UIWidget::getBorderRightWidth);
     g_lua.bindClassMemberFunction<UIWidget>("getBorderBottomWidth", &UIWidget::getBorderBottomWidth);
     g_lua.bindClassMemberFunction<UIWidget>("getBorderLeftWidth", &UIWidget::getBorderLeftWidth);
+    g_lua.bindClassMemberFunction<UIWidget>("getBorderRadius", &UIWidget::getBorderRadius);
     g_lua.bindClassMemberFunction<UIWidget>("getImageSource", &UIWidget::getImageSource);
     g_lua.bindClassMemberFunction<UIWidget>("getMarginTop", &UIWidget::getMarginTop);
     g_lua.bindClassMemberFunction<UIWidget>("getMarginRight", &UIWidget::getMarginRight);
