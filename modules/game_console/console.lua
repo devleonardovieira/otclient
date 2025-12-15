@@ -153,6 +153,8 @@ ignoredChannels = {}
 filters = {}
 floatingMode = false
 
+consoleController = Controller:new()
+
 local communicationSettings = {
 	yelling = false,
 	privateMessages = false,
@@ -164,24 +166,24 @@ local communicationSettings = {
 }
 
 function init()
-	connect(g_game, {
+	consoleController:setUI("console", modules.game_interface.getRootPanel())
+	consoleController:init()
+	consoleController:registerEvents(g_game, {
 		onTalk = onTalk,
 		onChannelList = onChannelList,
 		onOpenChannel = onOpenChannel,
 		onCloseChannel = onCloseChannel,
 		onChannelEvent = onChannelEvent,
 		onOpenPrivateChannel = onOpenPrivateChannel,
-		onOpenOwnPrivateChannel = onOpenOwnPrivateChannel,
+		onOpenOwnPrivateChannel = onOpenPrivateChannel,
 		onRuleViolationChannel = onRuleViolationChannel,
 		onRuleViolationRemove = onRuleViolationRemove,
 		onRuleViolationCancel = onRuleViolationCancel,
-		onRuleViolationLock = onRuleViolationLock,
-		onGameStart = online,
-		onGameEnd = offline
+		onRuleViolationLock = onRuleViolationLock
 	})
 	g_ui.importStyle("communicationwindow.otui")
 
-	consolePanel = g_ui.loadUI("console", modules.game_interface.getRootPanel())
+	consolePanel = consoleController.ui
 	consoleTextEdit = consolePanel:getChildById("consoleTextEdit")
 	consoleContentPanel = consolePanel:getChildById("consoleContentPanel")
 	consoleTabBar = consolePanel:getChildById("consoleTabBar")
@@ -267,6 +269,14 @@ function init()
 	if g_game.isOnline() then
 		online()
 	end
+end
+
+function consoleController:onGameStart()
+	online()
+end
+
+function consoleController:onGameEnd()
+	offline()
 end
 
 function clearSelection(consoleBuffer)
@@ -478,21 +488,7 @@ end
 
 function terminate()
   save()
-  disconnect(g_game, {
-		onTalk = onTalk,
-		onChannelList = onChannelList,
-		onOpenChannel = onOpenChannel,
-		onOpenPrivateChannel = onOpenPrivateChannel,
-		onOpenOwnPrivateChannel = onOpenPrivateChannel,
-		onCloseChannel = onCloseChannel,
-		onRuleViolationChannel = onRuleViolationChannel,
-		onRuleViolationRemove = onRuleViolationRemove,
-		onRuleViolationCancel = onRuleViolationCancel,
-		onRuleViolationLock = onRuleViolationLock,
-		onGameStart = online,
-		onGameEnd = offline,
-		onChannelEvent = onChannelEvent
-  })
+  consoleController:terminate()
 
   if g_game.isOnline() then
     clear()
