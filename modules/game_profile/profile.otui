@@ -20,8 +20,8 @@ ProfileCardValue < Label
 
 MainWindow
   id: profileWindow
-  size: 500 450
-  !text: tr('sss')
+  size: 500 1000
+  !text: tr('')
   @onEscape: modules.game_profile.profileController:toggle()
   padding: 0
 
@@ -241,3 +241,382 @@ MainWindow
         font: verdana-18px-bold
         color: #ff5555
         anchors.centerIn: parent
+
+  ProfileCard
+    id: ninjaPathCard
+    height: 220
+    anchors.top: statsRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 15
+    margin-left: 20
+    margin-right: 20
+    
+    UIWidget
+      id: iconPath
+      size: 14 14
+      image-source: /images/icons/icon_sword
+      image-color: #1fbf6e
+      anchors.top: parent.top
+      anchors.left: parent.left
+      
+    Label
+      text: "NINJA PATH"
+      font: verdana-10px-bold
+      color: #1fbf6e
+      anchors.top: parent.top
+      anchors.left: prev.right
+      margin-left: 5
+      
+    Panel
+      id: starsPanel
+      height: 14
+      width: 60
+      anchors.top: parent.top
+      anchors.right: parent.right
+      layout:
+        type: horizontalBox
+        spacing: 2
+        align-right: true
+
+    Label
+      id: pathRank
+      text: "Rank IV"
+      font: verdana-9px-bold
+      color: #555555
+      anchors.top: starsPanel.bottom
+      anchors.right: parent.right
+      margin-top: 2
+
+    Label
+      id: pathClass
+      text: "Assassin"
+      font: verdana-20px-bold
+      color: #ffffff
+      anchors.top: iconPath.bottom
+      anchors.left: parent.left
+      margin-top: 5
+      
+    UIWidget
+      height: 1
+      background-color: #1f2b24
+      anchors.top: pathClass.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 10
+      
+    Label
+      text: "EXPANDED AFFINITIES"
+      font: verdana-9px-bold
+      color: #555555
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      
+    Panel
+      id: affinitiesGrid
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 10
+      layout:
+        type: grid
+        cell-size: 220 35
+        cell-spacing: 10
+        flow: true
+
+
+  ProfileCard
+    id: ninjaWorldCard
+    height: 380
+    anchors.top: ninjaPathCard.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 15
+    margin-left: 20
+    margin-right: 20
+    
+    UIWidget
+      id: iconWorld
+      size: 14 14
+      image-source: /images/icons/icon_location
+      image-color: #1fbf6e
+      anchors.top: parent.top
+      anchors.left: parent.left
+      
+    Label
+      text: "NINJA WORLD"
+      font: verdana-10px-bold
+      color: #1fbf6e
+      anchors.top: parent.top
+      anchors.left: prev.right
+      margin-left: 5
+
+    Panel
+      id: reputationCard
+      height: 80
+      background-color: #0b110e
+      border-width: 1
+      border-color: #1f2b24
+      border-radius: 6
+      anchors.top: iconWorld.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 15
+      padding: 10
+      
+      Label
+        text: "CURRENT REPUTATION"
+        font: verdana-9px-bold
+        color: #555555
+        anchors.top: parent.top
+        anchors.left: parent.left
+        
+      UIWidget
+        id: medalIcon
+        size: 16 16
+        image-source: /images/game/icons/icon_vip_14px
+        image-color: #e5bc6d
+        anchors.top: parent.top
+        anchors.right: parent.right
+
+      Label
+        id: reputationName
+        text: "Honored"
+        font: verdana-18px-bold
+        color: #e5bc6d
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        margin-top: 5
+        
+      Label
+        id: reputationRank
+        text: "IV"
+        font: verdana-9px-bold
+        color: #e5bc6d
+        background-color: #1f2b24
+        padding: 2 4
+        border-radius: 3
+        anchors.bottom: reputationName.bottom
+        anchors.left: reputationName.right
+        margin-left: 5
+        margin-bottom: 3
+        
+      UIWidget
+        id: reputationBarBg
+        height: 8
+        background-color: #1f2b24
+        anchors.top: reputationName.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 8
+        border-radius: 4
+        
+      UIWidget
+        id: reputationBar
+        height: 8
+        background-color: #1fbf6e
+        anchors.left: reputationBarBg.left
+        anchors.top: reputationBarBg.top
+        border-radius: 4
+        width: 150
+
+      Label
+        id: reputationPercent
+        text: "95% to Legend"
+        font: verdana-9px-bold
+        color: #1fbf6e
+        anchors.top: reputationBarBg.bottom
+        anchors.left: parent.left
+        margin-top: 5
+
+      Label
+        id: reputationNext
+        text: "Next: 100%"
+        font: verdana-9px-bold
+        color: #555555
+        anchors.top: reputationBarBg.bottom
+        anchors.right: parent.right
+        margin-top: 5
+
+    Panel
+      id: factionsList
+      anchors.top: reputationCard.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 140
+      margin-top: 15
+      layout:
+        type: verticalBox
+        spacing: 10
+
+    UIWidget
+      height: 1
+      background-color: #1f2b24
+      anchors.top: factionsList.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 10
+
+    Label
+      text: "LINEAGE"
+      font: verdana-9px-bold
+      color: #555555
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      
+    Panel
+      id: lineageList
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      height: 60
+      margin-top: 5
+      layout:
+        type: verticalBox
+        spacing: 5
+        
+    ButtonBlueSmall
+      id: watchlistButton
+      height: 30
+      background-color: #1f1a0b
+      border-width: 1
+      border-color: #e5bc6d
+      border-radius: 4
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      
+      UIWidget
+        id: warningIcon
+        size: 14 14
+        image-source: /images/game/icons/icon_warning_16px
+        image-color: #e5bc6d
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.right: parent.horizontalCenter
+        margin-right: 60
+        
+      Label
+        text: "ANBU WATCHLIST ACTIVE"
+        font: verdana-10px-bold
+        color: #e5bc6d
+        anchors.centerIn: parent
+
+ProfileAffinityPanel < Panel
+  height: 35
+  
+  UIWidget
+    id: icon
+    size: 20 20
+    anchors.left: parent.left
+    anchors.top: parent.top
+    
+  Label
+    id: name
+    font: verdana-11px-bold
+    color: #cccccc
+    anchors.left: icon.right
+    anchors.top: parent.top
+    margin-left: 8
+    
+  Label
+    id: value
+    font: verdana-10px-bold
+    anchors.right: parent.right
+    anchors.top: parent.top
+    
+  UIWidget
+    id: progressBarBg
+    height: 4
+    background-color: #1f2b24
+    anchors.left: icon.right
+    anchors.right: parent.right
+    anchors.bottom: icon.bottom
+    margin-left: 8
+    border-radius: 2
+    
+  UIWidget
+    id: progressBar
+    height: 4
+    anchors.left: progressBarBg.left
+    anchors.top: progressBarBg.top
+    border-radius: 2
+
+ProfileFactionPanel < Panel
+  height: 40
+  background-color: #0b110e
+  border-radius: 6
+  padding: 8
+  
+  UIWidget
+    id: icon
+    size: 24 24
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    background-color: #15221a
+    border-radius: 12
+    padding: 4
+    
+  Label
+    id: name
+    font: verdana-11px-bold
+    color: #ffffff
+    anchors.top: parent.top
+    anchors.left: icon.right
+    margin-left: 10
+    margin-top: 2
+    
+  Label
+    id: desc
+    font: verdana-9px-bold
+    color: #555555
+    anchors.top: name.bottom
+    anchors.left: icon.right
+    margin-left: 10
+    margin-top: 2
+    
+  Label
+    id: status
+    font: verdana-9px-bold
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    padding: 4 8
+    border-radius: 4
+    background-color: #15221a
+
+ProfileLineagePanel < Panel
+  height: 25
+  
+  UIWidget
+    id: icon
+    size: 14 14
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    image-color: #ff5555
+    
+  Label
+    id: label
+    font: verdana-10px-bold
+    color: #aaaaaa
+    anchors.left: icon.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+    
+  Label
+    id: value
+    font: verdana-11px-bold
+    color: #ffffff
+    anchors.left: label.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 5
+    
+  UIWidget
+    id: arrow
+    size: 12 12
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    image-source: /images/game/actionbar/icon_arrow
+    rotation: 270
+    image-color: #555555

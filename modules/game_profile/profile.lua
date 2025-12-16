@@ -16,11 +16,20 @@ local profileData = {
       pvpKills = 27,
       betrayals = 2
   },
-  -- Legacy data structures kept for reference or future expansion
   ninjaPath = {
-    class = "Assassino",
-    stars = 4
+      class = "Assassin",
+      rank = "Rank IV",
+      stars = 4
   },
+  expandedAffinities = {
+    {name = "Ninjutsu", value = "MAX", percent = 100, color = "#ffcc00", icon = "/images/game/icons/icon_instinct_20px"},
+    {name = "Taijutsu", value = "LV.8", percent = 80, color = "#3399ff", icon = "/images/icons/icon_fist"},
+    {name = "Genjutsu", value = "MAX", percent = 100, color = "#cc66ff", icon = "/images/game/icons/icon_mystic_20px"},
+    {name = "Kenjutsu", value = "LV.6", percent = 60, color = "#ff5555", icon = "/images/icons/icon_sword"},
+    {name = "Fuinjutsu", value = "LV.4", percent = 40, color = "#00cc66", icon = "/images/game/icons/icon_researcher"},
+    {name = "Medical", value = "LV.3", percent = 30, color = "#00cc66", icon = "/images/icons/icon_healing"}
+  },
+  -- Legacy data structures kept for reference or future expansion
   affinities = {
     {name = "Ninjutsu", stars = 5},
     {name = "Taijutsu", stars = 4},
@@ -33,18 +42,22 @@ local profileData = {
     {name = "Traições", value = 2}
   },
   ninjaWorld = {
-    reputation = "HONRADO",
-    percentage = 95,
-    factions = {
-      {name = "Vila da Folha", status = "Aliado", color = "#55FF55"},
-      {name = "Mercadores", status = "Neutro", color = "#FFFF55"},
-      {name = "Submundo", status = "Infame", color = "#FF5555"}
-    }
-  },
-  lineage = {
-    clan = "Uchiha",
-    kekkeiGenkai = "Sharingan",
-    state = "Observado pela ANBU"
+      reputation = {
+          name = "Honored",
+          rank = "IV",
+          percent = 95,
+          next = "Legend"
+      },
+      factions = {
+          {name = "Leaf Village", desc = "Homeland", status = "ALLY", statusColor = "#1fbf6e", icon = "/images/icons/icon_location"},
+          {name = "Merchants", desc = "Trade Guild", status = "NEUTRAL", statusColor = "#e5bc6d", icon = "/images/game/npcicons/icon_trade"},
+          {name = "Underworld", desc = "Crime Syndicate", status = "INFAMOUS", statusColor = "#ff5555", icon = "/images/game/battle/icon-battlelist-skull"}
+      },
+      lineage = {
+          clan = "Uchiha",
+          kekkeiGenkai = "Sharingan",
+          watchlist = true
+      }
   },
   history = {
     {text = "Concluiu missão S Rank", type = "success"},
@@ -150,6 +163,117 @@ function profileController:refreshUI()
       local betrayalCard = statsRow:getChildById('betrayalCard')
       if betrayalCard then
           betrayalCard:getChildById('betrayalValue'):setText(profileData.stats.betrayals)
+      end
+  end
+
+  -- Ninja Path Section
+  local ninjaPathCard = ui:getChildById('ninjaPathCard')
+  if ninjaPathCard then
+      ninjaPathCard:getChildById('pathClass'):setText(profileData.ninjaPath.class)
+      ninjaPathCard:getChildById('pathRank'):setText(profileData.ninjaPath.rank)
+      
+      local starsPanel = ninjaPathCard:getChildById('starsPanel')
+      if starsPanel then
+          starsPanel:destroyChildren()
+          for i=1, profileData.ninjaPath.stars do
+              local star = g_ui.createWidget('UIWidget', starsPanel)
+              star:setImageSource('/images/game/icons/star')
+              star:setSize({width=14, height=14})
+              star:setImageColor('#ffcc00')
+          end
+      end
+      
+      local affinitiesGrid = ninjaPathCard:getChildById('affinitiesGrid')
+      if affinitiesGrid then
+          affinitiesGrid:destroyChildren()
+          for _, affinity in ipairs(profileData.expandedAffinities) do
+              local panel = g_ui.createWidget('ProfileAffinityPanel', affinitiesGrid)
+              
+              local icon = panel:getChildById('icon')
+              icon:setImageSource(affinity.icon)
+              icon:setImageColor(affinity.color)
+              
+              panel:getChildById('name'):setText(affinity.name)
+              
+              local valueLabel = panel:getChildById('value')
+              valueLabel:setText(affinity.value)
+              valueLabel:setColor(affinity.color)
+              
+              local progressBar = panel:getChildById('progressBar')
+              progressBar:setBackgroundColor(affinity.color)
+              progressBar:setWidth((affinity.percent / 100) * 130) -- Approximate width based on layout
+          end
+      end
+  end
+
+  -- Ninja World Section
+  local ninjaWorldCard = ui:getChildById('ninjaWorldCard')
+  if ninjaWorldCard then
+      -- Reputation
+      local reputationCard = ninjaWorldCard:getChildById('reputationCard')
+      if reputationCard then
+          reputationCard:getChildById('reputationName'):setText(profileData.ninjaWorld.reputation.name)
+          reputationCard:getChildById('reputationRank'):setText(profileData.ninjaWorld.reputation.rank)
+          reputationCard:getChildById('reputationPercent'):setText(profileData.ninjaWorld.reputation.percent .. "% to " .. profileData.ninjaWorld.reputation.next)
+          
+          local bar = reputationCard:getChildById('reputationBar')
+          local barBg = reputationCard:getChildById('reputationBarBg')
+          if bar and barBg then
+              bar:setWidth((profileData.ninjaWorld.reputation.percent / 100) * barBg:getWidth())
+          end
+      end
+
+      -- Factions
+      local factionsList = ninjaWorldCard:getChildById('factionsList')
+      if factionsList then
+          factionsList:destroyChildren()
+          for _, faction in ipairs(profileData.ninjaWorld.factions) do
+              local panel = g_ui.createWidget('ProfileFactionPanel', factionsList)
+              
+              local icon = panel:getChildById('icon')
+              icon:setImageSource(faction.icon)
+              if faction.status == "INFAMOUS" then
+                 icon:setImageColor('#ff5555')
+              elseif faction.status == "NEUTRAL" then
+                 icon:setImageColor('#e5bc6d')
+              else
+                 icon:setImageColor('#1fbf6e')
+              end
+
+              panel:getChildById('name'):setText(faction.name)
+              panel:getChildById('desc'):setText(faction.desc)
+              
+              local status = panel:getChildById('status')
+              status:setText(faction.status)
+              status:setColor(faction.statusColor)
+              status:setBackgroundColor(faction.statusColor .. "22") -- Low opacity background
+          end
+      end
+
+      -- Lineage
+      local lineageList = ninjaWorldCard:getChildById('lineageList')
+      if lineageList then
+          lineageList:destroyChildren()
+          
+          -- Clan
+          local clanPanel = g_ui.createWidget('ProfileLineagePanel', lineageList)
+          clanPanel:getChildById('icon'):setImageSource('/images/game/icons/icon_no_clan_20px') -- Placeholder
+          clanPanel:getChildById('icon'):setImageColor('#ff5555')
+          clanPanel:getChildById('label'):setText("Clan")
+          clanPanel:getChildById('value'):setText(profileData.ninjaWorld.lineage.clan)
+
+          -- Kekkei Genkai
+          local kgPanel = g_ui.createWidget('ProfileLineagePanel', lineageList)
+          kgPanel:getChildById('icon'):setImageSource('/images/game/icons/icon_eye_24px')
+          kgPanel:getChildById('icon'):setImageColor('#cc66ff')
+          kgPanel:getChildById('label'):setText("Kekkei Genkai")
+          kgPanel:getChildById('value'):setText(profileData.ninjaWorld.lineage.kekkeiGenkai)
+      end
+      
+      -- Watchlist Button
+      local watchlistButton = ninjaWorldCard:getChildById('watchlistButton')
+      if watchlistButton then
+          watchlistButton:setVisible(profileData.ninjaWorld.lineage.watchlist)
       end
   end
 end
