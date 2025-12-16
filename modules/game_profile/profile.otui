@@ -1,271 +1,243 @@
-ProfileWindow < MainWindow
+ProfileCard < Panel
+  background-color: #0b110e
+  border-width: 1
+  border-color: #1f2b24
+  border-radius: 6
+  padding: 10
+
+ProfileCardTitle < Label
+  font: verdana-10px-bold
+  color: #6a8c75
+  text-auto-resize: true
+  anchors.top: parent.top
+  anchors.left: parent.left
+
+ProfileCardValue < Label
+  font: verdana-18px-bold
+  color: #ffffff
+  text-auto-resize: true
+  anchors.centerIn: parent
+
+MainWindow
   id: profileWindow
-  size: 360 600
-  !text: tr('Ninja Profile')
+  size: 500 450
+  !text: tr('sss')
   @onEscape: modules.game_profile.profileController:toggle()
+  padding: 0
 
   Panel
-    id: header
-    height: 180
+    id: headerPanel
+    height: 160
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 10
-
-    Panel
-      id: portraitContainer
-      size: 84 84
+    
+    UICreature
+      id: portrait
+      size: 72 72
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
-      
-      Panel
-        anchors.fill: parent
-        border-width: 2
-        border-color: #1fbf6e
-        margin: 2
+      margin-top: 25
+      padding: 4
+      background-color: #000000
+      border-width: 2
+      border-color: #1fbf6e
+      border-radius: 36
 
-      UICreature
-        id: portrait
-        size: 64 64
-        anchors.centerIn: parent
-        padding: 4
-        background-color: #000000
+    Label
+      id: levelBadge
+      text: "42"
+      color: #ffffff
+      background-color: #1fbf6e
+      size: 20 20
+      border-radius: 10
+      text-align: center
+      font: verdana-11px-bold
+      anchors.bottom: portrait.bottom
+      anchors.right: portrait.right
+      margin-bottom: 0
+      margin-right: 0
 
-      Label
-        id: levelBadge
-        text: 42
-        color: #ffffff
-        font: verdana-11px-bold
-        background-color: #1a261c
-        text-align: center
-        size: 24 24
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        border-width: 1
-        border-color: #1fbf6e
-        margin-right: 5
-        margin-bottom: 5
-
-    Panel
-      id: infoPanel
-      anchors.top: portraitContainer.bottom
+    Label
+      id: nameLabel
+      text: "Kenji Zero"
+      font: verdana-18px-bold
+      color: #ffffff
+      anchors.top: portrait.bottom
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.bottom: parent.bottom
-      width: 300
       margin-top: 10
 
-      Label
-        id: nameLabel
-        font: verdana-13px-bold
-        text-align: center
-        color: #ffffff
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        text-auto-resize: true
+    Label
+      id: rankLabel
+      text: "SHADOW WALKER"
+      font: verdana-10px-bold
+      color: #1fbf6e
+      background-color: #15221a
+      padding: 4 10
+      border-radius: 4
+      anchors.top: nameLabel.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      text-auto-resize: true
 
-      Label
-        id: classLabel
-        font: verdana-11px-bold
-        text-align: center
-        color: #000000
-        background-color: #1fbf6e
-        padding: 2 8
-        anchors.top: nameLabel.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        margin-top: 8
-        text-auto-resize: true
+    Label
+      id: titleLabel
+      text: "Master Assassin • Night Operative"
+      font: verdana-11px-rounded
+      color: #6a8c75
+      anchors.top: rankLabel.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 5
 
+  Panel
+    id: balanceRow
+    height: 90
+    anchors.top: headerPanel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-left: 20
+    margin-right: 20
+    layout:
+      type: horizontalBox
+      spacing: 15
+
+    ProfileCard
+      id: bankCard
+      width: 222
+      border-color: #1fbf6e
+      
       Label
-        id: titleLabel
-        font: verdana-11px-rounded
-        text-align: center
+        text: "BANK BALANCE"
+        font: verdana-10px-bold
         color: #6a8c75
-        anchors.top: classLabel.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        margin-top: 5
-        text-auto-resize: true
+        anchors.top: parent.top
+        anchors.left: parent.left
+      
+      UIWidget
+        id: bankIcon
+        anchors.top: parent.top
+        anchors.right: parent.right
+        size: 16 16
+        image-source: /images/icons/icon-balance
+        image-color: #1fbf6e
+        
+      Label
+        id: bankValue
+        text: "¥1,400,000"
+        font: verdana-20px-bold
+        color: #ffffff
+        anchors.centerIn: parent
+        margin-right: 15
+        
+      Label
+        text: "RYO"
+        font: verdana-10px-bold
+        color: #1fbf6e
+        anchors.left: bankValue.right
+        anchors.bottom: bankValue.bottom
+        margin-left: 5
+        margin-bottom: 3
+
+    ProfileCard
+      id: specialCard
+      width: 222
+      border-color: #e5bc6d
+      
+      Label
+        text: "SPECIAL"
+        font: verdana-10px-bold
+        color: #8c7a50
+        anchors.top: parent.top
+        anchors.left: parent.left
+        
+      UIWidget
+        id: specialIcon
+        anchors.top: parent.top
+        anchors.right: parent.right
+        size: 16 16
+        image-source: /images/game/icons/icon_vip_32px
+        image-color: #e5bc6d
+
+      Label
+        id: specialValue
+        text: "850"
+        font: verdana-20px-bold
+        color: #e5bc6d
+        anchors.centerIn: parent
+        margin-right: 20
+        
+      Label
+        text: "KOBAN"
+        font: verdana-10px-bold
+        color: #8c7a50
+        anchors.left: specialValue.right
+        anchors.bottom: specialValue.bottom
+        margin-left: 5
+        margin-bottom: 3
 
   Panel
     id: statsRow
-    height: 90
-    anchors.top: header.bottom
+    height: 70
+    anchors.top: balanceRow.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 10
+    margin-top: 15
+    margin-left: 20
+    margin-right: 20
     layout:
       type: horizontalBox
-      spacing: 10
+      spacing: 15
 
-    Panel
-      id: balanceCard
-      background-color: #15221a
-      padding: 10
-      width: 155 
-
+    ProfileCard
+      id: missionCard
+      width: 143
+      
       Label
-        text: BALANCE
-        font: verdana-10px-bold
-        color: #6a8c75
+        text: "S-RANK MISSIONS"
+        font: verdana-9px-bold
+        color: #555555
         anchors.top: parent.top
-        anchors.left: parent.left
-        margin-top: 5
-
+        anchors.horizontalCenter: parent.horizontalCenter
+        
       Label
-        id: valueLabel
-        font: verdana-13px-bold
+        id: missionValue
+        text: "12"
+        font: verdana-18px-bold
         color: #ffffff
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.left: parent.left
-        margin-top: 5
+        anchors.centerIn: parent
 
-      UIProgressBar
-        height: 4
-        background-color: #333333
-        color: #1fbf6e
-        percent: 60
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-bottom: 5
-
-    Panel
-      id: reputationCard
-      background-color: #15221a
-      padding: 10
-      width: 155
-
+    ProfileCard
+      id: killsCard
+      width: 143
+      
       Label
-        text: REPUTATION
-        font: verdana-10px-bold
-        color: #6a8c75
+        text: "PVP KILLS"
+        font: verdana-9px-bold
+        color: #555555
         anchors.top: parent.top
-        anchors.left: parent.left
-        margin-top: 5
-
+        anchors.horizontalCenter: parent.horizontalCenter
+        
       Label
-        id: valueLabel
-        font: verdana-13px-bold
+        id: killsValue
+        text: "27"
+        font: verdana-18px-bold
         color: #ffffff
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.left: parent.left
-        margin-top: 5
+        anchors.centerIn: parent
 
-      UIProgressBar
-        id: progressBar
-        height: 4
-        background-color: #333333
-        color: #1fbf6e
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-bottom: 5
-
-  Panel
-    id: detailsList
-    anchors.top: statsRow.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    anchors.bottom: actionButton.top
-    margin-top: 15
-    margin-bottom: 15
-    layout:
-      type: verticalBox
-      spacing: 2
-
-    Panel
-      id: guildItem
-      height: 50
-      background-color: #15221a
-      padding: 10
-
+    ProfileCard
+      id: betrayalCard
+      width: 143
+      border-color: #3d2a2a
+      
       Label
-        text: GUILD
-        font: verdana-10px-bold
-        color: #6a8c75
+        text: "BETRAYALS"
+        font: verdana-9px-bold
+        color: #8c5050
         anchors.top: parent.top
-        anchors.left: parent.left
-
+        anchors.horizontalCenter: parent.horizontalCenter
+        
       Label
-        id: valueLabel
-        font: verdana-13px-bold
-        color: #ffffff
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        margin-bottom: 2
-
-      Label
-        text: >
-        font: verdana-11px-bold
-        color: #6a8c75
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-
-    Panel
-      id: clanItem
-      height: 50
-      background-color: #15221a
-      padding: 10
-
-      Label
-        text: CLAN
-        font: verdana-10px-bold
-        color: #6a8c75
-        anchors.top: parent.top
-        anchors.left: parent.left
-
-      Label
-        id: valueLabel
-        font: verdana-13px-bold
-        color: #ffffff
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        margin-bottom: 2
-
-      Label
-        text: >
-        font: verdana-11px-bold
-        color: #6a8c75
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-
-    Panel
-      id: rankItem
-      height: 50
-      background-color: #15221a
-      padding: 10
-
-      Label
-        text: RANK
-        font: verdana-10px-bold
-        color: #6a8c75
-        anchors.top: parent.top
-        anchors.left: parent.left
-
-      Label
-        id: valueLabel
-        font: verdana-13px-bold
-        color: #ffffff
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        margin-bottom: 2
-
-      Label
-        text: >
-        font: verdana-11px-bold
-        color: #6a8c75
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-
-  ButtonBlueSmall
-    id: actionButton
-    !text: tr('Open Inventory')
-    height: 45
-    anchors.bottom: parent.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    color: #000000
-    background-color: #1fbf6e
-    font: verdana-11px-bold
-    margin-bottom: 10
-
-ProfileWindow
+        id: betrayalValue
+        text: "2"
+        font: verdana-18px-bold
+        color: #ff5555
+        anchors.centerIn: parent

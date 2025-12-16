@@ -5,17 +5,57 @@ profileController = Controller:new()
 local profileData = {
   name = "Kenji Zero",
   level = 42,
-  class = "SHADOW WALKER",
-  title = "Master Assassin",
-  balance = "¥1,450,000",
-  reputation = { value = 98, max = 100 },
-  guild = "Silent Lotus",
-  clan = "Wind Fury",
-  rank = "Jonin"
+  rank = "SHADOW WALKER",
+  title = "Master Assassin • Night Operative",
+  balance = {
+      ryo = "1,400,000",
+      koban = "850"
+  },
+  stats = {
+      sRankMissions = 12,
+      pvpKills = 27,
+      betrayals = 2
+  },
+  -- Legacy data structures kept for reference or future expansion
+  ninjaPath = {
+    class = "Assassino",
+    stars = 4
+  },
+  affinities = {
+    {name = "Ninjutsu", stars = 5},
+    {name = "Taijutsu", stars = 4},
+    {name = "Genjutsu", stars = 2}
+  },
+  detailedStats = {
+    {name = "Concluiu missões S Rank", value = 12},
+    {name = "Maior Rank", value = "Jonin"},
+    {name = "Mortes PvP", value = 27},
+    {name = "Traições", value = 2}
+  },
+  ninjaWorld = {
+    reputation = "HONRADO",
+    percentage = 95,
+    factions = {
+      {name = "Vila da Folha", status = "Aliado", color = "#55FF55"},
+      {name = "Mercadores", status = "Neutro", color = "#FFFF55"},
+      {name = "Submundo", status = "Infame", color = "#FF5555"}
+    }
+  },
+  lineage = {
+    clan = "Uchiha",
+    kekkeiGenkai = "Sharingan",
+    state = "Observado pela ANBU"
+  },
+  history = {
+    {text = "Concluiu missão S Rank", type = "success"},
+    {text = "Traiu uma facção", type = "warning"},
+    {text = "Eliminou alvo de elite", type = "success"}
+  }
 }
 
 function profileController:onInit()
-  g_keyboard.bindKeyDown('Ctrl+P', function() self:toggle() end)
+  g_keyboard.bindKeyDown('Ctrl+Shift+P', function() self:toggle() end)
+  print("Profile module initialized. Press Ctrl+Shift+P to open.")
 end
 
 function profileController:onTerminate()
@@ -33,11 +73,19 @@ function profileController:onGameEnd()
 end
 
 function profileController:toggle()
+  print("Toggle called")
   if not self.ui then
+    print("Creating UI...")
     self.ui = g_ui.displayUI('profile')
+    if self.ui then
+        print("UI created successfully")
+    else
+        print("Failed to create UI - displayUI returned nil")
+    end
   end
   
   if not self.ui then
+    print("UI is nil, returning")
     return
   end
 
@@ -56,60 +104,52 @@ function profileController:refreshUI()
   if not ui then return end
   
   -- Header
-  local header = ui:getChildById('header')
-  if header then
-      -- Portrait
-      local portrait = header:getChildById('portrait')
+  local headerPanel = ui:getChildById('headerPanel')
+  if headerPanel then
+      headerPanel:getChildById('nameLabel'):setText(profileData.name)
+      headerPanel:getChildById('rankLabel'):setText(profileData.rank)
+      headerPanel:getChildById('titleLabel'):setText(profileData.title)
+      headerPanel:getChildById('levelBadge'):setText(profileData.level)
+      
+      local portrait = headerPanel:getChildById('portrait')
       if portrait then
           local localPlayer = g_game.getLocalPlayer()
           if localPlayer then
             portrait:setCreature(localPlayer)
           end
       end
+  end
 
-      -- Level Badge
-      local levelBadge = header:getChildById('levelBadge')
-      if levelBadge then levelBadge:setText(tostring(profileData.level)) end
-
-      -- Name & Info
-      local infoPanel = header:getChildById('infoPanel')
-      if infoPanel then
-          infoPanel:getChildById('nameLabel'):setText(profileData.name)
-          infoPanel:getChildById('classLabel'):setText(profileData.class)
-          infoPanel:getChildById('titleLabel'):setText(profileData.title)
+  -- Balance Row
+  local balanceRow = ui:getChildById('balanceRow')
+  if balanceRow then
+      local bankCard = balanceRow:getChildById('bankCard')
+      if bankCard then
+          bankCard:getChildById('bankValue'):setText("¥" .. profileData.balance.ryo)
+      end
+      
+      local specialCard = balanceRow:getChildById('specialCard')
+      if specialCard then
+          specialCard:getChildById('specialValue'):setText(profileData.balance.koban)
       end
   end
 
   -- Stats Row
   local statsRow = ui:getChildById('statsRow')
   if statsRow then
-      -- Balance
-      local balanceCard = statsRow:getChildById('balanceCard')
-      if balanceCard then
-          balanceCard:getChildById('valueLabel'):setText(profileData.balance)
+      local missionCard = statsRow:getChildById('missionCard')
+      if missionCard then
+          missionCard:getChildById('missionValue'):setText(profileData.stats.sRankMissions)
       end
 
-      -- Reputation
-      local reputationCard = statsRow:getChildById('reputationCard')
-      if reputationCard then
-          reputationCard:getChildById('valueLabel'):setText(profileData.reputation.value .. "/" .. profileData.reputation.max)
-          local progressBar = reputationCard:getChildById('progressBar')
-          if progressBar then
-              progressBar:setPercent(profileData.reputation.value)
-          end
+      local killsCard = statsRow:getChildById('killsCard')
+      if killsCard then
+          killsCard:getChildById('killsValue'):setText(profileData.stats.pvpKills)
       end
-  end
-
-  -- Details List
-  local detailsList = ui:getChildById('detailsList')
-  if detailsList then
-      local guildItem = detailsList:getChildById('guildItem')
-      if guildItem then guildItem:getChildById('valueLabel'):setText(profileData.guild) end
-
-      local clanItem = detailsList:getChildById('clanItem')
-      if clanItem then clanItem:getChildById('valueLabel'):setText(profileData.clan) end
-
-      local rankItem = detailsList:getChildById('rankItem')
-      if rankItem then rankItem:getChildById('valueLabel'):setText(profileData.rank) end
+      
+      local betrayalCard = statsRow:getChildById('betrayalCard')
+      if betrayalCard then
+          betrayalCard:getChildById('betrayalValue'):setText(profileData.stats.betrayals)
+      end
   end
 end
