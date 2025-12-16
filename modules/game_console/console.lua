@@ -810,7 +810,7 @@ function addPrivateChannel(receiver)
 end
 
 function addPrivateText(text, speaktype, name, isPrivateCommand, creatureName)
-	if speaktype.npcChat and modules.game_tv.isPlayerWatchingTV() then
+	if speaktype.npcChat then
 		return
 	end
 
@@ -842,8 +842,14 @@ end
 function addText(text, speaktype, tabName, creatureName)
 	local tab = getTab(tabName)
 
-	if tab ~= nil then
+	if tab == nil then
+		pdebug(string.format('[Console] Tab "%s" not found; creating.', tostring(tabName)))
+		tab = addTab(tabName, false)
+	end
+	if tab then
 		addTabText(text, speaktype, tab, creatureName)
+		else
+		pwarning(string.format('[Console] Failed to log text; tab "%s" unavailable.', tostring(tabName)))
 	end
 end
 
@@ -1533,9 +1539,9 @@ function sendMessage(message, tab)
 	local name = tab:getText()
 
 	if tab == serverTab or tab == getRuleViolationsTab() then
-		tab = defaultTab
-		name = defaultTab:getText()
-	end
+        tab = defaultTab or tab
+        name = (defaultTab and defaultTab.getText and defaultTab:getText()) or (tab and tab.getText and tab:getText()) or tr("Default")
+    end
 
 	local channel = tab.channelId
 	local originalMessage = message
@@ -1611,9 +1617,12 @@ function sendMessage(message, tab)
 
 	local speaktypedesc
 
-	if (channel or tab == defaultTab) and not chatCommandPrivateReady then
-		if tab == defaultTab then
-			speaktypedesc = chatCommandSayMode or SayModes[consolePanel:getChildById("sayModeButton").sayMode].speakTypeDesc
+	 if (channel or tab == defaultTab) and not chatCommandPrivateReady then
+        if tab == defaultTab then
+            local sayButton = consolePanel and consolePanel:getChildById("sayModeButton")
+            local sayMode = (sayButton and sayButton.sayMode) or 2 -- default index for "say"
+            local sayEntry = SayModes[sayMode]
+            speaktypedesc = chatCommandSayMode or (sayEntry and sayEntry.speakTypeDesc) or "say"
 
 			if speaktypedesc ~= "say" then
 				sayModeChange(2)
@@ -1622,7 +1631,13 @@ function sendMessage(message, tab)
 			speaktypedesc = chatCommandSayMode or "channelYellow"
 		end
 
-		g_game.talkChannel(SpeakTypesSettings[speaktypedesc].speakType, channel, message)
+		local speaktype = SpeakTypesSettings[speaktypedesc]
+        if speaktype and speaktype.speakType then
+            g_game.talkChannel(speaktype.speakType, channel, message)
+        else
+            g_game.talkChannel(MessageModes.Say, channel or 0, message)
+            speaktype = SpeakTypesSettings.say
+        end
 
 		return
 	else
@@ -1654,7 +1669,7 @@ function sendMessage(message, tab)
 			speaktypedesc = "privatePlayerToPlayer"
 		end
 
-		local speaktype = SpeakTypesSettings[speaktypedesc]
+		 local speaktype = SpeakTypesSettings[speaktypedesc] or SpeakTypesSettings.privatePlayerToPlayer
 		local player = g_game.getLocalPlayer()
 
 		g_game.talkPrivate(speaktype.speakType, name, message)
@@ -1775,11 +1790,7 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 		local staticMessage = message
 
 		if isNpcMode then
-			if modules.game_tv.isPlayerWatchingTV() then
-				return
-			end
-
-			local highlightData = getNewHighlightedText(staticMessage, speaktype.color, "#1fbf6e")
+				local highlightData = getNewHighlightedText(staticMessage, speaktype.color, "#1fbf6e")
 
 			if #highlightData > 2 then
 				staticText:addColoredMessage(name, mode, highlightData)
@@ -1829,7 +1840,11 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 		if channel then
 			addText(composedMessage, speaktype, channel, name)
 		else
-			pwarning("message in channel id " .. channelId .. " which is unknown, this is a server bug, relogin if you want to see messages in this channel")
+			if serverTab then
+				addTabText(composedMessage, speaktype, serverTab, name)
+			else
+				addText(composedMessage, speaktype, tr("Server Log"), name)
+			end
 		end
 	end
 end

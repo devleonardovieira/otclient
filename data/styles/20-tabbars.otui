@@ -25,7 +25,7 @@ MoveableTabBarButton < UIButton
 
   $checked:
     image-clip: 0 0 153 33
-    color: #9BCCFD
+    color: #1fbf6e
     image-color: #FFFFFF
 
   $on !checked:
@@ -175,6 +175,6 @@ TabBarHorizontalButton < UIButton
     icon-color: #333333
   $checked:
     icon-color: #ffffff
-    color: 1fbf6e
+    color: #1fbf6e
   $on !checked:
     color: #F55E5E

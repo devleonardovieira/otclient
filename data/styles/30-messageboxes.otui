@@ -8,6 +8,7 @@ MessageBoxLabel < Label-16px-Regular
   text-auto-resize: true
   text-align: center
   text-wrap: true
+  color: #FFDA2B
 
 MessageBoxButtonHolder < UIWidget
   id: buttonHolder

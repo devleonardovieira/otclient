@@ -907,3 +907,7 @@ function extraActionOnMouseRelease(widget, mousePosition, mouseButton)
 
 	return false
 end
+
+function getActionBottomPanel()
+	return actionBottomPanel
+end

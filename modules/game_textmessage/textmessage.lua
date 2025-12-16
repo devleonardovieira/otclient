@@ -12,7 +12,7 @@ MessageSettings = {
 	},
 	consoleBlue = {
 		consoleTab = "Default",
-		color = TextColors.green
+		color = TextColors.white
 	},
 	centerRed = {
 		screenTarget = "lowCenterLabel",
@@ -23,7 +23,7 @@ MessageSettings = {
 		screenTarget = "highCenterLabel",
 		consoleOption = "showInfoMessagesInConsole",
 		consoleTab = "Server Log",
-		color = TextColors.green
+		color = TextColors.white
 	},
 	centerWhite = {
 		screenTarget = "middleCenterLabel",
@@ -134,8 +134,16 @@ local msgtype = MessageTypes[mode]
   if msgtype.screenTarget and mode ~= MessageModes.Failure then
     local label = messagesPanel:recursiveGetChildById(msgtype.screenTarget)
     label:setMarginBottom(2)
-    label:setMultiColorText(text, msgtype.color)
-    label:setColor(msgtype.color)
+    local first, rest = text:match("^(.-)\n(.*)$")
+    if first then
+      local colored = "{" .. first .. ", " .. "#1f9ffe" .. "}"
+      colored = colored .. "{" .. "\n" .. rest .. ", " .. "#FFFFFF" .. "}"
+      label:setColoredText(colored)
+    else
+      local colored = "{" .. text .. ", " .. "#1f9ffe" .. "}"
+      label:setColoredText(colored)
+    end
+    label:setColor("#FFFFFF")
     label:setVisible(true)
     removeEvent(label.hideEvent)
     label.hideEvent = scheduleEvent(function()
