@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_actionbar/actionbar.lua
+-- chunkname: @/modules/game_actionbar/actionbar.lua
 
 actionPanel1 = nil
 mouseGrabberWidget = nil
@@ -869,6 +869,9 @@ function showSetupHotkey(callback)
 	function assignWindow.onDestroy(widget)
 		if widget == hotkeyAssignWindow then
 			hotkeyAssignWindow = nil
+		end
+		if modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+			modules.game_console.visibleConsolePanel(true)
 		end
 	end
 

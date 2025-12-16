@@ -396,7 +396,12 @@ function g_keyboard.unbindHotkeyPress(keyComboDesc, arg1, arg2)
 end
 
 function g_keyboard.getHotkeyType(keyComboDesc)
-	return hotkeys[keyComboDesc]
+	local t = hotkeys[keyComboDesc]
+	if t then return t end
+	if modules and modules.game_walk and modules.game_walk.isWalkingCombo and modules.game_walk.isWalkingCombo(keyComboDesc) then
+		return "Walking"
+	end
+	return nil
 end
 
 function g_keyboard.isSkipKey(key)

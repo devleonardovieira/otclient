@@ -2,6 +2,7 @@ EnterGameWindow = nil
 EnterGame = EnterGame or {}
 local LOCAL_API_KEY = "6f8d9c2a1b7e4d3f9a0c5e7b2d6f1a3c8e9b0d4f2a6c7e5b1d3f9a2c4e6b8d0f"
 controller = Controller:new()
+controller.name = 'client_entergame2'
 local function isLoaderActive()
   local ok, loader = pcall(function() return modules.client_loader and modules.client_loader.Loader end)
   if not ok or not loader or not loader.isActive then return false end
@@ -10,9 +11,11 @@ local function isLoaderActive()
 end
 
 function controller:onInit()
-  EnterGameWindow = g_ui.loadUI('entergame', rootWidget)
-  EnterGameWindow.onEscape = function()
-    EnterGameWindow:hide()
+  controller:setUI('entergame', rootWidget)
+  controller:loadUI()
+  EnterGameWindow = controller.ui
+  EnterGameWindow.onEscape = function(self)
+    self:hide()
   end
   -- Initialize remember email checkbox and prefill state
   local rememberBox = EnterGameWindow and EnterGameWindow:recursiveGetChildById('rememberEmailBox') or nil
@@ -28,7 +31,7 @@ function controller:onInit()
         emailEdit:setCursorPos(-1)
       end
     end
-    connect(rememberBox, {
+    local evt = controller:registerUIEvents(rememberBox, {
       onCheckChange = function(widget, checked)
         g_settings.set('rememberEmail', checked)
         g_settings.save()
@@ -38,15 +41,17 @@ function controller:onInit()
         end
       end
     })
+    evt:connect()
   end
   g_logger.info('client_entergame2: controller init')
 end
 
 function controller:onTerminate()
-  if EnterGameWindow then
-    EnterGameWindow:destroy()
-    EnterGameWindow = nil
+  if controller.ui then
+    controller:destroyUI()
   end
+  EnterGameWindow = nil
+  controller:checkWidgetsDestroyed()
 end
 
 function controller:toggle()
@@ -124,9 +129,11 @@ end
 -- Reexibe (ou recria) a janela de login quando necessário
 function EnterGame.show()
   if not EnterGameWindow then
-    EnterGameWindow = g_ui.loadUI('entergame', rootWidget)
-    EnterGameWindow.onEscape = function()
-      EnterGameWindow:hide()
+    controller:setUI('entergame', rootWidget)
+    controller:loadUI()
+    EnterGameWindow = controller.ui
+    EnterGameWindow.onEscape = function(self)
+      self:hide()
     end
   end
   if isLoaderActive() then
@@ -209,7 +216,7 @@ function EnterGame.doLogin()
   -- Cria imediatamente o loading para evitar corrida com o retorno do login
   if EnterGame.loadBox then EnterGame.destroyLoadBox() end
   EnterGame.loadBox = displayCancelBox(tr('Please wait'), tr('Connecting to login server...'))
-  connect(EnterGame.loadBox, {
+  local cancelEvt = controller:registerUIEvents(EnterGame.loadBox, {
     onCancel = function()
       if http and http.cancel then http:cancel() end
       EnterGame.destroyLoadBox()
@@ -220,6 +227,7 @@ function EnterGame.doLogin()
       end
     end
   })
+  cancelEvt:connect()
   -- Anima saída da janela de login para a esquerda em paralelo ao loading
   if EnterGameWindow and EnterGameWindow:isVisible() then
     local w = EnterGameWindow
@@ -249,6 +257,7 @@ function EnterGame.destroyLoadBox()
   if EnterGame.loadBox then
     EnterGame.loadBox:destroy()
     EnterGame.loadBox = nil
+    controller:checkWidgetsDestroyed()
   end
 end
 

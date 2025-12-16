@@ -4,7 +4,7 @@ local loaderWindow
 local scheduledEvent
 local loadFn
 local startMillis = 0
-local minDisplayMs = 100 -- tempo mínimo de exibição da tela de loading
+local minDisplayMs = 1 -- tempo mínimo de exibição da tela de loading
 local hiddenWidgets = {}
 local rootConn
 local bgConn

@@ -178,7 +178,6 @@ function Creature:onTypeChange(typeId)
 end
 
 function Creature:onIconChange(iconId)
-    print('asdasdasd')
     local imagePath = getIconImagePath(iconId)
     if type(iconId) == 'string' then
         imagePath = iconId
@@ -187,13 +186,10 @@ function Creature:onIconChange(iconId)
     if imagePath then
         self:setIconTexture(imagePath)
     end
-print('teste4')
     -- Integração com minimapa: marca/desmarca posição do NPC conforme ícone
     if minimapWidget and self:isNpc() then
-        print('teste')
         local pos = self:getPosition()
         if imagePath then
-            print('teste2')
             minimapWidget:addFlag(pos, imagePath, self:getName(), true, 'white')
         else
             minimapWidget:removeFlag(pos)

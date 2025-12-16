@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/corelib/ui/uiwindow.lua
+-- chunkname: @/modules/corelib/ui/uiwindow.lua
 
 UIWindow = extends(UIWidget, "UIWindow")
 
@@ -30,6 +30,9 @@ function UIWindow:onKeyDown(keyCode, keyboardModifiers)
 			signalcall(self.onEnter, self)
 		elseif keyCode == KeyEscape then
 			signalcall(self.onEscape, self)
+			if modules and modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+				modules.game_console.visibleConsolePanel(true)
+			end
 		end
 	end
 end

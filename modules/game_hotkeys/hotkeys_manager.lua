@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_hotkeys/hotkeys_manager.lua
+-- chunkname: @/modules/game_hotkeys/hotkeys_manager.lua
 
 local HOTKEY_MANAGER_USE = nil
 local HOTKEY_MANAGER_USEONSELF = 1
@@ -483,6 +483,11 @@ function addHotkey()
 
 	assignWindow:grabKeyboard()
 	assignWindow:grabMouse()
+	assignWindow.onDestroy = function()
+		if modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+			modules.game_console.visibleConsolePanel(true)
+		end
+	end
 
 	local comboLabel = assignWindow:getChildById("comboPreview")
 
@@ -498,9 +503,10 @@ function addKeyCombo(keyCombo, keySettings, focus)
 		return
 	end
 
+	local hotkeyType = g_keyboard.getHotkeyType(keyCombo)
 	local validate, message = KeybindManager:validate("", "", keyCombo)
 
-	if message then
+	if hotkeyType or message then
 		return
 	end
 
@@ -571,8 +577,14 @@ function prepareKeyCombo(keyCombo, ticks)
 		hotKey = hotkeyList[tostring(keyCombo)]
 	end
 
-	if not hotKey or modules.game_console.isChatEnabled() and not g_keyboard.isSkipKey(keyCombo) then
+	if not hotKey then
 		return
+	end
+	-- Permitir hotkeys de itens/ações com chat aberto; bloquear apenas texto de uma tecla
+	if modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+		if keyCombo:len() == 1 and (hotKey.itemId == nil) and (hotKey.action == nil) then
+			return
+		end
 	end
 
 	if hotKey.itemId == nil and hotKey.action == nil then
@@ -591,15 +603,19 @@ function doKeyCombo(keyCombo, repeated)
 		return
 	end
 
-	if modules.game_console and modules.game_console.isChatEnabled() and keyCombo:len() == 1 then
-		return
+	-- Permitir hotkeys de itens/ações com chat aberto; bloquear apenas texto de uma tecla
+	local hotKey = hotkeyList[keyCombo]
+	if modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+		if keyCombo:len() == 1 and hotKey and (hotKey.itemId == nil) and (hotKey.action == nil) then
+			return
+		end
 	end
 
 	if modules.game_walking then
 		modules.game_walking.checkTurn()
 	end
 
-	local hotKey = hotkeyList[keyCombo]
+	hotKey = hotKey or hotkeyList[keyCombo]
 
 	if not hotKey then
 		return
@@ -956,4 +972,7 @@ end
 function hotkeyCaptureOk(assignWindow, keyCombo)
 	addKeyCombo(keyCombo, nil, true)
 	assignWindow:destroy()
+	if modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() then
+		modules.game_console.visibleConsolePanel(true)
+	 end
 end

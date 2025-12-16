@@ -283,6 +283,18 @@ function onGameStart()
         gameRightPanel:setMarginBottom(mobileConfig.mobileHeightShortcuts)
         gameLeftPanel:setMarginBottom(mobileConfig.mobileHeightJoystick)
     end
+    local function focusReport(tag)
+        local ct = rootWidget.currentTextEdit
+        pdebug(string.format('[FocusCheck %s] rootFocused=%s mapFocused=%s currentTextEdit=%s chatEnabled=%s',
+            tostring(tag),
+            tostring(gameRootPanel:isFocused()),
+            tostring(gameMapPanel:isFocused()),
+            tostring(ct and ct:getId() or 'nil'),
+            tostring(modules.game_console and modules.game_console.isChatEnabled and modules.game_console.isChatEnabled() or false)))
+    end
+    scheduleEvent(function() focusReport('onGameStart t+100') end, 100)
+    scheduleEvent(function() focusReport('onGameStart t+600') end, 600)
+    scheduleEvent(function() focusReport('onGameStart t+1200') end, 1200)
 end
 
 function onGameEnd()
@@ -297,6 +309,16 @@ function show()
     gameRootPanel:show()
     gameRootPanel:focus()
     gameMapPanel:followCreature(g_game.getLocalPlayer())
+    do
+        local prevOnFocus = gameRootPanel.onFocusChange
+        function gameRootPanel.onFocusChange(focused)
+            if prevOnFocus then prevOnFocus(focused) end
+            local ct = rootWidget.currentTextEdit
+            pdebug(string.format('[FocusCheck root focus] focused=%s currentTextEdit=%s',
+                tostring(focused),
+                tostring(ct and ct:getId() or 'nil')))
+        end
+    end
 
     updateStretchShrink()
     logoutButton:setTooltip(tr('Logout'))

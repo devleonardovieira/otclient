@@ -1,6 +1,7 @@
 -- chunkname: @/modules/client_entergame/characterlist.lua
 
 CharacterList = {}
+characterController = Controller:new()
 
 local charactersWindow, loadBox, characterList, errorBox, waitingWindow, updateWaitEvent, resendWaitEvent, loginEvent
 local lastLogout = 0
@@ -24,8 +25,9 @@ local function tryLogin(charInfo, tries)
 			g_game.safeLogout()
 		end
 
-		loginEvent = scheduleEvent(function()
+		loginEvent = characterController:scheduleEvent(function()
 			tryLogin(charInfo, tries + 1)
+			return true
 		end, 100)
 
 		return
@@ -35,15 +37,14 @@ local function tryLogin(charInfo, tries)
 	g_game.loginWorld(G.account, G.password, charInfo.worldName, charInfo.worldHost, charInfo.worldPort, charInfo.characterName, G.authenticatorToken, G.sessionKey)
 
 	loadBox = displayCancelBox(tr("Please wait"), tr("Connecting to game server..."))
-
-	connect(loadBox, {
+	local cancelEvt = characterController:registerUIEvents(loadBox, {
 		onCancel = function()
 			loadBox = nil
-
 			g_game.cancelLogin()
 			CharacterList.show()
 		end
 	})
+	cancelEvt:connect()
 	g_settings.set("last-used-character", charInfo.characterName)
 	g_settings.set("last-used-world", charInfo.worldName)
 end
@@ -63,8 +64,9 @@ local function updateWait(timeStart, timeEnd)
 
 			label:setText(tr("Trying to reconnect in %s seconds.", timeStr))
 
-			updateWaitEvent = scheduleEvent(function()
+			updateWaitEvent = characterController:scheduleEvent(function()
 				updateWait(timeStart, timeEnd)
+				return true
 			end, 1000 * progressBar:getPercentPixels() / 100 * (timeEnd - timeStart))
 
 			return true
@@ -72,8 +74,7 @@ local function updateWait(timeStart, timeEnd)
 	end
 
 	if updateWaitEvent then
-		updateWaitEvent:cancel()
-
+		characterController:removeEvent(updateWaitEvent)
 		updateWaitEvent = nil
 	end
 end
@@ -85,8 +86,7 @@ local function resendWait()
 		waitingWindow = nil
 
 		if updateWaitEvent then
-			updateWaitEvent:cancel()
-
+			characterController:removeEvent(updateWaitEvent)
 			updateWaitEvent = nil
 		end
 
@@ -116,10 +116,11 @@ local function onLoginWait(message, time)
 
 	label:setText(message)
 
-	updateWaitEvent = scheduleEvent(function()
+	updateWaitEvent = characterController:scheduleEvent(function()
 		updateWait(g_clock.seconds(), g_clock.seconds() + time)
+		return true
 	end, 0)
-	resendWaitEvent = scheduleEvent(resendWait, time * 1000)
+	resendWaitEvent = characterController:scheduleEvent(resendWait, time * 1000)
 end
 
 function onGameLoginError(message)
@@ -187,42 +188,10 @@ function CharacterList.init()
 		return
 	end
 
-	connect(g_game, {
-		onLoginError = onGameLoginError
-	})
-	connect(g_game, {
-		onLoginToken = onGameLoginToken
-	})
-	connect(g_game, {
-		onUpdateNeeded = onGameUpdateNeeded
-	})
-	connect(g_game, {
-		onConnectionError = onGameConnectionError
-	})
-	-- Ao iniciar o jogo, esconda completamente a lista de personagens
-	local function onGameStartHide()
-		CharacterList.destroyLoadBox()
-		CharacterList.hide(false)
+	-- Mantido como wrapper caso seja usado externamente
+	if characterController and characterController.onInit then
+		characterController:onInit()
 	end
-	connect(g_game, {
-		onGameStart = onGameStartHide
-	})
-	connect(g_game, {
-		onLoginWait = onLoginWait
-	})
-	connect(g_game, {
-		onGameEnd = onGameEnd
-	})
-	connect(g_game, {
-		onLogout = onLogout
-	})
-
-    -- Carregar favoritos antes de criar a lista para aplicar ordenação
-    favorites = g_settings.getNode("favoritesCharacterList") or {}
-
-    if G.characters then
-        CharacterList.create(G.characters, G.characterAccount)
-    end
 end
 
 function CharacterList.terminate()
@@ -230,78 +199,78 @@ function CharacterList.terminate()
 		return
 	end
 
-	disconnect(g_game, {
-		onLoginError = onGameLoginError
+	if characterController and characterController.onTerminate then
+		characterController:onTerminate()
+	end
+end
+
+function characterController:onInit()
+	-- Eventos que precisam existir antes e durante o login (fora do mapa)
+	characterController:registerEvents(g_game, {
+		onLoginError = onGameLoginError,
+		onLoginToken = onGameLoginToken,
+		onUpdateNeeded = onGameUpdateNeeded,
+		onConnectionError = onGameConnectionError,
+		onLoginWait = onLoginWait,
+		onGameEnd = onGameEnd,
+		onLogout = onLogout,
+		onGameStart = function()
+			CharacterList.destroyLoadBox()
+			CharacterList.cancelWait()
+			CharacterList.hide(false)
+			characterController:checkWidgetsDestroyed()
+		end
 	})
-	disconnect(g_game, {
-		onLoginToken = onGameLoginToken
-	})
-	disconnect(g_game, {
-		onUpdateNeeded = onGameUpdateNeeded
-	})
-	disconnect(g_game, {
-		onConnectionError = onGameConnectionError
-	})
-	disconnect(g_game, {
-		onGameStart = CharacterList.destroyLoadBox
-	})
-	disconnect(g_game, {
-		onLoginWait = onLoginWait
-	})
-	disconnect(g_game, {
-		onGameEnd = onGameEnd
-	})
-	disconnect(g_game, {
-		onLogout = onLogout
-	})
+
+	-- Carregar favoritos e criar lista inicial se já houver personagens
+	favorites = g_settings.getNode("favoritesCharacterList") or {}
+	if G.characters then
+		CharacterList.create(G.characters, G.characterAccount)
+	end
+end
+
+function characterController:onTerminate()
 	g_settings.setNode("favoritesCharacterList", favorites)
 
 	if infoPanel then
 		infoPanel:destroy()
-
 		infoPanel = nil
 	end
 
 	if charactersWindow then
 		characterList = nil
-
 		charactersWindow:destroy()
-
 		charactersWindow = nil
+		characterController:checkWidgetsDestroyed()
 	end
 
 	if loadBox then
 		g_game.cancelLogin()
 		loadBox:destroy()
-
 		loadBox = nil
+		characterController:checkWidgetsDestroyed()
 	end
 
 	if waitingWindow then
 		waitingWindow:destroy()
-
 		waitingWindow = nil
+		characterController:checkWidgetsDestroyed()
 	end
 
 	if updateWaitEvent then
-		removeEvent(updateWaitEvent)
-
+		characterController:removeEvent(updateWaitEvent)
 		updateWaitEvent = nil
 	end
 
 	if resendWaitEvent then
-		removeEvent(resendWaitEvent)
-
+		characterController:removeEvent(resendWaitEvent)
 		resendWaitEvent = nil
 	end
 
 	if loginEvent then
-		removeEvent(loginEvent)
-
+		characterController:removeEvent(loginEvent)
 		loginEvent = nil
 	end
-
-	CharacterList = nil
 end
 
 function CharacterList.createList(characters)
@@ -309,6 +278,7 @@ function CharacterList.createList(characters)
     G.characters = characters
 
     characterList:destroyChildren()
+    characterController:checkWidgetsDestroyed()
 
     local focusLabel
     -- Pré-ordenar: favoritos primeiro (por newIndex), depois não favoritos na ordem original
@@ -361,12 +331,13 @@ function CharacterList.createList(characters)
         widget.world:setColor('#FFFFFF')
 		widget:setImageSource("/images/game/characters/" .. (info.sex == 0 and "female" or "male"))
 		widget.clan:setImageSource("/images/game/icons/" .. (info.clan and iconsClan[tonumber(math.floor(info.clan))] or "icon_no_clan_20px"))
-		connect(widget, {
+		local dblEvt = characterController:registerUIEvents(widget, {
 			onDoubleClick = function()
 				CharacterList.doLogin() 
 				return true
 			end
 		})
+		dblEvt:connect()
 
 		if info.daysToDelete then
 			local deleteMsg = info.daysToDelete > 0 and tr("em %d dias", info.daysToDelete) or tr("hoje")
@@ -377,55 +348,62 @@ function CharacterList.createList(characters)
 		widget.cancel:setVisible(info.daysToDelete)
 		widget.delete:setVisible(not info.daysToDelete)
 
-		function widget.delete.onClick()
-			modules.game_accounts.showDeletePanel(info.name)
-		end
+		local delEvt = characterController:registerUIEvents(widget.delete, {
+			onClick = function()
+				modules.game_accounts.showDeletePanel(info.name)
+			end
+		})
+		delEvt:connect()
 
-		function widget.cancel.onClick()
-			modules.game_accounts.showCancelDeletePanel(info.name, info.daysToDelete)
-		end
+		local cancelEvt2 = characterController:registerUIEvents(widget.cancel, {
+			onClick = function()
+				modules.game_accounts.showCancelDeletePanel(info.name, info.daysToDelete)
+			end
+		})
+		cancelEvt2:connect()
 
-        function widget.favorite:onClick()
-            local favoriteChar = favorites[info.name]
+        local favEvt = characterController:registerUIEvents(widget.favorite, {
+            onClick = function(widgetFav)
+                local favoriteChar = favorites[info.name]
 
-            if favoriteChar then
-                self:setOn(false)
+                if favoriteChar then
+                    widgetFav:setOn(false)
 
-                favorites[info.name] = nil
+                    favorites[info.name] = nil
 
-                local desired = favoriteChar.oldIndex or characterList:getChildIndex(widget)
-                local count = characterList:getChildCount()
-                if desired < 1 then desired = 1 end
-                if desired > count then desired = count end
-                characterList:moveChildToIndex(widget, desired)
-            else
-                favorites[info.name] = {
-                    newIndex = 1,
-                    oldIndex = characterList:getChildIndex(widget)
-                }
+                    local desired = favoriteChar.oldIndex or characterList:getChildIndex(widget)
+                    local count = characterList:getChildCount()
+                    if desired < 1 then desired = 1 end
+                    if desired > count then desired = count end
+                    characterList:moveChildToIndex(widget, desired)
+                else
+                    favorites[info.name] = {
+                        newIndex = 1,
+                        oldIndex = characterList:getChildIndex(widget)
+                    }
 
-                characterList:moveChildToIndex(widget, 1)
-                self:setOn(true)
-            end
-
-            -- Renumera favoritos conforme ordem visível na UI (determinístico)
-            local idx = 1
-            for i = 1, characterList:getChildCount() do
-                local child = characterList:getChildByIndex(i)
-                if child and child.favorite and child.favorite:isOn() then
-                    local name = child:getId()
-                    if favorites[name] then
-                        favorites[name].newIndex = idx
-                    else
-                        favorites[name] = { newIndex = idx, oldIndex = i }
-                    end
-                    idx = idx + 1
+                    characterList:moveChildToIndex(widget, 1)
+                    widgetFav:setOn(true)
                 end
-            end
 
-            -- Persiste imediatamente as preferências de favoritos
-            g_settings.setNode("favoritesCharacterList", favorites)
-        end
+                local idx = 1
+                for i = 1, characterList:getChildCount() do
+                    local child = characterList:getChildByIndex(i)
+                    if child and child.favorite and child.favorite:isOn() then
+                        local name = child:getId()
+                        if favorites[name] then
+                            favorites[name].newIndex = idx
+                        else
+                            favorites[name] = { newIndex = idx, oldIndex = i }
+                        end
+                        idx = idx + 1
+                    end
+                end
+
+                g_settings.setNode("favoritesCharacterList", favorites)
+            end
+        })
+        favEvt:connect()
 
 		if i == 1 or g_settings.get("last-used-character") == widget.characterName and g_settings.get("last-used-world") == widget.worldName then
 			focusLabel = widget
@@ -600,8 +578,7 @@ function CharacterList.doLogin()
 		charactersWindow:hide()
 
 		if loginEvent then
-			removeEvent(loginEvent)
-
+			characterController:removeEvent(loginEvent)
 			loginEvent = nil
 		end
 
@@ -629,19 +606,20 @@ function CharacterList.cancelWait()
 	end
 
 	if updateWaitEvent then
-		removeEvent(updateWaitEvent)
+		characterController:removeEvent(updateWaitEvent)
 
 		updateWaitEvent = nil
 	end
 
 	if resendWaitEvent then
-		removeEvent(resendWaitEvent)
+		characterController:removeEvent(resendWaitEvent)
 
 		resendWaitEvent = nil
 	end
 
 	CharacterList.destroyLoadBox()
 	CharacterList.showAgain()
+	characterController:checkWidgetsDestroyed()
 end
 
 function CharacterList.hideInfoPanel()

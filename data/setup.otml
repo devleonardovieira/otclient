@@ -39,6 +39,6 @@ game
 
 font
   widget: verdana-11px-antialised
-  static-text: verdana-11px-rounded
-  animated-text: verdana-11px-rounded
-  creature-text: libel-suit-30px_cp1250
+  static-text: righteous-12px-rounded
+  animated-text: righteous-12px-rounded
+  creature-text: righteous-12px-rounded

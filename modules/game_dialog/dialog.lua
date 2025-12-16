@@ -1,4 +1,4 @@
-﻿-- chunkname: @/modules/game_dialog/dialog.lua
+-- chunkname: @/modules/game_dialog/dialog.lua
 
 Dialog = {}
 
@@ -52,12 +52,24 @@ function addDialogOption(data)
 	if keywords and #keywords > 0 then
 		for i = 1, #keywords do
 			local option = g_ui.createWidget("OptionDialog", dialogWindow.options)
+			local opt = tostring(keywords[i] or "")
+			option.onClick = function()
+				local npcName = dialogWindow and dialogWindow.title and dialogWindow.title:getText() or nil
+				if npcName and #opt > 0 then
+					g_game.talkPrivate(MessageModes.NpcTo, npcName, opt)
+					if opt:lower() == "bye" then
+						suppressUntilStartBlock = true
+						suppressNpcName = npcName
+					end
+					onDialogGameEnd()
+				end
+			end
 
 			if i <= 3 then
 				height = height + option:getHeight() + option:getMarginTop()
 			end
 
-			option:setMultiColorText(keywords[i])
+			option:setMultiColorText(opt)
 		end
 
 		dialogWindow.options.selectedWidget = dialogWindow.options:getFirstChild()

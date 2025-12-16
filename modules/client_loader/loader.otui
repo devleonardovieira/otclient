@@ -1,4 +1,4 @@
-UIWindow
+PanelRoundedSolid
   id: loaderWindow
   title: Loading
   visible: false
@@ -31,6 +31,8 @@ UIWindow
       margin.right: 24
       !text: tr('Loading Modules')
       font: DMSans-26px-bold
+      text-auto-resize: true
+      color: #128c4f
 
     LoaderProgressBar
       id: mainProgress
@@ -52,6 +54,8 @@ UIWindow
       margin.right: 24
       text: 0%
       font: DMSans-26px-bold
+      text-auto-resize: true
+      color: #128c4f
 
 
 LoaderProgressBar < UIProgressBar
@@ -61,3 +65,5 @@ LoaderProgressBar < UIProgressBar
   background-border: 2
   font: DMSans-26px-bold
   text-offset: 0 1
+  text-auto-resize: true
+  color: black

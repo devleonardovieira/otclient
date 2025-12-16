@@ -14,11 +14,19 @@ Module
     dofile 'entergame'
     dofile 'characterlist'
     controller:init()
-    if CharacterList and CharacterList.init then
-      CharacterList.init()
+    if characterController and characterController.init then
+      characterController:init()
+    else
+      if CharacterList and CharacterList.init then
+        CharacterList.init()
+      end
     end
   @onUnload: |
     controller:terminate()
-    if CharacterList and CharacterList.terminate then
-      CharacterList.terminate()
+    if characterController and characterController.terminate then
+      characterController:terminate()
+    else
+      if CharacterList and CharacterList.terminate then
+        CharacterList.terminate()
+      end
     end

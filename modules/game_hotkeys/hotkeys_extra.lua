@@ -28,7 +28,7 @@ function setupExtraHotkeys(combobox)
 		local breakNext = false
 
 		for i, child in ipairs(battlePanel:getChildren()) do
-			if child.creature and child:isOn() and not child.creature:isSummon() and not child.creature:isOtherSummon() and not not child.creature:isMonster() then
+			if child.creature and child:isOn() and--[[  not child.creature:isSummon() and not child.creature:isOtherSummon() and not ]] not child.creature:isMonster() then
 				if breakNext then
 					nextChild = child
 
@@ -43,7 +43,7 @@ function setupExtraHotkeys(combobox)
 
 		if not nextChild then
 			for i, child in ipairs(battlePanel:getChildren()) do
-				if child.creature and child:isOn() and not child.creature:isSummon() and not child.creature:isOtherSummon() and not not child.creature:isMonster() then
+				if child.creature and child:isOn() and --[[not child.creature:isSummon() and not child.creature:isOtherSummon() and  not ]]not child.creature:isMonster() then
 					nextChild = child
 
 					break

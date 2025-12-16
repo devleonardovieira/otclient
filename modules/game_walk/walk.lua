@@ -34,6 +34,18 @@ local turnKeys = {
 }
 
 WalkController = Controller:new()
+local hotkeyPressRefs = {}
+modules.game_walk = modules.game_walk or {}
+local walkingSet = {
+    ["Up"] = true, ["Right"] = true, ["Down"] = true, ["Left"] = true,
+    ["W"] = true, ["A"] = true, ["S"] = true, ["D"] = true,
+    ["Numpad8"] = true, ["Numpad9"] = true, ["Numpad6"] = true, ["Numpad3"] = true,
+    ["Numpad2"] = true, ["Numpad1"] = true, ["Numpad4"] = true, ["Numpad7"] = true,
+    ["Ctrl+Up"] = true, ["Ctrl+Right"] = true, ["Ctrl+Down"] = true, ["Ctrl+Left"] = true
+}
+function modules.game_walk.isWalkingCombo(desc)
+    return walkingSet[tostring(desc)]
+end
 
 --- Stops the smart walking process.
 local function stopSmartWalk()
@@ -312,6 +324,7 @@ function bindWalkKey(key, dir, gated)
         end
         smartWalk(dir)
     end, gameRootPanel)
+
 end
 
 function bindTurnKey(key, dir)
@@ -323,6 +336,7 @@ function bindTurnKey(key, dir)
         local player = g_game.getLocalPlayer()
         if player then player:lockWalk(200) end
     end, gameRootPanel)
+
 end
 
 function unbindWalkKey(key)

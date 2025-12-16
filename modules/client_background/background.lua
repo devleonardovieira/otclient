@@ -1,56 +1,45 @@
 -- private variables
 local background
+backgroundController = Controller:new()
 local clientVersionLabel
 local bgEffectEvent = nil
 local toggleState = true  -- controls which effect  is active
 local timeLoopBackgroundEffect = 5000 -- 5 seconds
 
 -- public functions
-function init()
+function backgroundController:onInit()
     background = g_ui.displayUI('background')
     background:lower()
-
     clientVersionLabel = background:getChildById('clientVersionLabel')
     clientVersionLabel:setText("Copyright 2025 Shin Online. All Rights Reserverd.")
-
-    -- Esconde o botão de logout por padrão (só aparece na CharacterList)
     local logoutButton = background:getChildById('logoutButton')
     if logoutButton then
         logoutButton:hide()
     end
-
     if not g_game.isOnline() then
         addEvent(function()
             g_effects.fadeIn(clientVersionLabel, 1500)
         end)
     end
-
-    connect(g_game, {
-        onGameStart = hide
-    })
-    connect(g_game, {
+    backgroundController:registerEvents(g_game, {
+        onGameStart = hide,
         onGameEnd = show
     })
-    startBackgroundEffectLoop() -- start the background effect loop
+    startBackgroundEffectLoop()
 end
 
-function terminate()
-    disconnect(g_game, {
-        onGameStart = hide
-    })
-    disconnect(g_game, {
-        onGameEnd = show
-    })
-
+function backgroundController:onTerminate()
     g_effects.cancelFade(background:getChildById('clientVersionLabel'))
     if bgEffectEvent then
         removeEvent(bgEffectEvent)
         bgEffectEvent = nil
     end
-    background:destroy()
-
-    background = nil
+    if background then
+        background:destroy()
+        background = nil
+    end
     clientVersionLabel = nil
+    backgroundController:checkWidgetsDestroyed()
 end
 
 function hide()
