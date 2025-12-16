@@ -33,6 +33,13 @@ EmblemOther = 5
 VipIconFirst = 0
 VipIconLast = 7
 
+
+ViewMode = {
+    Normal = 0,
+    Mid = 1,
+    Extended = 2
+}
+
 Directions = {
     North = 0,
     East = 1,

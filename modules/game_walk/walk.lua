@@ -47,6 +47,14 @@ function modules.game_walk.isWalkingCombo(desc)
     return walkingSet[tostring(desc)]
 end
 
+function enableWSAD()
+    return modules.game_console.isChatEnabled()
+end
+
+function disableWSAD()
+    return (not modules.game_console.isChatEnabled())
+end
+
 --- Stops the smart walking process.
 local function stopSmartWalk()
     smartWalkDirs = {}

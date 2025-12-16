@@ -19,7 +19,7 @@ SpeakTypesSettings = {
 		speakType = MessageModes.GamemasterBroadcast
 	},
 	private = {
-		color = "#1fbf6e",
+		color = "#5FF7F7",
 		private = true,
 		speakType = MessageModes.PrivateTo
 	},
@@ -29,18 +29,18 @@ SpeakTypesSettings = {
 		speakType = MessageModes.GamemasterTo
 	},
 	privatePlayerToPlayer = {
-		color = "#1fbf6e",
+		color = "#9F9DFD",
 		private = true,
 		speakType = MessageModes.PrivateTo
 	},
 	privatePlayerToNpc = {
-		color = "#1fbf6e",
+		color = "#9F9DFD",
 		npcChat = true,
 		private = true,
 		speakType = MessageModes.NpcTo
 	},
 	privateNpcToPlayer = {
-		color = "#1fbf6e",
+		color = "#5FF7F7",
 		npcChat = true,
 		private = true,
 		speakType = MessageModes.NpcFrom
@@ -152,9 +152,6 @@ violationReportTab = nil
 ignoredChannels = {}
 filters = {}
 floatingMode = false
-recentOutgoingMessages = {}
-
-consoleController = Controller:new()
 
 local communicationSettings = {
 	yelling = false,
@@ -167,24 +164,24 @@ local communicationSettings = {
 }
 
 function init()
-	consoleController:setUI("console", modules.game_interface.getRootPanel())
-	consoleController:init()
-	consoleController:registerEvents(g_game, {
+	connect(g_game, {
 		onTalk = onTalk,
 		onChannelList = onChannelList,
 		onOpenChannel = onOpenChannel,
 		onCloseChannel = onCloseChannel,
 		onChannelEvent = onChannelEvent,
 		onOpenPrivateChannel = onOpenPrivateChannel,
-		onOpenOwnPrivateChannel = onOpenPrivateChannel,
+		onOpenOwnPrivateChannel = onOpenOwnPrivateChannel,
 		onRuleViolationChannel = onRuleViolationChannel,
 		onRuleViolationRemove = onRuleViolationRemove,
 		onRuleViolationCancel = onRuleViolationCancel,
-		onRuleViolationLock = onRuleViolationLock
+		onRuleViolationLock = onRuleViolationLock,
+		onGameStart = online,
+		onGameEnd = offline
 	})
 	g_ui.importStyle("communicationwindow.otui")
 
-	consolePanel = consoleController.ui
+	consolePanel = g_ui.loadUI("console", modules.game_interface.getRootPanel())
 	consoleTextEdit = consolePanel:getChildById("consoleTextEdit")
 	consoleContentPanel = consolePanel:getChildById("consoleContentPanel")
 	consoleTabBar = consolePanel:getChildById("consoleTabBar")
@@ -243,30 +240,6 @@ function init()
 	g_keyboard.bindKeyDown("Ctrl+O", g_game.requestChannels, gameRootPanel)
 	g_keyboard.bindKeyDown("Ctrl+E", removeCurrentTab, gameRootPanel)
 	g_keyboard.bindKeyDown("Ctrl+H", openHelp, gameRootPanel)
-	local function quickEnter()
-		if not g_game.isOnline() then
-			return
-		end
-		local chatVisible = not consoleToggleChat:isChecked() and consoleTextEdit:isVisible()
-		local inputFocused = consoleTextEdit:isFocused()
-		if chatVisible then
-			if inputFocused then
-				local text = consoleTextEdit:getText()
-				if text and #text > 0 then
-					sendCurrentMessage()
-				else
-					disableChat(true)
-				end
-			else
-				disableChat(true)
-			end
-		else
-			enableChat(true)
-			visibleConsolePanel(true)
-		end
-	end
-    g_keyboard.bindKeyDown("Enter", quickEnter, gameRootPanel)
-    -- focus-related enter binds removed per request
 
 	consoleToggleChat = consolePanel:getChildById("toggleChat")
 
@@ -277,38 +250,13 @@ function init()
 	end
 end
 
-function consoleController:onGameStart()
-	online()
-end
-
-function consoleController:onGameEnd()
-	offline()
-end
-
 function clearSelection(consoleBuffer)
-    for _, label in pairs(consoleBuffer:getChildren()) do
-        label:clearSelection()
-    end
+	for _, label in pairs(consoleBuffer:getChildren()) do
+		label:clearSelection()
+	end
 
-    consoleBuffer.selectionText = nil
-    consoleBuffer.selection = nil
-end
-
--- Safely destroy a console label by removing event handlers and selections
-local function destroyConsoleLabelSafely(label)
-  if not label then return end
-  -- Unhook handlers to avoid closures holding references
-  label.onMouseRelease = nil
-  label.onMousePress = nil
-  label.onDragEnter = nil
-  label.onDragLeave = nil
-  label.onDragMove = nil
-  -- Clear any selection state
-  protectedcall(function() label:clearSelection() end)
-  -- Remove auxiliary fields
-  label.name = nil
-  -- Finally destroy the widget
-  label:destroy()
+	consoleBuffer.selectionText = nil
+	consoleBuffer.selection = nil
 end
 
 function addConsolePhatomLine(text, color)
@@ -323,15 +271,9 @@ function addConsolePhatomLine(text, color)
 	end
 
 	local tmpLabel = g_ui.createWidget("ConsolePhantomLabel", consolePhantom)
-	-- Suporte a texto colorido no phantom: se vier em formato {texto, #cor}, usar setColoredText
-	if type(text) == "string" and text:find("{") then
-		tmpLabel:setColoredText(text)
-	else
-		tmpLabel:setText(text)
-		if color then
-			tmpLabel:setColor(color)
-		end
-	end
+
+	tmpLabel:setText(text)
+	tmpLabel:setColor(color)
 
 	local function destroyCallback()
 		tmpLabel:destroy()
@@ -389,28 +331,18 @@ function visibleConsolePanel(state)
 		consolePanel.toggleChat:show()
 		consolePanel:setPhantom(not state)
 		consolePanel.consolePhantom:setVisible(not state)
-		local currentTab = consoleTabBar and consoleTabBar:getCurrentTab()
-		if currentTab then
-			currentTab.tabPanel:getChildById("consoleBuffer"):setOn(state)
-			currentTab.tabPanel:getChildById("consoleScrollBar"):setVisible(state)
-		end
-		if state and isChatEnabled() then
-			consoleTextEdit:focus()
-		end
+		getCurrentTab().tabPanel:getChildById("consoleBuffer"):setOn(state)
+		getCurrentTab().tabPanel:getChildById("consoleScrollBar"):setVisible(state)
 	end)
 end
 
 function enableChat(temporarily)
-	if g_platform.isMobile() then
+	  if g_platform.isMobile() then
 		return
 	end
 
 	if consoleToggleChat:isChecked() then
-		consoleToggleChat:setChecked(false)
-	end
-
-	if not temporarily then
-		modules.client_options.setOption("wsadWalking", false)
+		return consoleToggleChat:setChecked(false)
 	end
 
 	visibleConsolePanel(true)
@@ -424,6 +356,7 @@ function enableChat(temporarily)
 	g_keyboard.unbindKeyDown("Enter", gameRootPanel)
 
 	if temporarily then
+		print('? ', temporarily)
 		local function quickFunc()
 			if not g_game.isOnline() then
 				return
@@ -438,18 +371,17 @@ function enableChat(temporarily)
 		g_keyboard.bindKeyDown("Escape", quickFunc, gameRootPanel)
 	end
 
---[[ 	modules.game_walking.disableQEZC()
-	modules.game_walking.disableWSAD() ]]
+	modules.game_walk.disableWSAD()
 	consoleToggleChat:setTooltip(tr("Disable chat mode, allow to walk using ASDW"))
 end
 
 function disableChat(temporarily)
-	if g_platform.isMobile()then
+	  if g_platform.isMobile() then
 		return
 	end
 
 	if not consoleToggleChat:isChecked() then
-		consoleToggleChat:setChecked(true)
+		return consoleToggleChat:setChecked(true)
 	end
 
 	if not temporarily then
@@ -458,7 +390,6 @@ function disableChat(temporarily)
 
 	consoleTextEdit:setVisible(false)
 	consoleTextEdit:setText("")
-	visibleConsolePanel(false)
 
 	local function quickFunc()
 		if not g_game.isOnline() then
@@ -476,16 +407,13 @@ function disableChat(temporarily)
 
 	g_keyboard.bindKeyDown("Enter", quickFunc, gameRootPanel)
 
-	--[[ if g_settings.getNumber("viewMode") == ViewMode.Extended then
+	if g_settings.getNumber("viewMode") == ViewMode.Extended then
 		visibleConsolePanel(false)
-	end ]]
-
-	--[[ if modules.client_options.getOption("qezcWalking") then
-		modules.game_walking.enableQEZC()
 	end
 
-	modules.game_walking.enableWSAD()
-	consoleToggleChat:setTooltip(tr("Enable chat mode")) ]]
+
+	modules.game_walk.enableWSAD()
+	consoleToggleChat:setTooltip(tr("Enable chat mode"))
 end
 
 function isChatEnabled()
@@ -493,39 +421,37 @@ function isChatEnabled()
 end
 
 function terminate()
-  save()
-  consoleController:terminate()
+	save()
+	disconnect(g_game, {
+		onTalk = onTalk,
+		onChannelList = onChannelList,
+		onOpenChannel = onOpenChannel,
+		onOpenPrivateChannel = onOpenPrivateChannel,
+		onOpenOwnPrivateChannel = onOpenPrivateChannel,
+		onCloseChannel = onCloseChannel,
+		onRuleViolationChannel = onRuleViolationChannel,
+		onRuleViolationRemove = onRuleViolationRemove,
+		onRuleViolationCancel = onRuleViolationCancel,
+		onRuleViolationLock = onRuleViolationLock,
+		onGameStart = online,
+		onGameEnd = offline,
+		onChannelEvent = onChannelEvent
+	})
 
-  if g_game.isOnline() then
-    clear()
-  end
+	if g_game.isOnline() then
+		clear()
+	end
 
-  local gameRootPanel = modules.game_interface.getRootPanel()
+	local gameRootPanel = modules.game_interface.getRootPanel()
 
-  -- Unbind all keyboard shortcuts attached to consolePanel to avoid
-  -- lingering references to child widgets (e.g., consoleTabBar, consoleTextEdit)
-  if consolePanel then
-    g_keyboard.unbindKeyPress("Shift+Up", consolePanel)
-    g_keyboard.unbindKeyPress("Shift+Down", consolePanel)
-    -- A tecla Enter foi vinculada ao gameRootPanel, desvincule aqui
-    if gameRootPanel then
-      g_keyboard.unbindKeyDown("Enter", gameRootPanel)
-    end
-    g_keyboard.unbindKeyPress("Tab", consolePanel)
-    g_keyboard.unbindKeyPress("Shift+Tab", consolePanel)
-    g_keyboard.unbindKeyDown("Enter", consolePanel)
-    g_keyboard.unbindKeyPress("Ctrl+A", consolePanel)
-  end
+	g_keyboard.unbindKeyDown("Ctrl+O", gameRootPanel)
+	g_keyboard.unbindKeyDown("Ctrl+E", gameRootPanel)
+	g_keyboard.unbindKeyDown("Ctrl+H", gameRootPanel)
+	saveCommunicationSettings()
 
-  g_keyboard.unbindKeyDown("Ctrl+O", gameRootPanel)
-  g_keyboard.unbindKeyDown("Ctrl+E", gameRootPanel)
-  g_keyboard.unbindKeyDown("Ctrl+H", gameRootPanel)
-  -- focus-related enter unbinds removed per request
-  saveCommunicationSettings()
-
-  if channelsWindow then
-    channelsWindow:destroy()
-  end
+	if channelsWindow then
+		channelsWindow:destroy()
+	end
 
 	if communicationWindow then
 		communicationWindow:destroy()
@@ -535,33 +461,16 @@ function terminate()
 		violationWindow:destroy()
 	end
 
-    -- Safely clear the current console buffer to release label widgets
-    pcall(function()
-      if consoleTabBar then
-        clearChannel(consoleTabBar)
-      end
-    end)
+	consoleTabBar = nil
+	consoleContentPanel = nil
+	consoleToggleChat = nil
+	consoleTextEdit = nil
 
-    -- Ensure tabbar releases all tab references before panel destruction
-    if consoleTabBar and consoleTabBar.clearTabs then
-      pcall(function()
-        consoleTabBar:clearTabs()
-      end)
-      consoleTabBar.onTabChange = nil
-    end
-    consoleTabBar = nil
-    consoleContentPanel = nil
-    consoleToggleChat = nil
-  consoleTextEdit = nil
+	consolePanel:destroy()
 
-  
-
-  consolePanel:destroy()
-  consoleController:checkWidgetsDestroyed()
-
-  consolePanel = nil
-  ownPrivateName = nil
-  Console = nil
+	consolePanel = nil
+	ownPrivateName = nil
+	Console = nil
 end
 
 function save()
@@ -593,15 +502,10 @@ function onTabChange(tabBar, tab)
 		return
 	end
 
-    addEvent(function()
-        local currentTab = consoleTabBar and consoleTabBar:getCurrentTab()
-        if not currentTab then return end
-        currentTab.tabPanel:getChildById("consoleBuffer"):setOn(isChatEnabled())
-        currentTab.tabPanel:getChildById("consoleScrollBar"):setVisible(isChatEnabled())
-		if isChatEnabled() then
-			consoleTextEdit:focus()
-		end
-    end)
+	addEvent(function()
+		getCurrentTab().tabPanel:getChildById("consoleBuffer"):setOn(isChatEnabled())
+		getCurrentTab().tabPanel:getChildById("consoleScrollBar"):setVisible(isChatEnabled())
+	end)
 end
 
 function clear()
@@ -610,39 +514,6 @@ function clear()
 	local playerName = g_game.getCharacterName()
 	local savedChannels = {}
 	local set = false
-	local hasTabBar = consoleTabBar and consoleTabBar.getTab ~= nil
-
-	-- Desativar mudanças de aba para evitar referências penduradas durante limpeza
-	if hasTabBar then
-		consoleTabBar.onTabChange = nil
-	end
-
-	if hasTabBar then
-		if defaultTab then
-			consoleTabBar:selectTab(defaultTab)
-			clearChannel(consoleTabBar)
-		end
-		if serverTab then
-			consoleTabBar:selectTab(serverTab)
-			clearChannel(consoleTabBar)
-		end
-		local npcTab = consoleTabBar.getTab and consoleTabBar:getTab("NPCs")
-		if npcTab then
-			consoleTabBar:selectTab(npcTab)
-			clearChannel(consoleTabBar)
-		end
-		for _, channelName in pairs(channels) do
-			local tab = consoleTabBar.getTab and consoleTabBar:getTab(channelName)
-			if tab then
-				consoleTabBar:selectTab(tab)
-				clearChannel(consoleTabBar)
-			end
-		end
-		if violationReportTab then
-			consoleTabBar:selectTab(violationReportTab)
-			clearChannel(consoleTabBar)
-		end
-	end
 
 	for channelId, channelName in pairs(channels) do
 		if type(channelId) == "number" then
@@ -657,42 +528,33 @@ function clear()
 		lastChannelsOpen[playerName] = nil
 	end
 
-	if consolePanel and consoleToggleChat then
-		configChat[playerName] = {
-			savePos = pointtostring(consolePanel:getPosition()),
-			saveWidth = consolePanel:getWidth(),
-			saveHeight = consolePanel:getHeight(),
-			toggleChat = consoleToggleChat:isChecked()
-		}
-	end
+	configChat[playerName] = {
+		savePos = pointtostring(consolePanel:getPosition()),
+		saveWidth = consolePanel:getWidth(),
+		saveHeight = consolePanel:getHeight(),
+		toggleChat = consoleToggleChat:isChecked()
+	}
 
 	g_settings.setNode("lastChannelsOpen", lastChannelsOpen)
 	g_settings.setNode("configChat", configChat)
 
-	if hasTabBar then
-		for _, channelName in pairs(channels) do
-			local tab = consoleTabBar.getTab and consoleTabBar:getTab(channelName)
-			if tab then
-				consoleTabBar:removeTab(tab)
-			end
-		end
+	for _, channelName in pairs(channels) do
+		local tab = consoleTabBar:getTab(channelName)
+
+		consoleTabBar:removeTab(tab)
 	end
 
 	channels = {}
 
-	if hasTabBar and defaultTab then
-		consoleTabBar:removeTab(defaultTab)
-	end
+	consoleTabBar:removeTab(defaultTab)
 
 	defaultTab = nil
 
-	if hasTabBar and serverTab then
-		consoleTabBar:removeTab(serverTab)
-	end
+	consoleTabBar:removeTab(serverTab)
 
 	serverTab = nil
 
-	local npcTab = hasTabBar and consoleTabBar.getTab and consoleTabBar:getTab("NPCs")
+	local npcTab = consoleTabBar:getTab("NPCs")
 
 	if npcTab then
 		consoleTabBar:removeTab(npcTab)
@@ -700,20 +562,13 @@ function clear()
 		npcTab = nil
 	end
 
-	if hasTabBar and violationReportTab then
+	if violationReportTab then
 		consoleTabBar:removeTab(violationReportTab)
 
 		violationReportTab = nil
 	end
 
-	-- Garantir que todas as abas internas sejam descartadas
-	if hasTabBar and consoleTabBar.clearTabs then
-		protectedcall(function() consoleTabBar:clearTabs() end)
-	end
-
-	if consoleTextEdit then
-		consoleTextEdit:clearText()
-	end
+	consoleTextEdit:clearText()
 
 	if violationWindow then
 		violationWindow:destroy()
@@ -798,38 +653,7 @@ function onDragLeave(widget, pos)
 end
 
 function clearChannel(consoleTabBar)
-  local currentTab = consoleTabBar:getCurrentTab()
-  if not currentTab then return end
-  local panel = consoleTabBar:getTabPanel(currentTab)
-  if not panel then return end
-  local consoleBuffer = panel:getChildById("consoleBuffer")
-  if not consoleBuffer then return end
-
-  -- Clear selection and focus before destroying children
-  clearSelection(consoleBuffer)
-  protectedcall(function()
-    local focused = consoleBuffer.getFocusedChild and consoleBuffer:getFocusedChild()
-    if focused then
-      -- Some engines support setFocusedChild; guard with pcall
-      if consoleBuffer.setFocusedChild then
-        consoleBuffer:setFocusedChild(nil)
-      else
-        focused:setPhantom(true)
-      end
-    end
-  end)
-
-  -- Unhook buffer-level handlers that capture the currentTab upvalue
-  consoleBuffer.onMouseRelease = nil
-
-  -- Destroy each label safely to avoid lingering references
-  for _, child in pairs(consoleBuffer:getChildren()) do
-    destroyConsoleLabelSafely(child)
-  end
-
-  -- Fallback to ensure buffer is empty
-  protectedcall(function() consoleBuffer:destroyChildren() end)
-  consoleController:checkWidgetsDestroyed()
+	consoleTabBar:getCurrentTab().tabPanel:getChildById("consoleBuffer"):destroyChildren()
 end
 
 function setTextEditText(text)
@@ -887,7 +711,6 @@ function addTab(name, focus)
 		end
 	else
 		tab = consoleTabBar:addTab(name, nil, processChannelTabMenu)
-		tab:setColor("#1fbf6e")
 	end
 
 	if focus then
@@ -924,9 +747,9 @@ function removeTab(tab)
 		g_game.closeNpcChannel()
 	end
 
-  if consoleTabBar:getCurrentTab() == tab then
-    consoleTabBar:selectTab(defaultTab)
-  end
+	if getCurrentTab() == tab then
+		consoleTabBar:selectTab(defaultTab)
+	end
 
 	consoleTabBar:removeTab(tab)
 end
@@ -979,9 +802,9 @@ function addPrivateChannel(receiver)
 end
 
 function addPrivateText(text, speaktype, name, isPrivateCommand, creatureName)
-	--[[ if speaktype.npcChat and modules.game_tv.isPlayerWatchingTV() then
+	if speaktype.npcChat and modules.game_tv.isPlayerWatchingTV() then
 		return
-	end ]]
+	end
 
 	local focus = false
 
@@ -1011,14 +834,8 @@ end
 function addText(text, speaktype, tabName, creatureName)
 	local tab = getTab(tabName)
 
-	if tab == nil then
-		pdebug(string.format('[Console] Tab "%s" not found; creating.', tostring(tabName)))
-		tab = addTab(tabName, false)
-	end
-	if tab then
+	if tab ~= nil then
 		addTabText(text, speaktype, tab, creatureName)
-	else
-		pwarning(string.format('[Console] Failed to log text; tab "%s" unavailable.', tostring(tabName)))
 	end
 end
 
@@ -1323,34 +1140,10 @@ function addTabText(text, speaktype, tab, creatureName)
 	end
 
 	label = label or g_ui.createWidget("ConsoleLabel", consoleBuffer)
+
 	label:setId("consoleLabel" .. consoleBuffer:getChildCount())
-	local tabText = tab:getText()
-	-- Cor padrão para nome do canal
-	local channelColor = "#1fbf6e"
-	local ts, rest = text:match("^(%d%d:%d%d)%s+(.*)$")
-	rest = rest or text
-	-- Linha visível (sem prefixo do canal)
-	local coloredStr = ""
-	if ts then
-		coloredStr = coloredStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
-	end
-	local namePart, body = rest:match("^(.-):%s*(.*)$")
-	if namePart then
-		local nOnly, lvl = namePart:match("^(.-)%s*%((%d+)%)$")
-		if not lvl then
-			nOnly, lvl = namePart:match("^(.-)%s*%[(%d+)%]$")
-		end
-		if nOnly and lvl then
-			coloredStr = coloredStr .. "{" .. nOnly .. ", " .. "#1fbf6e" .. "}"
-			coloredStr = coloredStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
-		else
-			coloredStr = coloredStr .. "{" .. namePart .. ": " .. ", " .. "#1fbf6e" .. "}"
-		end
-		coloredStr = coloredStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
-	else
-		coloredStr = coloredStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
-	end
-	label:setColoredText(coloredStr)
+	label:setText(text)
+	label:setColor(speaktype.color)
 	consoleTabBar:blinkTab(tab)
 
 	if table.contains({
@@ -1363,147 +1156,148 @@ function addTabText(text, speaktype, tab, creatureName)
 		if string.find(text:lower(), tr("@%s", playerName:lower())) then
 			label:setPadding(3)
 			label:setImageBorder(10)
-            label:setImageColor("#1fbf6e")
+			label:setImageColor("#0466C8")
 			label:setImageSource("/images/ui/panel_rounded_solid")
 		end
 	end
 
 	if speaktype.npcChat and (g_game.getCharacterName() ~= creatureName or g_game.getCharacterName() == "Account Manager") then
-		local highlightData = getNewHighlightedText(text, speaktype.color, "#1fbf6e")
+		local highlightData = getNewHighlightedText(text, speaktype.color, "#1f9ffe")
 
 		if #highlightData > 2 then
 			label:setColoredText(highlightData)
 		end
 	end
 
-	-- Linha no phantom (com prefixo do canal em verde)
-	local phantomStr = ""
-	phantomStr = phantomStr .. "{" .. "(" .. tabText .. ") " .. ", " .. channelColor .. "}"
-	if ts then
-		phantomStr = phantomStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
-	end
-	if namePart then
-		local nOnly, lvl = namePart:match("^(.-)%s*%((%d+)%)$")
-		if not lvl then
-			nOnly, lvl = namePart:match("^(.-)%s*%[(%d+)%]$")
-		end
-		if nOnly and lvl then
-			phantomStr = phantomStr .. "{" .. nOnly .. ", " .. "#1fbf6e" .. "}"
-			phantomStr = phantomStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
-		else
-			phantomStr = phantomStr .. "{" .. namePart .. ": " .. ", " .. "#1fbf6e" .. "}"
-		end
-		phantomStr = phantomStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
-	else
-		phantomStr = phantomStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
-	end
-	addConsolePhatomLine(phantomStr, speaktype.color)
+	local tmpText = string.format("[%s]: %s", tab:getText(), text)
+
+	addConsolePhatomLine(tmpText, speaktype.color)
 
 	label.name = creatureName
 
-    local bufferEvt = consoleController:registerUIEvents(consoleBuffer, {
-        onMouseRelease = function(widget, mousePos, mouseButton)
-            processMessageMenu(mousePos, mouseButton, nil, nil, nil, tab)
-        end
-    })
-    bufferEvt:connect()
+	function consoleBuffer:onMouseRelease(mousePos, mouseButton)
+		processMessageMenu(mousePos, mouseButton, nil, nil, nil, tab)
+	end
 
-    local labelEvt = consoleController:registerUIEvents(label, {
-        onMouseRelease = function(widget, mousePos, mouseButton)
-            processMessageMenu(mousePos, mouseButton, creatureName, text, widget, tab)
-        end,
-        onMousePress = function(widget, mousePos, button)
-            if button == MouseLeftButton then
-                clearSelection(consoleBuffer)
-            end
-        end,
-        onDragEnter = function(widget, mousePos)
-            clearSelection(consoleBuffer)
-            return true
-        end,
-        onDragLeave = function(widget, droppedWidget, mousePos)
-            local collected = {}
-            for selectionChild = consoleBuffer.selection.first, consoleBuffer.selection.last do
-                local l = widget:getParent():getChildByIndex(selectionChild)
-                table.insert(collected, l:getSelection())
-            end
-            consoleBuffer.selectionText = table.concat(collected, "\n")
-            return true
-        end,
-        onDragMove = function(widget, mousePos, mouseMoved)
-            local parent = widget:getParent()
-            local parentRect = parent:getPaddingRect()
-            local selfIndex = parent:getChildIndex(widget)
-            local child = parent:getChildByPos(mousePos)
-            if not child then
-                if mousePos.y < widget:getY() then
-                    for index = selfIndex - 1, 1, -1 do
-                        local l = parent:getChildByIndex(index)
-                        if l:getY() + l:getHeight() > parentRect.y then
-                            if mousePos.y >= l:getY() and mousePos.y <= l:getY() + l:getHeight() or index == 1 then
-                                child = l
-                                break
-                            end
-                        else
-                            child = parent:getChildByIndex(index + 1)
-                            break
-                        end
-                    end
-                elseif mousePos.y > widget:getY() + widget:getHeight() then
-                    for index = selfIndex + 1, parent:getChildCount() do
-                        local l = parent:getChildByIndex(index)
-                        if l:getY() < parentRect.y + parentRect.height then
-                            if mousePos.y >= l:getY() and mousePos.y <= l:getY() + l:getHeight() or index == parent:getChildCount() then
-                                child = l
-                                break
-                            end
-                        else
-                            child = parent:getChildByIndex(index - 1)
-                            break
-                        end
-                    end
-                else
-                    child = widget
-                end
-            end
-            if not child then
-                return false
-            end
-            local childIndex = parent:getChildIndex(child)
-            clearSelection(consoleBuffer)
-            local textBegin = widget:getTextPos(widget:getLastClickPosition())
-            local textPos = widget:getTextPos(mousePos)
-            widget:setSelection(textBegin, textPos)
-            consoleBuffer.selection = {
-                first = math.min(selfIndex, childIndex),
-                last = math.max(selfIndex, childIndex)
-            }
-            if child ~= widget then
-                for selectionChild = consoleBuffer.selection.first + 1, consoleBuffer.selection.last - 1 do
-                    parent:getChildByIndex(selectionChild):selectAll()
-                end
-                local cTextPos = child:getTextPos(mousePos)
-                if selfIndex < childIndex then
-                    child:setSelection(0, cTextPos)
-                else
-                    child:setSelection(string.len(child:getText()), cTextPos)
-                end
-            end
-            return true
-        end
-    })
-    labelEvt:connect()
+	function label:onMouseRelease(mousePos, mouseButton)
+		processMessageMenu(mousePos, mouseButton, creatureName, text, self, tab)
+	end
+
+	function label:onMousePress(mousePos, button)
+		if button == MouseLeftButton then
+			clearSelection(consoleBuffer)
+		end
+	end
+
+	function label:onDragEnter(mousePos)
+		clearSelection(consoleBuffer)
+
+		return true
+	end
+
+	function label:onDragLeave(droppedWidget, mousePos)
+		local text = {}
+
+		for selectionChild = consoleBuffer.selection.first, consoleBuffer.selection.last do
+			local label = self:getParent():getChildByIndex(selectionChild)
+
+			table.insert(text, label:getSelection())
+		end
+
+		consoleBuffer.selectionText = table.concat(text, "\n")
+
+		return true
+	end
+
+	function label:onDragMove(mousePos, mouseMoved)
+		local parent = self:getParent()
+		local parentRect = parent:getPaddingRect()
+		local selfIndex = parent:getChildIndex(self)
+		local child = parent:getChildByPos(mousePos)
+
+		if not child then
+			if mousePos.y < self:getY() then
+				for index = selfIndex - 1, 1, -1 do
+					local label = parent:getChildByIndex(index)
+
+					if label:getY() + label:getHeight() > parentRect.y then
+						if mousePos.y >= label:getY() and mousePos.y <= label:getY() + label:getHeight() or index == 1 then
+							child = label
+
+							break
+						end
+					else
+						child = parent:getChildByIndex(index + 1)
+
+						break
+					end
+				end
+			elseif mousePos.y > self:getY() + self:getHeight() then
+				for index = selfIndex + 1, parent:getChildCount() do
+					local label = parent:getChildByIndex(index)
+
+					if label:getY() < parentRect.y + parentRect.height then
+						if mousePos.y >= label:getY() and mousePos.y <= label:getY() + label:getHeight() or index == parent:getChildCount() then
+							child = label
+
+							break
+						end
+					else
+						child = parent:getChildByIndex(index - 1)
+
+						break
+					end
+				end
+			else
+				child = self
+			end
+		end
+
+		if not child then
+			return false
+		end
+
+		local childIndex = parent:getChildIndex(child)
+
+		clearSelection(consoleBuffer)
+
+		local textBegin = self:getTextPos(self:getLastClickPosition())
+		local textPos = self:getTextPos(mousePos)
+
+		self:setSelection(textBegin, textPos)
+
+		consoleBuffer.selection = {
+			first = math.min(selfIndex, childIndex),
+			last = math.max(selfIndex, childIndex)
+		}
+
+		if child ~= self then
+			for selectionChild = consoleBuffer.selection.first + 1, consoleBuffer.selection.last - 1 do
+				parent:getChildByIndex(selectionChild):selectAll()
+			end
+
+			local textPos = child:getTextPos(mousePos)
+
+			if selfIndex < childIndex then
+				child:setSelection(0, textPos)
+			else
+				child:setSelection(string.len(child:getText()), textPos)
+			end
+		end
+
+		return true
+	end
 end
 
 function removeTabLabelByName(tab, name)
-    local panel = consoleTabBar:getTabPanel(tab)
-    local consoleBuffer = panel:getChildById("consoleBuffer")
+	local panel = consoleTabBar:getTabPanel(tab)
+	local consoleBuffer = panel:getChildById("consoleBuffer")
 
-    for _, label in pairs(consoleBuffer:getChildren()) do
-        if label.name == name then
-            destroyConsoleLabelSafely(label)
-        end
-    end
+	for _, label in pairs(consoleBuffer:getChildren()) do
+		if label.name == name then
+			label:destroy()
+		end
+	end
 end
 
 function processChannelTabMenu(tab, mousePos, mouseButton)
@@ -1528,9 +1322,7 @@ function processChannelTabMenu(tab, mousePos, mouseButton)
 			clearChannel(consoleTabBar)
 		end)
 		menu:addOption(tr("Save Messages"), function()
-			local current = consoleTabBar:getCurrentTab()
-			if not current then return end
-			local panel = consoleTabBar:getTabPanel(current)
+			local panel = consoleTabBar:getTabPanel(tab)
 			local consoleBuffer = panel:getChildById("consoleBuffer")
 			local lines = {}
 
@@ -1633,9 +1425,7 @@ function processMessageMenu(mousePos, mouseButton, creatureName, text, label, ta
 		end
 
 		menu:addOption(tr("Select all"), function()
-			local current = consoleTabBar:getCurrentTab()
-			if not current then return end
-			selectAll(current.tabPanel:getChildById("consoleBuffer"))
+			selectAll(tab.tabPanel:getChildById("consoleBuffer"))
 		end)
 
 		if tab.violations and creatureName then
@@ -1665,7 +1455,6 @@ function sendCurrentMessage()
 
 	consoleTextEdit:clearText()
 	sendMessage(message)
-	disableChat(true)
 end
 
 function addFilter(filter)
@@ -1677,11 +1466,11 @@ function removeFilter(filter)
 end
 
 function sendMessage(message, tab)
-    local tab = tab or consoleTabBar:getCurrentTab()
+	local tab = tab or getCurrentTab()
 
-    if not tab then
-        return
-    end
+	if not tab then
+		return
+	end
 
 	for k, func in pairs(filters) do
 		if func(message) then
@@ -1691,10 +1480,10 @@ function sendMessage(message, tab)
 
 	local name = tab:getText()
 
-    if tab == serverTab or tab == getRuleViolationsTab() then
-        tab = defaultTab or tab
-        name = (defaultTab and defaultTab.getText and defaultTab:getText()) or (tab and tab.getText and tab:getText()) or tr("Default")
-    end
+	if tab == serverTab or tab == getRuleViolationsTab() then
+		tab = defaultTab
+		name = defaultTab:getText()
+	end
 
 	local channel = tab.channelId
 	local originalMessage = message
@@ -1770,53 +1559,23 @@ function sendMessage(message, tab)
 
 	local speaktypedesc
 
-    if (channel or tab == defaultTab) and not chatCommandPrivateReady then
-        if tab == defaultTab then
-            local sayButton = consolePanel and consolePanel:getChildById("sayModeButton")
-            local sayMode = (sayButton and sayButton.sayMode) or 2 -- default index for "say"
-            local sayEntry = SayModes[sayMode]
-            speaktypedesc = chatCommandSayMode or (sayEntry and sayEntry.speakTypeDesc) or "say"
+	if (channel or tab == defaultTab) and not chatCommandPrivateReady then
+		if tab == defaultTab then
+			speaktypedesc = chatCommandSayMode or SayModes[consolePanel:getChildById("sayModeButton").sayMode].speakTypeDesc
 
-            if speaktypedesc ~= "say" then
-                sayModeChange(2)
-            end
-        else
-            speaktypedesc = chatCommandSayMode or "channelYellow"
-        end
+			if speaktypedesc ~= "say" then
+				sayModeChange(2)
+			end
+		else
+			speaktypedesc = chatCommandSayMode or "channelYellow"
+		end
 
-        local speaktype = SpeakTypesSettings[speaktypedesc]
-        if speaktype and speaktype.speakType then
-            g_game.talkChannel(speaktype.speakType, channel, message)
-        else
-            g_game.talkChannel(MessageModes.Say, channel or 0, message)
-            speaktype = SpeakTypesSettings.say
-        end
+		g_game.talkChannel(SpeakTypesSettings[speaktypedesc].speakType, channel, message)
 
-        local composedMessage = applyMessagePrefixies(g_game.getCharacterName(), g_game.getLocalPlayer() and g_game.getLocalPlayer():getLevel() or 0, message)
-        addTabText(composedMessage, speaktype, tab, g_game.getCharacterName())
-        recentOutgoingMessages[message] = g_clock.millis()
-        if tab == defaultTab then
-            local mmode = nil
-            if speaktypedesc == "say" then
-                mmode = MessageModes.Say
-            elseif speaktypedesc == "whisper" then
-                mmode = MessageModes.Whisper
-            elseif speaktypedesc == "yell" then
-                mmode = MessageModes.Yell
-            elseif speaktypedesc == "spell" then
-                mmode = MessageModes.Spell
-            end
-            local player = g_game.getLocalPlayer()
-            if mmode and player and player:getPosition() then
-                local staticText = StaticText.create()
-                staticText:addMessage(g_game.getCharacterName(), mmode, message)
-                g_map.addStaticText(staticText, player:getPosition())
-            end
-        end
-        return
-    else
-        local isPrivateCommand = false
-        local priv = true
+		return
+	else
+		local isPrivateCommand = false
+		local priv = true
 		local tabname = name
 		local dontAdd = false
 
@@ -1843,23 +1602,17 @@ function sendMessage(message, tab)
 			speaktypedesc = "privatePlayerToPlayer"
 		end
 
-        local speaktype = SpeakTypesSettings[speaktypedesc] or SpeakTypesSettings.privatePlayerToPlayer
-        local player = g_game.getLocalPlayer()
+		local speaktype = SpeakTypesSettings[speaktypedesc]
+		local player = g_game.getLocalPlayer()
 
-        if speaktype and speaktype.speakType then
-            g_game.talkPrivate(speaktype.speakType, name, message)
-        else
-            g_game.talkPrivate(MessageModes.PrivateTo, name, message)
-        end
+		g_game.talkPrivate(speaktype.speakType, name, message)
 
-        if not dontAdd then
-            message = applyMessagePrefixies(g_game.getCharacterName(), player:getLevel(), message)
-            addPrivateText(message, speaktype, tabname, isPrivateCommand, g_game.getCharacterName())
-            if originalMessage then
-                recentOutgoingMessages[originalMessage] = g_clock.millis()
-            end
-        end
-    end
+		if not dontAdd then
+			message = applyMessagePrefixies(g_game.getCharacterName(), player:getLevel(), message)
+
+			addPrivateText(message, speaktype, tabname, isPrivateCommand, g_game.getCharacterName())
+		end
+	end
 end
 
 function sayModeChange(sayMode)
@@ -1935,28 +1688,13 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 		return
 	end
 
-	local isNpcMode = (mode == MessageModes.NpcFromStartBlock or mode == MessageModes.NpcFrom)
+	local isNpcMode = mode == MessageModes.NpcFromStartBlock or mode == MessageModes.NpcFrom
 
-    -- Suprimir mensagens de NPC quando o diálogo clicável estiver aberto,
-    -- independente da ordem de execução dos callbacks.
-    local npcDialogOpen = false
-    if modules and modules.game_npcdialog and modules.game_npcdialog.NpcDialog then
-        npcDialogOpen = modules.game_npcdialog.NpcDialog.window ~= nil
-    end
-    if isNpcMode and (ignoreNpcMessages or npcDialogOpen) then
-        return
-    end
+	if ignoreNpcMessages and isNpcMode then
+		return
+	end
 
-    if name == g_game.getCharacterName() and recentOutgoingMessages[message] then
-        local t = recentOutgoingMessages[message]
-        if t and (g_clock.millis() - t) < 2000 then
-            recentOutgoingMessages[message] = nil
-            return
-        else
-            recentOutgoingMessages[message] = nil
-        end
-    end
-    speaktype = SpeakTypes[mode]
+	speaktype = SpeakTypes[mode]
 
 	if not speaktype then
 		perror("unhandled onTalk message mode " .. mode .. ": " .. message)
@@ -1980,14 +1718,14 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 		channelId = violationsChannelId
 	end
 
-	--[[ if (mode == MessageModes.Say or mode == MessageModes.Whisper or mode == MessageModes.Yell or mode == MessageModes.Spell or mode == MessageModes.MonsterSay or mode == MessageModes.MonsterYell or mode == MessageModes.NpcFrom or mode == MessageModes.BarkLow or mode == MessageModes.BarkLoud or mode == MessageModes.NpcFromStartBlock) and creaturePos then
+	if (mode == MessageModes.Say or mode == MessageModes.Whisper or mode == MessageModes.Yell or mode == MessageModes.Spell or mode == MessageModes.MonsterSay or mode == MessageModes.MonsterYell or mode == MessageModes.NpcFrom or mode == MessageModes.BarkLow or mode == MessageModes.BarkLoud or mode == MessageModes.NpcFromStartBlock) and creaturePos then
 		local staticText = StaticText.create()
 		local staticMessage = message
 
 		if isNpcMode then
-			 if modules.game_tv.isPlayerWatchingTV() then
+			if modules.game_tv.isPlayerWatchingTV() then
 				return
-			end 
+			end
 
 			local highlightData = getNewHighlightedText(staticMessage, speaktype.color, "#1f9ffe")
 
@@ -2000,37 +1738,10 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 			staticText:setColor(speaktype.color)
 		else
 			staticText:addMessage(name, mode, staticMessage)
-			g_map.addStaticText(staticText, creaturePos)
 		end
 
 		g_map.addThing(staticText, creaturePos, -1)
-	end ]]
-
-	if (mode == MessageModes.Say or mode == MessageModes.Whisper or mode == MessageModes.Yell or mode ==
-        MessageModes.Spell or mode == MessageModes.MonsterSay or mode == MessageModes.MonsterYell or mode ==
-        MessageModes.NpcFrom or mode == MessageModes.BarkLow or mode == MessageModes.BarkLoud or mode ==
-        MessageModes.NpcFromStartBlock) and creaturePos then
-        local staticText = StaticText.create()
-        -- Remove curly braces from screen message
-        local staticMessage = message
-        if isNpcMode then
-            local highlightData = getHighlightedText(staticMessage)
-            if #highlightData > 0 then
-                for i = 1, #highlightData / 3 do
-                    local dataBlock = {
-                        _start = highlightData[(i - 1) * 3 + 1],
-                        _end = highlightData[(i - 1) * 3 + 2],
-                        words = highlightData[(i - 1) * 3 + 3]
-                    }
-                    staticMessage = staticMessage:gsub('{' .. dataBlock.words .. '}', dataBlock.words)
-                end
-            end
-            staticText:setColor(speaktype.color)
-        end
-
-        staticText:addMessage(name, mode, staticMessage)
-        g_map.addStaticText(staticText, creaturePos)
-    end
+	end
 
 	local defaultMessage = mode <= 3 and true or false
 
@@ -2066,11 +1777,7 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 		if channel then
 			addText(composedMessage, speaktype, channel, name)
 		else
-			if serverTab then
-				addTabText(composedMessage, speaktype, serverTab, name)
-			else
-				addText(composedMessage, speaktype, tr("Server Log"), name)
-			end
+			pwarning("message in channel id " .. channelId .. " which is unknown, this is a server bug, relogin if you want to see messages in this channel")
 		end
 	end
 end
@@ -2614,15 +2321,6 @@ function online()
 	scheduleEvent(function()
 		consoleTabBar:selectTab(defaultTab)
 	end, 500)
-	scheduleEvent(function()
-		if isChatEnabled() then
-			consoleTextEdit:focus()
-		end
-		local ct = rootWidget.currentTextEdit
-		pdebug(string.format('[FocusCheck online t+550] chatEnabled=%s currentTextEdit=%s',
-			tostring(isChatEnabled()),
-			tostring(ct and ct:getId() or 'nil')))
-	end, 550)
 	scheduleEvent(function()
 		ignoredChannels = {}
 	end, 3000)
