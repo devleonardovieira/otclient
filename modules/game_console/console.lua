@@ -1790,17 +1790,11 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 		local staticMessage = message
 
 		if isNpcMode then
-				local highlightData = getNewHighlightedText(staticMessage, speaktype.color, "#1fbf6e")
-
-			if #highlightData > 2 then
-				staticText:addColoredMessage(name, mode, highlightData)
-			else
-				staticText:addMessage(name, mode, staticMessage)
-			end
-
+			staticText:addMessage(name, mode, staticMessage)
 			staticText:setColor(speaktype.color)
 		else
 			staticText:addMessage(name, mode, staticMessage)
+			g_map.addStaticText(staticText, creaturePos)
 		end
 
 		g_map.addThing(staticText, creaturePos, -1)

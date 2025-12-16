@@ -1,0 +1,271 @@
+ProfileWindow < MainWindow
+  id: profileWindow
+  size: 360 600
+  !text: tr('Ninja Profile')
+  @onEscape: modules.game_profile.profileController:toggle()
+
+  Panel
+    id: header
+    height: 180
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+
+    Panel
+      id: portraitContainer
+      size: 84 84
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      
+      Panel
+        anchors.fill: parent
+        border-width: 2
+        border-color: #1fbf6e
+        margin: 2
+
+      UICreature
+        id: portrait
+        size: 64 64
+        anchors.centerIn: parent
+        padding: 4
+        background-color: #000000
+
+      Label
+        id: levelBadge
+        text: 42
+        color: #ffffff
+        font: verdana-11px-bold
+        background-color: #1a261c
+        text-align: center
+        size: 24 24
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        border-width: 1
+        border-color: #1fbf6e
+        margin-right: 5
+        margin-bottom: 5
+
+    Panel
+      id: infoPanel
+      anchors.top: portraitContainer.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.bottom: parent.bottom
+      width: 300
+      margin-top: 10
+
+      Label
+        id: nameLabel
+        font: verdana-13px-bold
+        text-align: center
+        color: #ffffff
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        text-auto-resize: true
+
+      Label
+        id: classLabel
+        font: verdana-11px-bold
+        text-align: center
+        color: #000000
+        background-color: #1fbf6e
+        padding: 2 8
+        anchors.top: nameLabel.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        margin-top: 8
+        text-auto-resize: true
+
+      Label
+        id: titleLabel
+        font: verdana-11px-rounded
+        text-align: center
+        color: #6a8c75
+        anchors.top: classLabel.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        margin-top: 5
+        text-auto-resize: true
+
+  Panel
+    id: statsRow
+    height: 90
+    anchors.top: header.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 10
+    layout:
+      type: horizontalBox
+      spacing: 10
+
+    Panel
+      id: balanceCard
+      background-color: #15221a
+      padding: 10
+      width: 155 
+
+      Label
+        text: BALANCE
+        font: verdana-10px-bold
+        color: #6a8c75
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 5
+
+      Label
+        id: valueLabel
+        font: verdana-13px-bold
+        color: #ffffff
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: parent.left
+        margin-top: 5
+
+      UIProgressBar
+        height: 4
+        background-color: #333333
+        color: #1fbf6e
+        percent: 60
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-bottom: 5
+
+    Panel
+      id: reputationCard
+      background-color: #15221a
+      padding: 10
+      width: 155
+
+      Label
+        text: REPUTATION
+        font: verdana-10px-bold
+        color: #6a8c75
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 5
+
+      Label
+        id: valueLabel
+        font: verdana-13px-bold
+        color: #ffffff
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: parent.left
+        margin-top: 5
+
+      UIProgressBar
+        id: progressBar
+        height: 4
+        background-color: #333333
+        color: #1fbf6e
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-bottom: 5
+
+  Panel
+    id: detailsList
+    anchors.top: statsRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: actionButton.top
+    margin-top: 15
+    margin-bottom: 15
+    layout:
+      type: verticalBox
+      spacing: 2
+
+    Panel
+      id: guildItem
+      height: 50
+      background-color: #15221a
+      padding: 10
+
+      Label
+        text: GUILD
+        font: verdana-10px-bold
+        color: #6a8c75
+        anchors.top: parent.top
+        anchors.left: parent.left
+
+      Label
+        id: valueLabel
+        font: verdana-13px-bold
+        color: #ffffff
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        margin-bottom: 2
+
+      Label
+        text: >
+        font: verdana-11px-bold
+        color: #6a8c75
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+
+    Panel
+      id: clanItem
+      height: 50
+      background-color: #15221a
+      padding: 10
+
+      Label
+        text: CLAN
+        font: verdana-10px-bold
+        color: #6a8c75
+        anchors.top: parent.top
+        anchors.left: parent.left
+
+      Label
+        id: valueLabel
+        font: verdana-13px-bold
+        color: #ffffff
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        margin-bottom: 2
+
+      Label
+        text: >
+        font: verdana-11px-bold
+        color: #6a8c75
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+
+    Panel
+      id: rankItem
+      height: 50
+      background-color: #15221a
+      padding: 10
+
+      Label
+        text: RANK
+        font: verdana-10px-bold
+        color: #6a8c75
+        anchors.top: parent.top
+        anchors.left: parent.left
+
+      Label
+        id: valueLabel
+        font: verdana-13px-bold
+        color: #ffffff
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        margin-bottom: 2
+
+      Label
+        text: >
+        font: verdana-11px-bold
+        color: #6a8c75
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+
+  ButtonBlueSmall
+    id: actionButton
+    !text: tr('Open Inventory')
+    height: 45
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    color: #000000
+    background-color: #1fbf6e
+    font: verdana-11px-bold
+    margin-bottom: 10
+
+ProfileWindow

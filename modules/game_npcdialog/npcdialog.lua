@@ -212,14 +212,18 @@ function NpcDialog.refreshOptionsFromText(text)
   end
 
   local options = {}
-  for word in string.gmatch(text or '', '{(.-)}') do
-    for opt in string.gmatch(word, '[^|,;]+') do
-      opt = opt:trim()
-      -- remover crases e pontuação de borda
-      opt = opt:gsub('^[`"%s]+', '')
-      opt = opt:gsub('[`"%s%.,;:!?]+$', '')
-      if opt ~= '' and not table.find(options, opt) then
-        table.insert(options, opt)
+  local parts = (text or ''):split('{')
+  for i = 2, #parts do
+    local capture = parts[i]:split('}')[1]
+    if capture then
+      for opt in string.gmatch(capture, '[^|,;]+') do
+        opt = opt:trim()
+        -- remover crases e pontuação de borda
+        opt = opt:gsub('^[`"%s]+', '')
+        opt = opt:gsub('[`"%s%.,;:!?]+$', '')
+        if opt ~= '' and not table.find(options, opt) then
+          table.insert(options, opt)
+        end
       end
     end
   end

@@ -1,0 +1,10 @@
+Module
+  name: game_profile
+  description: Player Profile Interface
+  author: User
+  website: https://github.com/edubart/otclient
+  sandboxed: true
+  scripts: [ profile ]
+  dependencies: [ client_topmenu, game_interface ]
+  @onLoad: profileController:init()
+  @onUnload: profileController:terminate()
