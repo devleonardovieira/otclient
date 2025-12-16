@@ -1189,13 +1189,13 @@ function addTabText(text, speaktype, tab, creatureName)
 		if string.find(text:lower(), tr("@%s", playerName:lower())) then
 			label:setPadding(3)
 			label:setImageBorder(10)
-			label:setImageColor("#0466C8")
+			label:setImageColor("#1fbf6e")
 			label:setImageSource("/images/ui/panel_rounded_solid")
 		end
 	end
 
 	if speaktype.npcChat and (g_game.getCharacterName() ~= creatureName or g_game.getCharacterName() == "Account Manager") then
-		local highlightData = getNewHighlightedText(text, speaktype.color, "#1f9ffe")
+		local highlightData = getNewHighlightedText(text, speaktype.color, "#1fbf6e")
 
 		if #highlightData > 2 then
 			label:setColoredText(highlightData)
@@ -1779,7 +1779,7 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 				return
 			end
 
-			local highlightData = getNewHighlightedText(staticMessage, speaktype.color, "#1f9ffe")
+			local highlightData = getNewHighlightedText(staticMessage, speaktype.color, "#1fbf6e")
 
 			if #highlightData > 2 then
 				staticText:addColoredMessage(name, mode, highlightData)
