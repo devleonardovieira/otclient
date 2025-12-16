@@ -1011,8 +1011,14 @@ end
 function addText(text, speaktype, tabName, creatureName)
 	local tab = getTab(tabName)
 
-	if tab ~= nil then
+	if tab == nil then
+		pdebug(string.format('[Console] Tab "%s" not found; creating.', tostring(tabName)))
+		tab = addTab(tabName, false)
+	end
+	if tab then
 		addTabText(text, speaktype, tab, creatureName)
+	else
+		pwarning(string.format('[Console] Failed to log text; tab "%s" unavailable.', tostring(tabName)))
 	end
 end
 

@@ -11,6 +11,14 @@ PanelRoundedSolid
   @onEscape: modules.client_loader.Loader.abort()
 
   Panel
+    id: bgImage
+    anchors.fill: parent
+    image-source: /images/background
+    image-smooth: false
+    image-fixed-ratio: true
+    opacity: 1.0
+
+  Panel
     id: overlay
     anchors.fill: parent
     background-color: #000000
