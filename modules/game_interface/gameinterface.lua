@@ -213,7 +213,7 @@ function bindKeys()
         g_map.cleanTexts()
         modules.game_textmessage.clearMessages()
     end, gameRootPanel)
-    g_keyboard.bindKeyDown("Enter", function()
+     g_keyboard.bindKeyDown("Enter", function()
         if not g_game.isOnline() then return end
         if modules.game_console and modules.game_console.disableChat and modules.game_console.isChatEnabled then
             if modules.game_console.isChatEnabled() then

@@ -272,8 +272,14 @@ function addConsolePhatomLine(text, color)
 
 	local tmpLabel = g_ui.createWidget("ConsolePhantomLabel", consolePhantom)
 
-	tmpLabel:setText(text)
-	tmpLabel:setColor(color)
+	if type(text) == "string" and text:find("{") then
+		tmpLabel:setColoredText(text)
+	else
+		tmpLabel:setText(text)
+		if color then
+			tmpLabel:setColor(color)
+		end
+	end
 
 	local function destroyCallback()
 		tmpLabel:destroy()
@@ -334,6 +340,7 @@ function visibleConsolePanel(state)
 		getCurrentTab().tabPanel:getChildById("consoleBuffer"):setOn(state)
 		getCurrentTab().tabPanel:getChildById("consoleScrollBar"):setVisible(state)
 	end)
+	
 end
 
 function enableChat(temporarily)
@@ -356,7 +363,6 @@ function enableChat(temporarily)
 	g_keyboard.unbindKeyDown("Enter", gameRootPanel)
 
 	if temporarily then
-		print('? ', temporarily)
 		local function quickFunc()
 			if not g_game.isOnline() then
 				return
@@ -407,10 +413,7 @@ function disableChat(temporarily)
 
 	g_keyboard.bindKeyDown("Enter", quickFunc, gameRootPanel)
 
-	if g_settings.getNumber("viewMode") == ViewMode.Extended then
-		visibleConsolePanel(false)
-	end
-
+	visibleConsolePanel(false)
 
 	modules.game_walk.enableWSAD()
 	consoleToggleChat:setTooltip(tr("Enable chat mode"))
@@ -465,6 +468,10 @@ function terminate()
 	consoleContentPanel = nil
 	consoleToggleChat = nil
 	consoleTextEdit = nil
+
+	-- destruir widgets filhos
+	consolePanel:destroyChildren()
+	consoleContentPanel:destroyChildren()
 
 	consolePanel:destroy()
 
@@ -711,6 +718,7 @@ function addTab(name, focus)
 		end
 	else
 		tab = consoleTabBar:addTab(name, nil, processChannelTabMenu)
+		tab:setColor("#1fbf6e")
 	end
 
 	if focus then
@@ -1142,8 +1150,33 @@ function addTabText(text, speaktype, tab, creatureName)
 	label = label or g_ui.createWidget("ConsoleLabel", consoleBuffer)
 
 	label:setId("consoleLabel" .. consoleBuffer:getChildCount())
-	label:setText(text)
-	label:setColor(speaktype.color)
+	local tabText = tab:getText()
+	-- Cor padrão para nome do canal
+	local channelColor = "#1fbf6e"
+	local ts, rest = text:match("^(%d%d:%d%d)%s+(.*)$")
+	rest = rest or text
+	-- Linha visível (sem prefixo do canal)
+	local coloredStr = ""
+	if ts then
+		coloredStr = coloredStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
+	end
+	local namePart, body = rest:match("^(.-):%s*(.*)$")
+	if namePart then
+		local nOnly, lvl = namePart:match("^(.-)%s*%((%d+)%)$")
+		if not lvl then
+			nOnly, lvl = namePart:match("^(.-)%s*%[(%d+)%]$")
+		end
+		if nOnly and lvl then
+			coloredStr = coloredStr .. "{" .. nOnly .. ", " .. "#1fbf6e" .. "}"
+			coloredStr = coloredStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
+		else
+			coloredStr = coloredStr .. "{" .. namePart .. ": " .. ", " .. "#1fbf6e" .. "}"
+		end
+		coloredStr = coloredStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
+	else
+		coloredStr = coloredStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
+	end
+	label:setColoredText(coloredStr)
 	consoleTabBar:blinkTab(tab)
 
 	if table.contains({
@@ -1169,9 +1202,28 @@ function addTabText(text, speaktype, tab, creatureName)
 		end
 	end
 
-	local tmpText = string.format("[%s]: %s", tab:getText(), text)
-
-	addConsolePhatomLine(tmpText, speaktype.color)
+	-- Linha no phantom (com prefixo do canal em verde)
+	local phantomStr = ""
+	phantomStr = phantomStr .. "{" .. "(" .. tabText .. ") " .. ", " .. channelColor .. "}"
+	if ts then
+		phantomStr = phantomStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
+	end
+	if namePart then
+		local nOnly, lvl = namePart:match("^(.-)%s*%((%d+)%)$")
+		if not lvl then
+			nOnly, lvl = namePart:match("^(.-)%s*%[(%d+)%]$")
+		end
+		if nOnly and lvl then
+			phantomStr = phantomStr .. "{" .. nOnly .. ", " .. "#1fbf6e" .. "}"
+			phantomStr = phantomStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
+		else
+			phantomStr = phantomStr .. "{" .. namePart .. ": " .. ", " .. "#1fbf6e" .. "}"
+		end
+		phantomStr = phantomStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
+	else
+		phantomStr = phantomStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
+	end
+	addConsolePhatomLine(phantomStr, speaktype.color)
 
 	label.name = creatureName
 
@@ -1810,7 +1862,6 @@ function onCloseChannel(channelId)
 			consoleTabBar:removeTab(tab)
 			consoleTabBar:selectTab(defaultTab)
 		end
-
 		for k, v in pairs(channels) do
 			if k == tab.channelId then
 				channels[k] = nil

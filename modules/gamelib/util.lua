@@ -29,3 +29,20 @@ function formatTimeByMinutes(totalMinutes)
     local minutes = math.floor(remainingSeconds / 60)
     return string.format("%02d:%02d", hours, minutes)
 end
+
+function safeDestroy(widgetRefName)
+  local widget = _G[widgetRefName]
+  if not widget then return end
+
+  -- 1. desconectar eventos
+  disconnectAll(widget)
+
+  -- 2. remover filhos explicitamente (se houver)
+  widget:destroyChildren()
+
+  -- 3. destruir
+  widget:destroy()
+
+  -- 4. zerar referência
+  _G[widgetRefName] = nil
+end
