@@ -20,14 +20,14 @@ ProfileCardValue < Label
 
 MainWindow
   id: profileWindow
-  size: 500 1000
+  size: 900 650
   !text: tr('')
   @onEscape: modules.game_profile.profileController:toggle()
   padding: 0
 
   Panel
     id: headerPanel
-    height: 160
+    height: 140
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
@@ -37,7 +37,7 @@ MainWindow
       size: 72 72
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
-      margin-top: 25
+      margin-top: 20
       padding: 4
       background-color: #000000
       border-width: 2
@@ -89,420 +89,428 @@ MainWindow
       margin-top: 5
 
   Panel
-    id: balanceRow
-    height: 90
+    id: leftColumn
     anchors.top: headerPanel.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
-    margin-left: 20
-    margin-right: 20
-    layout:
-      type: horizontalBox
-      spacing: 15
-
-    ProfileCard
-      id: bankCard
-      width: 222
-      border-color: #1fbf6e
-      
-      Label
-        text: "BANK BALANCE"
-        font: verdana-10px-bold
-        color: #6a8c75
-        anchors.top: parent.top
-        anchors.left: parent.left
-      
-      UIWidget
-        id: bankIcon
-        anchors.top: parent.top
-        anchors.right: parent.right
-        size: 16 16
-        image-source: /images/icons/icon-balance
-        image-color: #1fbf6e
-        
-      Label
-        id: bankValue
-        text: "¥1,400,000"
-        font: verdana-20px-bold
-        color: #ffffff
-        anchors.centerIn: parent
-        margin-right: 15
-        
-      Label
-        text: "RYO"
-        font: verdana-10px-bold
-        color: #1fbf6e
-        anchors.left: bankValue.right
-        anchors.bottom: bankValue.bottom
-        margin-left: 5
-        margin-bottom: 3
-
-    ProfileCard
-      id: specialCard
-      width: 222
-      border-color: #e5bc6d
-      
-      Label
-        text: "SPECIAL"
-        font: verdana-10px-bold
-        color: #8c7a50
-        anchors.top: parent.top
-        anchors.left: parent.left
-        
-      UIWidget
-        id: specialIcon
-        anchors.top: parent.top
-        anchors.right: parent.right
-        size: 16 16
-        image-source: /images/game/icons/icon_vip_32px
-        image-color: #e5bc6d
-
-      Label
-        id: specialValue
-        text: "850"
-        font: verdana-20px-bold
-        color: #e5bc6d
-        anchors.centerIn: parent
-        margin-right: 20
-        
-      Label
-        text: "KOBAN"
-        font: verdana-10px-bold
-        color: #8c7a50
-        anchors.left: specialValue.right
-        anchors.bottom: specialValue.bottom
-        margin-left: 5
-        margin-bottom: 3
-
-  Panel
-    id: statsRow
-    height: 70
-    anchors.top: balanceRow.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 15
-    margin-left: 20
-    margin-right: 20
-    layout:
-      type: horizontalBox
-      spacing: 15
-
-    ProfileCard
-      id: missionCard
-      width: 143
-      
-      Label
-        text: "S-RANK MISSIONS"
-        font: verdana-9px-bold
-        color: #555555
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        
-      Label
-        id: missionValue
-        text: "12"
-        font: verdana-18px-bold
-        color: #ffffff
-        anchors.centerIn: parent
-
-    ProfileCard
-      id: killsCard
-      width: 143
-      
-      Label
-        text: "PVP KILLS"
-        font: verdana-9px-bold
-        color: #555555
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        
-      Label
-        id: killsValue
-        text: "27"
-        font: verdana-18px-bold
-        color: #ffffff
-        anchors.centerIn: parent
-
-    ProfileCard
-      id: betrayalCard
-      width: 143
-      border-color: #3d2a2a
-      
-      Label
-        text: "BETRAYALS"
-        font: verdana-9px-bold
-        color: #8c5050
-        anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        
-      Label
-        id: betrayalValue
-        text: "2"
-        font: verdana-18px-bold
-        color: #ff5555
-        anchors.centerIn: parent
-
-  ProfileCard
-    id: ninjaPathCard
-    height: 220
-    anchors.top: statsRow.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 15
-    margin-left: 20
-    margin-right: 20
+    anchors.bottom: parent.bottom
+    width: 440
+    margin-left: 10
+    margin-bottom: 10
     
-    UIWidget
-      id: iconPath
-      size: 14 14
-      image-source: /images/icons/icon_sword
-      image-color: #1fbf6e
+    Panel
+      id: statsRow
+      height: 70
       anchors.top: parent.top
       anchors.left: parent.left
-      
-    Label
-      text: "NINJA PATH"
-      font: verdana-10px-bold
-      color: #1fbf6e
-      anchors.top: parent.top
-      anchors.left: prev.right
-      margin-left: 5
-      
-    Panel
-      id: starsPanel
-      height: 14
-      width: 60
-      anchors.top: parent.top
       anchors.right: parent.right
       layout:
         type: horizontalBox
-        spacing: 2
-        align-right: true
-
-    Label
-      id: pathRank
-      text: "Rank IV"
-      font: verdana-9px-bold
-      color: #555555
-      anchors.top: starsPanel.bottom
-      anchors.right: parent.right
-      margin-top: 2
-
-    Label
-      id: pathClass
-      text: "Assassin"
-      font: verdana-20px-bold
-      color: #ffffff
-      anchors.top: iconPath.bottom
-      anchors.left: parent.left
-      margin-top: 5
-      
-    UIWidget
-      height: 1
-      background-color: #1f2b24
-      anchors.top: pathClass.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      margin-top: 10
-      
-    Label
-      text: "EXPANDED AFFINITIES"
-      font: verdana-9px-bold
-      color: #555555
-      anchors.top: prev.bottom
-      anchors.left: parent.left
-      margin-top: 10
-      
-    Panel
-      id: affinitiesGrid
-      anchors.top: prev.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      anchors.bottom: parent.bottom
-      margin-top: 10
-      layout:
-        type: grid
-        cell-size: 220 35
-        cell-spacing: 10
-        flow: true
-
-
-  ProfileCard
-    id: ninjaWorldCard
-    height: 380
-    anchors.top: ninjaPathCard.bottom
-    anchors.left: parent.left
-    anchors.right: parent.right
-    margin-top: 15
-    margin-left: 20
-    margin-right: 20
-    
-    UIWidget
-      id: iconWorld
-      size: 14 14
-      image-source: /images/icons/icon_location
-      image-color: #1fbf6e
-      anchors.top: parent.top
-      anchors.left: parent.left
-      
-    Label
-      text: "NINJA WORLD"
-      font: verdana-10px-bold
-      color: #1fbf6e
-      anchors.top: parent.top
-      anchors.left: prev.right
-      margin-left: 5
-
-    Panel
-      id: reputationCard
-      height: 80
-      background-color: #0b110e
-      border-width: 1
-      border-color: #1f2b24
-      border-radius: 6
-      anchors.top: iconWorld.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      margin-top: 15
-      padding: 10
-      
-      Label
-        text: "CURRENT REPUTATION"
-        font: verdana-9px-bold
-        color: #555555
-        anchors.top: parent.top
-        anchors.left: parent.left
-        
-      UIWidget
-        id: medalIcon
-        size: 16 16
-        image-source: /images/game/icons/icon_vip_14px
-        image-color: #e5bc6d
-        anchors.top: parent.top
-        anchors.right: parent.right
-
-      Label
-        id: reputationName
-        text: "Honored"
-        font: verdana-18px-bold
-        color: #e5bc6d
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        margin-top: 5
-        
-      Label
-        id: reputationRank
-        text: "IV"
-        font: verdana-9px-bold
-        color: #e5bc6d
-        background-color: #1f2b24
-        padding: 2 4
-        border-radius: 3
-        anchors.bottom: reputationName.bottom
-        anchors.left: reputationName.right
-        margin-left: 5
-        margin-bottom: 3
-        
-      UIWidget
-        id: reputationBarBg
-        height: 8
-        background-color: #1f2b24
-        anchors.top: reputationName.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-top: 8
-        border-radius: 4
-        
-      UIWidget
-        id: reputationBar
-        height: 8
-        background-color: #1fbf6e
-        anchors.left: reputationBarBg.left
-        anchors.top: reputationBarBg.top
-        border-radius: 4
-        width: 150
-
-      Label
-        id: reputationPercent
-        text: "95% to Legend"
-        font: verdana-9px-bold
-        color: #1fbf6e
-        anchors.top: reputationBarBg.bottom
-        anchors.left: parent.left
-        margin-top: 5
-
-      Label
-        id: reputationNext
-        text: "Next: 100%"
-        font: verdana-9px-bold
-        color: #555555
-        anchors.top: reputationBarBg.bottom
-        anchors.right: parent.right
-        margin-top: 5
-
-    Panel
-      id: factionsList
-      anchors.top: reputationCard.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      height: 140
-      margin-top: 15
-      layout:
-        type: verticalBox
         spacing: 10
 
-    UIWidget
-      height: 1
-      background-color: #1f2b24
-      anchors.top: factionsList.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      margin-top: 10
-
-    Label
-      text: "LINEAGE"
-      font: verdana-9px-bold
-      color: #555555
-      anchors.top: prev.bottom
-      anchors.left: parent.left
-      margin-top: 10
-      
-    Panel
-      id: lineageList
-      anchors.top: prev.bottom
-      anchors.left: parent.left
-      anchors.right: parent.right
-      height: 60
-      margin-top: 5
-      layout:
-        type: verticalBox
-        spacing: 5
+      ProfileCard
+        id: missionCard
+        width: 140
         
-    ButtonBlueSmall
-      id: watchlistButton
-      height: 30
-      background-color: #1f1a0b
-      border-width: 1
-      border-color: #e5bc6d
-      border-radius: 4
-      anchors.bottom: parent.bottom
+        Label
+          text: "S-RANK MISSIONS"
+          font: verdana-9px-bold
+          color: #555555
+          anchors.top: parent.top
+          anchors.horizontalCenter: parent.horizontalCenter
+          
+        Label
+          id: missionValue
+          text: "12"
+          font: verdana-18px-bold
+          color: #ffffff
+          anchors.centerIn: parent
+
+      ProfileCard
+        id: killsCard
+        width: 140
+        
+        Label
+          text: "PVP KILLS"
+          font: verdana-9px-bold
+          color: #555555
+          anchors.top: parent.top
+          anchors.horizontalCenter: parent.horizontalCenter
+          
+        Label
+          id: killsValue
+          text: "27"
+          font: verdana-18px-bold
+          color: #ffffff
+          anchors.centerIn: parent
+
+      ProfileCard
+        id: betrayalCard
+        width: 140
+        border-color: #3d2a2a
+        
+        Label
+          text: "BETRAYALS"
+          font: verdana-9px-bold
+          color: #8c5050
+          anchors.top: parent.top
+          anchors.horizontalCenter: parent.horizontalCenter
+          
+        Label
+          id: betrayalValue
+          text: "2"
+          font: verdana-18px-bold
+          color: #ff5555
+          anchors.centerIn: parent
+
+    ProfileCard
+      id: ninjaPathCard
+      anchors.top: statsRow.bottom
       anchors.left: parent.left
       anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 10
       
       UIWidget
-        id: warningIcon
+        id: iconPath
         size: 14 14
-        image-source: /images/game/icons/icon_warning_16px
-        image-color: #e5bc6d
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.right: parent.horizontalCenter
-        margin-right: 60
+        image-source: /images/icons/icon_sword
+        image-color: #1fbf6e
+        anchors.top: parent.top
+        anchors.left: parent.left
         
       Label
-        text: "ANBU WATCHLIST ACTIVE"
+        text: "NINJA PATH"
         font: verdana-10px-bold
-        color: #e5bc6d
-        anchors.centerIn: parent
+        color: #1fbf6e
+        anchors.top: parent.top
+        anchors.left: prev.right
+        margin-left: 5
+        
+      Panel
+        id: starsPanel
+        height: 14
+        width: 60
+        anchors.top: parent.top
+        anchors.right: parent.right
+        layout:
+          type: horizontalBox
+          spacing: 2
+          align-right: true
+
+      Label
+        id: pathRank
+        text: "Rank IV"
+        font: verdana-9px-bold
+        color: #555555
+        anchors.top: starsPanel.bottom
+        anchors.right: parent.right
+        margin-top: 2
+
+      Label
+        id: pathClass
+        text: "Assassin"
+        font: verdana-20px-bold
+        color: #ffffff
+        anchors.top: iconPath.bottom
+        anchors.left: parent.left
+        margin-top: 5
+        
+      UIWidget
+        height: 1
+        background-color: #1f2b24
+        anchors.top: pathClass.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 10
+        
+      Label
+        text: "EXPANDED AFFINITIES"
+        font: verdana-9px-bold
+        color: #555555
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        margin-top: 10
+        
+      Panel
+        id: affinitiesGrid
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-top: 10
+        layout:
+          type: grid
+          cell-size: 200 35
+          cell-spacing: 10
+          flow: true
+
+  Panel
+    id: rightColumn
+    anchors.top: headerPanel.bottom
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 440
+    margin-right: 10
+    margin-bottom: 10
+    
+    Panel
+      id: balanceRow
+      height: 70
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      layout:
+        type: horizontalBox
+        spacing: 10
+
+      ProfileCard
+        id: bankCard
+        width: 215
+        border-color: #1fbf6e
+        
+        Label
+          text: "BANK BALANCE"
+          font: verdana-10px-bold
+          color: #6a8c75
+          anchors.top: parent.top
+          anchors.left: parent.left
+        
+        UIWidget
+          id: bankIcon
+          anchors.top: parent.top
+          anchors.right: parent.right
+          size: 16 16
+          image-source: /images/icons/icon-balance
+          image-color: #1fbf6e
+          
+        Label
+          id: bankValue
+          text: "¥1,400,000"
+          font: verdana-20px-bold
+          color: #ffffff
+          anchors.centerIn: parent
+          margin-right: 15
+          
+        Label
+          text: "RYO"
+          font: verdana-10px-bold
+          color: #1fbf6e
+          anchors.left: bankValue.right
+          anchors.bottom: bankValue.bottom
+          margin-left: 5
+          margin-bottom: 3
+
+      ProfileCard
+        id: specialCard
+        width: 215
+        border-color: #e5bc6d
+        
+        Label
+          text: "SPECIAL"
+          font: verdana-10px-bold
+          color: #8c7a50
+          anchors.top: parent.top
+          anchors.left: parent.left
+          
+        UIWidget
+          id: specialIcon
+          anchors.top: parent.top
+          anchors.right: parent.right
+          size: 16 16
+          image-source: /images/game/icons/icon_vip_32px
+          image-color: #e5bc6d
+
+        Label
+          id: specialValue
+          text: "850"
+          font: verdana-20px-bold
+          color: #e5bc6d
+          anchors.centerIn: parent
+          margin-right: 20
+          
+        Label
+          text: "KOBAN"
+          font: verdana-10px-bold
+          color: #8c7a50
+          anchors.left: specialValue.right
+          anchors.bottom: specialValue.bottom
+          margin-left: 5
+          margin-bottom: 3
+
+    ProfileCard
+      id: ninjaWorldCard
+      anchors.top: balanceRow.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin-top: 10
+      
+      UIWidget
+        id: iconWorld
+        size: 14 14
+        image-source: /images/icons/icon_location
+        image-color: #1fbf6e
+        anchors.top: parent.top
+        anchors.left: parent.left
+        
+      Label
+        text: "NINJA WORLD"
+        font: verdana-10px-bold
+        color: #1fbf6e
+        anchors.top: parent.top
+        anchors.left: prev.right
+        margin-left: 5
+
+      Panel
+        id: reputationCard
+        height: 80
+        background-color: #0b110e
+        border-width: 1
+        border-color: #1f2b24
+        border-radius: 6
+        anchors.top: iconWorld.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 15
+        padding: 10
+        
+        Label
+          text: "CURRENT REPUTATION"
+          font: verdana-9px-bold
+          color: #555555
+          anchors.top: parent.top
+          anchors.left: parent.left
+          
+        UIWidget
+          id: medalIcon
+          size: 16 16
+          image-source: /images/game/icons/icon_vip_14px
+          image-color: #e5bc6d
+          anchors.top: parent.top
+          anchors.right: parent.right
+
+        Label
+          id: reputationName
+          text: "Honored"
+          font: verdana-18px-bold
+          color: #e5bc6d
+          anchors.top: prev.bottom
+          anchors.left: parent.left
+          margin-top: 5
+          
+        Label
+          id: reputationRank
+          text: "IV"
+          font: verdana-9px-bold
+          color: #e5bc6d
+          background-color: #1f2b24
+          padding: 2 4
+          border-radius: 3
+          anchors.bottom: reputationName.bottom
+          anchors.left: reputationName.right
+          margin-left: 5
+          margin-bottom: 3
+          
+        UIWidget
+          id: reputationBarBg
+          height: 8
+          background-color: #1f2b24
+          anchors.top: reputationName.bottom
+          anchors.left: parent.left
+          anchors.right: parent.right
+          margin-top: 8
+          border-radius: 4
+          
+        UIWidget
+          id: reputationBar
+          height: 8
+          background-color: #1fbf6e
+          anchors.left: reputationBarBg.left
+          anchors.top: reputationBarBg.top
+          border-radius: 4
+          width: 150
+
+        Label
+          id: reputationPercent
+          text: "95% to Legend"
+          font: verdana-9px-bold
+          color: #1fbf6e
+          anchors.top: reputationBarBg.bottom
+          anchors.left: parent.left
+          margin-top: 5
+
+        Label
+          id: reputationNext
+          text: "Next: 100%"
+          font: verdana-9px-bold
+          color: #555555
+          anchors.top: reputationBarBg.bottom
+          anchors.right: parent.right
+          margin-top: 5
+
+      Panel
+        id: factionsList
+        anchors.top: reputationCard.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 140
+        margin-top: 15
+        layout:
+          type: verticalBox
+          spacing: 10
+
+      UIWidget
+        height: 1
+        background-color: #1f2b24
+        anchors.top: factionsList.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 10
+
+      Label
+        text: "LINEAGE"
+        font: verdana-9px-bold
+        color: #555555
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        margin-top: 10
+        
+      Panel
+        id: lineageList
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 60
+        margin-top: 5
+        layout:
+          type: verticalBox
+          spacing: 5
+          
+      ButtonBlueSmall
+        id: watchlistButton
+        height: 30
+        background-color: #1f1a0b
+        border-width: 1
+        border-color: #e5bc6d
+        border-radius: 4
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        
+        UIWidget
+          id: warningIcon
+          size: 14 14
+          image-source: /images/game/icons/icon_warning_16px
+          image-color: #e5bc6d
+          anchors.verticalCenter: parent.verticalCenter
+          anchors.right: parent.horizontalCenter
+          margin-right: 60
+          
+        Label
+          text: "ANBU WATCHLIST ACTIVE"
+          font: verdana-10px-bold
+          color: #e5bc6d
+          anchors.centerIn: parent
 
 ProfileAffinityPanel < Panel
   height: 35
@@ -585,6 +593,7 @@ ProfileFactionPanel < Panel
     padding: 4 8
     border-radius: 4
     background-color: #15221a
+    text-auto-resize: true
 
 ProfileLineagePanel < Panel
   height: 25
