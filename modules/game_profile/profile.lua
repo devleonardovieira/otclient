@@ -49,16 +49,28 @@ local profileData = {
   },
   ninjaPath = {
       class = "Assassin",
-      rank = "Rank IV",
-      stars = 4
-  },
-  expandedAffinities = {
-    {name = "Ninjutsu", value = "MAX", percent = 100, color = "#ffcc00", icon = "/images/game/icons/icon_instinct_20px"},
-    {name = "Taijutsu", value = "LV.8", percent = 80, color = "#3399ff", icon = "/images/icons/icon_fist"},
-    {name = "Genjutsu", value = "MAX", percent = 100, color = "#cc66ff", icon = "/images/game/icons/icon_mystic_20px"},
-    {name = "Kenjutsu", value = "LV.6", percent = 60, color = "#ff5555", icon = "/images/icons/icon_sword"},
-    {name = "Fuinjutsu", value = "LV.4", percent = 40, color = "#00cc66", icon = "/images/game/icons/icon_researcher"},
-    {name = "Medical", value = "LV.3", percent = 30, color = "#00cc66", icon = "/images/icons/icon_healing"}
+      rank = "ELITE RANK IV",
+      stars = 4,
+      affinities = {
+          {name = "Ninjutsu", value = "MAX", percent = 100, color = "#ffcc00"},
+          {name = "Taijutsu", value = "LV.8", percent = 80, color = "#3399ff"},
+          {name = "Genjutsu", value = "MAX", percent = 100, color = "#cc66ff"},
+          {name = "Kenjutsu", value = "LV.6", percent = 60, color = "#ff5555"},
+          {name = "Fuinjutsu", value = "LV.4", percent = 40, color = "#00cc66"},
+          {name = "Medical", value = "LV.3", percent = 30, color = "#00cc66"}
+      },
+      attributes = {
+          {name = "STR", value = "85", icon = "/images/game/icons/icon_sword"},
+          {name = "AGI", value = "92", icon = "/images/game/icons/icon_boot"},
+          {name = "INT", value = "64", icon = "/images/game/icons/icon_brain"},
+          {name = "CON", value = "78", icon = "/images/game/icons/icon_shield"},
+          {name = "WIS", value = "55", icon = "/images/game/icons/icon_book"}
+      },
+      activeEffects = {
+          {name = "Lightning Reflexes", desc = "+15% Evasion, +5% Movement Speed", time = "14:59", icon = "/images/game/icons/icon_flash", color = "#00ff00"},
+          {name = "Chakra Surge", desc = "Regenerate 5% Chakra every 3s", time = "04:12", icon = "/images/game/icons/icon_fire", color = "#ffaa00"},
+          {name = "Blindness", desc = "-50% Accuracy on Physical Attacks", time = "00:45", icon = "/images/game/icons/icon_eye", color = "#ff5555"}
+      }
   },
   ninjaWorld = {
       reputation = {
@@ -157,7 +169,7 @@ end
 function profileController:selectTab(tabName)
     if not self.ui then return end
     
-    local tabs = {'Missions', 'PvP', 'Betrayals', 'Bank', 'Special'}
+    local tabs = {'Missions', 'PvP', 'NinjaPath', 'Betrayals', 'Bank', 'Special'}
     
     for _, tab in ipairs(tabs) do
         local tabButton = self.ui:recursiveGetChildById('tab' .. tab)
@@ -339,6 +351,56 @@ function profileController:refreshUI()
               card:getChildById('rank'):setText(criminal.rank)
               card:getChildById('bounty'):setText(criminal.bounty)
               -- card:getChildById('avatar'):setImageSource(criminal.avatar) 
+          end
+      end
+  end
+
+  -- Content: Ninja Path
+  local contentNinjaPath = ui:recursiveGetChildById('contentNinjaPath')
+  if contentNinjaPath and contentNinjaPath:isVisible() then
+      -- Header
+      contentNinjaPath:recursiveGetChildById('className'):setText(profileData.ninjaPath.class)
+      contentNinjaPath:recursiveGetChildById('rankText'):setText(profileData.ninjaPath.rank)
+      
+      -- Affinities
+      local affinitiesGrid = contentNinjaPath:getChildById('affinitiesGrid')
+      if affinitiesGrid then
+          affinitiesGrid:destroyChildren()
+          for _, aff in ipairs(profileData.ninjaPath.affinities) do
+              local bar = g_ui.createWidget('AffinityBar', affinitiesGrid)
+              bar:getChildById('name'):setText(aff.name)
+              bar:getChildById('level'):setText(aff.value)
+              bar:getChildById('level'):setColor(aff.color)
+              
+              local progress = bar:getChildById('progress')
+              progress:setPercent(aff.percent)
+              progress:setBackgroundColor(aff.color)
+          end
+      end
+      
+      -- Attributes
+      local attributesRow = contentNinjaPath:getChildById('attributesRow')
+      if attributesRow then
+          attributesRow:destroyChildren()
+          for _, attr in ipairs(profileData.ninjaPath.attributes) do
+              local card = g_ui.createWidget('AttributeCard', attributesRow)
+              card:getChildById('name'):setText(attr.name)
+              card:getChildById('value'):setText(attr.value)
+              -- card:getChildById('icon'):setImageSource(attr.icon)
+          end
+      end
+      
+      -- Active Effects
+      local activeEffectsList = contentNinjaPath:getChildById('activeEffectsList')
+      if activeEffectsList then
+          activeEffectsList:destroyChildren()
+          for _, effect in ipairs(profileData.ninjaPath.activeEffects) do
+              local card = g_ui.createWidget('EffectCard', activeEffectsList)
+              card:setWidth(activeEffectsList:getWidth())
+              card:getChildById('name'):setText(effect.name)
+              card:getChildById('description'):setText(effect.desc)
+              card:getChildById('timer'):setText(effect.time)
+              -- card:getChildById('image'):setImageSource(effect.icon)
           end
       end
   end

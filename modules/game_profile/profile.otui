@@ -9,18 +9,130 @@ ProfileTabButton < UIWidget
     background-color: #15221a
     border-color: #1fbf6e
 
-  Label-13px-Bold
+  Label
     id: title
+    font: verdana-13px-bold
     color: #555555
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 8
 
-  Label-16px-Bold
+  Label
     id: value
+    font: verdana-16px-bold
     color: red
     anchors.centerIn: parent
     margin-top: 5
+
+AffinityBar < UIWidget
+  height: 40
+  background-color: transparent
+  
+  Label
+    id: name
+    font: verdana-11px-bold
+    color: #ffffff
+    anchors.top: parent.top
+    anchors.left: parent.left
+    
+  Label
+    id: level
+    font: verdana-11px-bold
+    color: #1fbf6e
+    anchors.top: parent.top
+    anchors.right: parent.right
+    
+  ProgressBar
+    id: progress
+    height: 6
+    background-color: #15221a
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 5
+
+AttributeCard < UIWidget
+  width: 160
+  height: 80
+  background-color: #15221a
+  border-width: 1
+  border-color: #1f2b24
+  border-radius: 6
+  
+  UIWidget
+    id: icon
+    size: 24 24
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 10
+    image-color: #1fbf6e
+    
+  Label
+    id: name
+    font: verdana-10px-bold
+    color: #888888
+    anchors.top: icon.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 5
+    
+  Label
+    id: value
+    font: verdana-14px-bold
+    color: #ffffff
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 10
+
+EffectCard < UIWidget
+  height: 60
+  background-color: #15221a
+  border-width: 1
+  border-color: #1f2b24
+  border-radius: 6
+  margin-bottom: 5
+  
+  UIWidget
+    id: icon
+    size: 32 32
+    background-color: #1fbf6e
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 15
+    border-radius: 4
+    
+    UIWidget
+      id: image
+      size: 20 20
+      anchors.centerIn: parent
+      image-source: /images/game/icons/icon_flash
+      image-color: #15221a
+      
+  Label
+    id: name
+    font: verdana-12px-bold
+    color: #ffffff
+    anchors.top: parent.top
+    anchors.left: icon.right
+    margin-left: 15
+    margin-top: 12
+    
+  Label
+    id: description
+    font: verdana-10px-regular
+    color: #888888
+    anchors.top: name.bottom
+    anchors.left: icon.right
+    margin-left: 15
+    margin-top: 2
+    
+  Label
+    id: timer
+    font: verdana-11px-bold
+    color: #1fbf6e
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-right: 15
+    margin-top: 12
 
 MissionRankCard < Panel
   background-color: #0b110e
@@ -142,7 +254,7 @@ MainWindow
 
     ProfileTabButton
       id: tabMissions
-      width: 170
+      width: 135
       @onClick: modules.game_profile.profileController:selectTab('Missions')
       
       Label-16px-Bold
@@ -161,7 +273,7 @@ MainWindow
 
     ProfileTabButton
       id: tabPvP
-      width: 165
+      width: 135
       @onClick: modules.game_profile.profileController:selectTab('PvP')
       
       Label-16px-Bold
@@ -179,8 +291,27 @@ MainWindow
         margin-top: 5
 
     ProfileTabButton
+      id: tabNinjaPath
+      width: 135
+      @onClick: modules.game_profile.profileController:selectTab('NinjaPath')
+      
+      Label-16px-Bold
+        text: "NINJA PATH"
+        color: #1fbf6e
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        margin-top: 8
+        
+      Label-20px-Bold 
+        id: pathValue
+        text: "ELITE"
+        color: #ffffff
+        anchors.centerIn: parent
+        margin-top: 5
+
+    ProfileTabButton
       id: tabBetrayals
-      width: 170
+      width: 135
       @onClick: modules.game_profile.profileController:selectTab('Betrayals')
       
       Label-16px-Bold
@@ -199,7 +330,7 @@ MainWindow
 
     ProfileTabButton
       id: tabBank
-      width: 165
+      width: 135
       @onClick: modules.game_profile.profileController:selectTab('Bank')
       
       Label-16px-Bold
@@ -211,7 +342,7 @@ MainWindow
         
       Label-20px-Bold 
         id: bankValue
-        text: "¥1,400,000"
+        text: "¥1.4M"
         color: #ffffff
         anchors.centerIn: parent
         margin-top: 5
@@ -228,7 +359,7 @@ MainWindow
 
     ProfileTabButton
       id: tabSpecial
-      width: 165
+      width: 135
       @onClick: modules.game_profile.profileController:selectTab('Special')
       
       Label-16px-Bold
@@ -248,7 +379,7 @@ MainWindow
       UIWidget
         id: specialIcon
         size: 14 14
-        image-source: /images/game/icons/icon_vip_32px
+        image-source: /images/game/icons/icon_star
         image-color: #e5bc6d
         anchors.top: parent.top
         anchors.right: parent.right
@@ -398,6 +529,132 @@ MainWindow
         anchors.right: combatHistoryList.right
         step: 14
         pixels-scroll: true
+
+    Panel
+      id: contentNinjaPath
+      anchors.fill: parent
+      visible: false
+      
+      UIWidget
+        id: headerIcon
+        size: 14 14
+        image-source: /images/game/icons/icon_swords
+        image-color: #1fbf6e
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 2
+        
+      Label
+        text: "NINJA PATH"
+        font: verdana-14px-bold
+        color: #1fbf6e
+        anchors.verticalCenter: headerIcon.verticalCenter
+        anchors.left: headerIcon.right
+        margin-left: 8
+        
+      Label
+        id: className
+        text: "Assassin"
+        font: verdana-20px-bold
+        color: #ffffff
+        anchors.top: headerIcon.bottom
+        anchors.left: parent.left
+        margin-top: 10
+        
+      Label
+        id: rankText
+        text: "ELITE RANK IV"
+        font: verdana-10px-bold
+        color: #e5bc6d
+        anchors.bottom: className.bottom
+        anchors.right: parent.right
+        margin-bottom: 4
+        
+      UIWidget
+        id: separator1
+        height: 1
+        background-color: #333333
+        anchors.top: className.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 15
+
+      Label
+        text: "EXPANDED AFFINITIES"
+        font: verdana-10px-bold
+        color: #555555
+        anchors.top: separator1.bottom
+        anchors.left: parent.left
+        margin-top: 15
+        
+      Panel
+        id: affinitiesGrid
+        height: 100
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 15
+        layout:
+          type: grid
+          cell-size: 400 40
+          cell-spacing: 20
+          flow: true
+
+      UIWidget
+        id: separator2
+        height: 1
+        background-color: #333333
+        anchors.top: affinitiesGrid.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 15
+          
+      Label
+        text: "ATTRIBUTES"
+        font: verdana-10px-bold
+        color: #555555
+        anchors.top: separator2.bottom
+        anchors.left: parent.left
+        margin-top: 15
+        
+      Panel
+        id: attributesRow
+        height: 90
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 15
+        layout:
+          type: horizontalBox
+          spacing: 15
+
+      UIWidget
+        id: separator3
+        height: 1
+        background-color: #333333
+        anchors.top: attributesRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 15
+          
+      Label
+        text: "ACTIVE EFFECTS"
+        font: verdana-10px-bold
+        color: #555555
+        anchors.top: separator3.bottom
+        anchors.left: parent.left
+        margin-top: 15
+        
+      Panel
+        id: activeEffectsList
+        anchors.top: prev.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        margin-top: 15
+        layout:
+          type: verticalBox
+          spacing: 5
 
     Panel
       id: contentBetrayals
