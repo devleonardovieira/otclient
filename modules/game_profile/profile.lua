@@ -16,6 +16,37 @@ local profileData = {
       pvpKills = 27,
       betrayals = 2
   },
+  combatRecord = {
+      season = 5,
+      stats = {
+          {title = "K/D RATIO", value = "4.5", color = "#1fbf6e"},
+          {title = "STREAK", value = "18", color = "#e5bc6d"},
+          {title = "NEMESIS", value = "Orochi_X", color = "#ff5555"}
+      },
+      guildWar = {
+          contribution = "2,450",
+          rank = "Top 5%",
+          percent = 75
+      },
+      history = {
+          {level = 45, name = "Cloud_Ninja_01", location = "Valley of Clouds", time = "2m ago", type = "victory"},
+          {level = 38, name = "Sand_Puppet", location = "Desert Border", time = "1h ago", type = "victory"},
+          {level = 55, name = "Madara_U", location = "Final Valley", time = "Yesterday", type = "defeat"},
+          {level = 42, name = "Mist_Assassin", location = "Hidden Mist Lake", time = "3d ago", type = "victory"},
+          {level = 60, name = "Hokage_Pro", location = "Konoha Gates", time = "4d ago", type = "defeat"}
+      }
+  },
+  missionLog = {
+      total = 342,
+      ranks = {
+          {rank = "RANK SS", value = 2, sub = "/0", color = "#ff9999", barColor = "#ff5555"},
+          {rank = "RANK S", value = 12, sub = "/1", color = "#ff5555", barColor = "#ff0000"},
+          {rank = "RANK A", value = 45, sub = "/3", color = "#ffcc00", barColor = "#ffaa00"},
+          {rank = "RANK B", value = 88, sub = "/2", color = "#1fbf6e", barColor = "#00ff00"},
+          {rank = "RANK C", value = 124, sub = "/5", color = "#3399ff", barColor = "#0055ff"},
+          {rank = "RANK D", value = 71, sub = "/0", color = "#aaaaaa", barColor = "#ffffff"}
+      }
+  },
   ninjaPath = {
       class = "Assassin",
       rank = "Rank IV",
@@ -28,18 +59,6 @@ local profileData = {
     {name = "Kenjutsu", value = "LV.6", percent = 60, color = "#ff5555", icon = "/images/icons/icon_sword"},
     {name = "Fuinjutsu", value = "LV.4", percent = 40, color = "#00cc66", icon = "/images/game/icons/icon_researcher"},
     {name = "Medical", value = "LV.3", percent = 30, color = "#00cc66", icon = "/images/icons/icon_healing"}
-  },
-  -- Legacy data structures kept for reference or future expansion
-  affinities = {
-    {name = "Ninjutsu", stars = 5},
-    {name = "Taijutsu", stars = 4},
-    {name = "Genjutsu", stars = 2}
-  },
-  detailedStats = {
-    {name = "Concluiu missões S Rank", value = 12},
-    {name = "Maior Rank", value = "Jonin"},
-    {name = "Mortes PvP", value = 27},
-    {name = "Traições", value = 2}
   },
   ninjaWorld = {
       reputation = {
@@ -63,7 +82,36 @@ local profileData = {
     {text = "Concluiu missão S Rank", type = "success"},
     {text = "Traiu uma facção", type = "warning"},
     {text = "Eliminou alvo de elite", type = "success"}
-  }
+  },
+  bankData = {
+        actions = {
+            {text = "Deposit", icon = "/images/game/profile/bank/icon_down", color = "#1fbf6e"},
+            {text = "Withdraw", icon = "/images/game/profile/bank/icon_up", color = "#ff5555"},
+            {text = "Transfer", icon = "/images/game/profile/bank/icon_exchange", color = "#55aaff"}
+        },
+        transactions = {
+            {title = "Mission Reward", date = "Today, 10:42 AM", amount = "+ ¥25,000", detail = "S-RANK #422", type = "income"},
+            {title = "Sent to Sasuke", date = "Yesterday, 14:20 PM", amount = "- ¥5,000", detail = "CLAN FEE", type = "expense"},
+            {title = "Market Sale", date = "Yesterday, 09:15 AM", amount = "+ ¥12,500", detail = "Rare Ore x5", type = "income"},
+            {title = "Equipment Repair", date = "2 days ago", amount = "- ¥2,400", detail = "Blacksmith", type = "expense"},
+            {title = "Tournament Prize", date = "3 days ago", amount = "+ ¥50,000", detail = "1st Place", type = "income"}
+        }
+    },
+    betrayalData = {
+        actions = {
+            {text = "Place Bounty", icon = "/images/game/icons/icon_skull", color = "#ff5555"},
+            {text = "My Bounties", icon = "/images/game/icons/icon_list", color = "#e5bc6d"},
+            {text = "Top Hunters", icon = "/images/game/icons/icon_trophy", color = "#ffffff"}
+        },
+        bingoBook = {
+            {name = "Kisame Hoshigaki", rank = "S-Rank Criminal", bounty = "¥45,000,000", status = "Alive"},
+            {name = "Deidara", rank = "S-Rank Criminal", bounty = "¥38,500,000", status = "Alive"},
+            {name = "Kakuzu", rank = "S-Rank Criminal", bounty = "¥55,000,000", status = "Alive"},
+            {name = "Hidan", rank = "S-Rank Criminal", bounty = "¥40,000,000", status = "Alive"},
+            {name = "Sasori", rank = "S-Rank Criminal", bounty = "¥42,000,000", status = "Alive"},
+            {name = "Zetsu", rank = "S-Rank Criminal", bounty = "¥30,000,000", status = "Alive"}
+        }
+    }
 }
 
 function profileController:onInit()
@@ -86,20 +134,14 @@ function profileController:onGameEnd()
 end
 
 function profileController:toggle()
-  print("Toggle called")
   if not self.ui then
-    print("Creating UI...")
     self.ui = g_ui.displayUI('profile')
-    if self.ui then
-        print("UI created successfully")
-    else
-        print("Failed to create UI - displayUI returned nil")
+    if not self.ui then
+        print("Failed to create UI")
+        return
     end
-  end
-  
-  if not self.ui then
-    print("UI is nil, returning")
-    return
+    -- Select default tab
+    self:selectTab('Missions')
   end
 
   if self.ui:isVisible() then
@@ -112,15 +154,33 @@ function profileController:toggle()
   end
 end
 
+function profileController:selectTab(tabName)
+    if not self.ui then return end
+    
+    local tabs = {'Missions', 'PvP', 'Betrayals', 'Bank', 'Special'}
+    
+    for _, tab in ipairs(tabs) do
+        local tabButton = self.ui:recursiveGetChildById('tab' .. tab)
+        local contentPanel = self.ui:recursiveGetChildById('content' .. tab)
+        
+        if tabButton then
+            tabButton:setChecked(tab == tabName)
+        end
+        
+        if contentPanel then
+            contentPanel:setVisible(tab == tabName)
+        end
+    end
+    
+    -- Refresh UI to populate content for the newly visible tab
+    self:refreshUI()
+end
+
 function profileController:refreshUI()
   local ui = self.ui
   if not ui then return end
   
-  -- Layout Containers
-  local leftColumn = ui:getChildById('leftColumn')
-  local rightColumn = ui:getChildById('rightColumn')
-
-  -- Header
+  -- 1. Header Population
   local headerPanel = ui:getChildById('headerPanel')
   if headerPanel then
       headerPanel:getChildById('nameLabel'):setText(profileData.name)
@@ -137,154 +197,189 @@ function profileController:refreshUI()
       end
   end
 
-  -- Balance Row (Right Column)
-  if rightColumn then
-      local balanceRow = rightColumn:getChildById('balanceRow')
-      if balanceRow then
-          local bankCard = balanceRow:getChildById('bankCard')
-          if bankCard then
-              bankCard:getChildById('bankValue'):setText("¥" .. profileData.balance.ryo)
-          end
-          
-          local specialCard = balanceRow:getChildById('specialCard')
-          if specialCard then
-              specialCard:getChildById('specialValue'):setText(profileData.balance.koban)
+  -- 2. Tab Buttons Data (Summaries)
+  local tabBar = ui:getChildById('tabBar')
+  if tabBar then
+      local tabMissions = tabBar:getChildById('tabMissions')
+      if tabMissions then tabMissions:getChildById('missionValue'):setText(profileData.stats.sRankMissions) end
+      
+      local tabPvP = tabBar:getChildById('tabPvP')
+      if tabPvP then tabPvP:getChildById('killsValue'):setText(profileData.stats.pvpKills) end
+      
+      local tabBetrayals = tabBar:getChildById('tabBetrayals')
+      if tabBetrayals then tabBetrayals:getChildById('betrayalValue'):setText(profileData.stats.betrayals) end
+      
+      local tabBank = tabBar:getChildById('tabBank')
+      if tabBank then tabBank:getChildById('bankValue'):setText("¥" .. profileData.balance.ryo) end
+      
+      local tabSpecial = tabBar:getChildById('tabSpecial')
+      if tabSpecial then tabSpecial:getChildById('specialValue'):setText(profileData.balance.koban) end
+  end
+
+  -- 3. Content Panels Population
+  
+  -- Content: Missions (Mission Log)
+  local missionLogCard = ui:recursiveGetChildById('missionLogCard')
+  if missionLogCard then
+      missionLogCard:getChildById('totalCompleted'):setText("TOTAL COMPLETED: " .. profileData.missionLog.total)
+      
+      local missionGrid = missionLogCard:getChildById('missionGrid')
+      if missionGrid then
+          missionGrid:destroyChildren()
+          for _, rankData in ipairs(profileData.missionLog.ranks) do
+              local card = g_ui.createWidget('MissionRankCard', missionGrid)
+              
+              local rankTitle = card:getChildById('rankTitle')
+              rankTitle:setText(rankData.rank)
+              rankTitle:setColor(rankData.color)
+              
+              card:getChildById('mainValue'):setText(rankData.value)
+              card:getChildById('subValue'):setText(rankData.sub)
+              
+              local progressBar = card:getChildById('progressBar')
+              progressBar:setBackgroundColor(rankData.barColor)
           end
       end
   end
 
-  -- Stats Row (Left Column)
-  if leftColumn then
-      local statsRow = leftColumn:getChildById('statsRow')
+  -- Content: PvP (Combat Record)
+  local contentPvP = ui:recursiveGetChildById('contentPvP')
+  if contentPvP and contentPvP:isVisible() then
+      -- Stats Row
+      local statsRow = contentPvP:getChildById('statsRow')
       if statsRow then
-          local missionCard = statsRow:getChildById('missionCard')
-          if missionCard then
-              missionCard:getChildById('missionValue'):setText(profileData.stats.sRankMissions)
-          end
-
-          local killsCard = statsRow:getChildById('killsCard')
-          if killsCard then
-              killsCard:getChildById('killsValue'):setText(profileData.stats.pvpKills)
-          end
+          statsRow:destroyChildren()
+          -- Use fixed width since layout might not be ready
+          local cardWidth = 280 
           
-          local betrayalCard = statsRow:getChildById('betrayalCard')
-          if betrayalCard then
-              betrayalCard:getChildById('betrayalValue'):setText(profileData.stats.betrayals)
+          for _, stat in ipairs(profileData.combatRecord.stats) do
+              local card = g_ui.createWidget('CombatStatCard', statsRow)
+              card:setWidth(cardWidth)
+              
+              card:getChildById('title'):setText(stat.title)
+              card:getChildById('value'):setText(stat.value)
+              card:getChildById('underline'):setBackgroundColor(stat.color)
+          end
+      end
+      
+      -- Guild War
+      local gwCard = contentPvP:getChildById('guildWarCard')
+      if gwCard then
+          gwCard:getChildById('gwValue'):setText(profileData.combatRecord.guildWar.contribution)
+          gwCard:getChildById('gwRank'):setText(profileData.combatRecord.guildWar.rank)
+          
+          local gwBar = gwCard:getChildById('gwProgressBar')
+          local gwBarBg = gwCard:getChildById('gwProgressBarBg')
+          if gwBar and gwBarBg then
+              local percent = profileData.combatRecord.guildWar.percent
+              gwBar:setWidth(gwBarBg:getWidth() * (percent / 100))
+          end
+      end
+      
+      -- Combat History
+      local historyList = contentPvP:getChildById('combatHistoryList')
+      if historyList then
+          historyList:destroyChildren()
+          for _, match in ipairs(profileData.combatRecord.history) do
+              local panel = g_ui.createWidget('CombatMatchPanel', historyList)
+              panel:setWidth(historyList:getWidth() - 14) -- Subtract scrollbar width
+              
+              -- Common data
+              panel:recursiveGetChildById('levelValue'):setText(match.level)
+              panel:getChildById('name'):setText(match.name)
+              panel:getChildById('location'):setText(match.location)
+              panel:getChildById('timeLabel'):setText(match.time)
+              
+              -- Type specific styling
+              local statusIndicator = panel:getChildById('statusIndicator')
+              local levelBox = panel:getChildById('levelBox')
+              local levelTitle = panel:recursiveGetChildById('levelTitle')
+              local outcomeLabel = panel:getChildById('outcomeLabel')
+              
+              if match.type == 'victory' then
+                  statusIndicator:setBackgroundColor('#1fbf6e')
+                  levelBox:setBorderColor('#1fbf6e')
+                  levelTitle:setColor('#1fbf6e')
+                  outcomeLabel:setText('VICTORY')
+                  outcomeLabel:setColor('#1fbf6e')
+              elseif match.type == 'defeat' then
+                  statusIndicator:setBackgroundColor('#ff5555')
+                  levelBox:setBorderColor('#ff5555')
+                  levelTitle:setColor('#ff5555')
+                  outcomeLabel:setText('DEFEAT')
+                  outcomeLabel:setColor('#ff5555')
+              end
           end
       end
   end
 
-  -- Ninja Path Section (Left Column)
-  if leftColumn then
-      local ninjaPathCard = leftColumn:getChildById('ninjaPathCard')
-      if ninjaPathCard then
-          ninjaPathCard:getChildById('pathClass'):setText(profileData.ninjaPath.class)
-          ninjaPathCard:getChildById('pathRank'):setText(profileData.ninjaPath.rank)
-          
-          local starsPanel = ninjaPathCard:getChildById('starsPanel')
-          if starsPanel then
-              starsPanel:destroyChildren()
-              for i=1, profileData.ninjaPath.stars do
-                  local star = g_ui.createWidget('UIWidget', starsPanel)
-                  star:setImageSource('/images/game/icons/star')
-                  star:setSize({width=14, height=14})
-                  star:setImageColor('#ffcc00')
-              end
+  -- Content: Betrayals (Bingo Book)
+  local contentBetrayals = ui:recursiveGetChildById('contentBetrayals')
+  if contentBetrayals and contentBetrayals:isVisible() then
+      -- Actions
+      local actionPanel = contentBetrayals:getChildById('betrayalActions')
+      if actionPanel then
+          actionPanel:destroyChildren()
+          for _, action in ipairs(profileData.betrayalData.actions) do
+              local btn = g_ui.createWidget('BankActionButton', actionPanel)
+              btn:getChildById('text'):setText(action.text)
+              btn:getChildById('icon'):setImageSource(action.icon)
+              btn:getChildById('icon'):setImageColor(action.color)
+              btn:setWidth(280)
           end
-          
-          local affinitiesGrid = ninjaPathCard:getChildById('affinitiesGrid')
-          if affinitiesGrid then
-              affinitiesGrid:destroyChildren()
-              for _, affinity in ipairs(profileData.expandedAffinities) do
-                  local panel = g_ui.createWidget('ProfileAffinityPanel', affinitiesGrid)
-                  
-                  local icon = panel:getChildById('icon')
-                  icon:setImageSource(affinity.icon)
-                  icon:setImageColor(affinity.color)
-                  
-                  panel:getChildById('name'):setText(affinity.name)
-                  
-                  local valueLabel = panel:getChildById('value')
-                  valueLabel:setText(affinity.value)
-                  valueLabel:setColor(affinity.color)
-                  
-                  local progressBar = panel:getChildById('progressBar')
-                  progressBar:setBackgroundColor(affinity.color)
-                  progressBar:setWidth((affinity.percent / 100) * 130) -- Approximate width based on layout
-              end
+      end
+      
+      -- Bingo Book
+      local grid = contentBetrayals:getChildById('bingoBookGrid')
+      if grid then
+          grid:destroyChildren()
+          for _, criminal in ipairs(profileData.betrayalData.bingoBook) do
+              local card = g_ui.createWidget('BingoBookCard', grid)
+              card:getChildById('name'):setText(criminal.name)
+              card:getChildById('rank'):setText(criminal.rank)
+              card:getChildById('bounty'):setText(criminal.bounty)
+              -- card:getChildById('avatar'):setImageSource(criminal.avatar) 
           end
       end
   end
 
-  -- Ninja World Section (Right Column)
-  if rightColumn then
-      local ninjaWorldCard = rightColumn:getChildById('ninjaWorldCard')
-      if ninjaWorldCard then
-          -- Reputation
-          local reputationCard = ninjaWorldCard:getChildById('reputationCard')
-          if reputationCard then
-              reputationCard:getChildById('reputationName'):setText(profileData.ninjaWorld.reputation.name)
-              reputationCard:getChildById('reputationRank'):setText(profileData.ninjaWorld.reputation.rank)
-              reputationCard:getChildById('reputationPercent'):setText(profileData.ninjaWorld.reputation.percent .. "% to " .. profileData.ninjaWorld.reputation.next)
+  -- Content: Bank
+  local contentBank = ui:recursiveGetChildById('contentBank')
+  if contentBank and contentBank:isVisible() then
+      -- Actions
+      local actionPanel = contentBank:getChildById('bankActions')
+      if actionPanel then
+          actionPanel:destroyChildren()
+          for _, action in ipairs(profileData.bankData.actions) do
+              local btn = g_ui.createWidget('BankActionButton', actionPanel)
+              btn:getChildById('text'):setText(action.text)
+              btn:getChildById('icon'):setImageSource(action.icon)
+              btn:getChildById('icon'):setImageColor(action.color)
+              btn:setWidth(280) 
+          end
+      end
+
+      -- Transactions
+      local list = contentBank:getChildById('transactionList')
+      if list then
+          list:destroyChildren()
+          for _, trans in ipairs(profileData.bankData.transactions) do
+              local card = g_ui.createWidget('BankTransactionCard', list)
+              card:setWidth(list:getWidth())
+              card:getChildById('title'):setText(trans.title)
+              card:getChildById('date'):setText(trans.date)
+              card:getChildById('amount'):setText(trans.amount)
+              card:getChildById('detail'):setText(trans.detail)
               
-              local bar = reputationCard:getChildById('reputationBar')
-              local barBg = reputationCard:getChildById('reputationBarBg')
-              if bar and barBg then
-                  bar:setWidth((profileData.ninjaWorld.reputation.percent / 100) * barBg:getWidth())
+              if trans.type == 'income' then
+                  card:getChildById('amount'):setColor('#1fbf6e')
+                  card:getChildById('icon'):setImageSource('/images/game/profile/icon_down')
+                  card:getChildById('icon'):setImageColor('#1fbf6e')
+              else
+                  card:getChildById('amount'):setColor('#888888')
+                  card:getChildById('icon'):setImageSource('/images/game/profile/icon_up')
+                  card:getChildById('icon'):setImageColor('#ff5555')
               end
-          end
-
-          -- Factions
-          local factionsList = ninjaWorldCard:getChildById('factionsList')
-          if factionsList then
-              factionsList:destroyChildren()
-              for _, faction in ipairs(profileData.ninjaWorld.factions) do
-                  local panel = g_ui.createWidget('ProfileFactionPanel', factionsList)
-                  
-                  local icon = panel:getChildById('icon')
-                  icon:setImageSource(faction.icon)
-                  if faction.status == "INFAMOUS" then
-                     icon:setImageColor('#ff5555')
-                  elseif faction.status == "NEUTRAL" then
-                     icon:setImageColor('#e5bc6d')
-                  else
-                     icon:setImageColor('#1fbf6e')
-                  end
-
-                  panel:getChildById('name'):setText(faction.name)
-                  panel:getChildById('desc'):setText(faction.desc)
-                  
-                  local status = panel:getChildById('status')
-                  status:setText(faction.status)
-                  status:setColor(faction.statusColor)
-                  status:setBackgroundColor(faction.statusColor .. "22") -- Low opacity background
-              end
-          end
-
-          -- Lineage
-          local lineageList = ninjaWorldCard:getChildById('lineageList')
-          if lineageList then
-              lineageList:destroyChildren()
-              
-              -- Clan
-              local clanPanel = g_ui.createWidget('ProfileLineagePanel', lineageList)
-              clanPanel:getChildById('icon'):setImageSource('/images/game/icons/icon_no_clan_20px') -- Placeholder
-              clanPanel:getChildById('icon'):setImageColor('#ff5555')
-              clanPanel:getChildById('label'):setText("Clan")
-              clanPanel:getChildById('value'):setText(profileData.ninjaWorld.lineage.clan)
-
-              -- Kekkei Genkai
-              local kgPanel = g_ui.createWidget('ProfileLineagePanel', lineageList)
-              kgPanel:getChildById('icon'):setImageSource('/images/game/icons/icon_eye_24px')
-              kgPanel:getChildById('icon'):setImageColor('#cc66ff')
-              kgPanel:getChildById('label'):setText("Kekkei Genkai")
-              kgPanel:getChildById('value'):setText(profileData.ninjaWorld.lineage.kekkeiGenkai)
-          end
-          
-          -- Watchlist Button
-          local watchlistButton = ninjaWorldCard:getChildById('watchlistButton')
-          if watchlistButton then
-              watchlistButton:setVisible(profileData.ninjaWorld.lineage.watchlist)
           end
       end
   end
