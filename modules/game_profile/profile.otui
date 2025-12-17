@@ -28,12 +28,20 @@ AffinityBar < UIWidget
   height: 40
   background-color: transparent
   
+  UIWidget
+    id: icon
+    size: 20 20
+    anchors.top: parent.top
+    anchors.left: parent.left
+    visible: false
+
   Label
     id: name
     font: verdana-11px-bold
     color: #ffffff
     anchors.top: parent.top
-    anchors.left: parent.left
+    anchors.left: icon.right
+    margin-left: 10
     
   Label
     id: level
@@ -83,6 +91,55 @@ AttributeCard < UIWidget
     anchors.horizontalCenter: parent.horizontalCenter
     margin-bottom: 10
 
+GridEffectCard < UIWidget
+  background-color: #0b110e
+  border-width: 1
+  border-color: #1f2b24
+  border-radius: 8
+  
+  UIWidget
+    id: iconBg
+    size: 40 40
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 12
+    background-color: #1fbf6e
+    border-radius: 6
+    opacity: 0.2
+
+  UIWidget
+    id: icon
+    size: 24 24
+    anchors.centerIn: iconBg
+    image-source: /images/profile/ninja/icon_flash
+    
+  Label
+    id: name
+    font: verdana-12px-bold
+    color: #ffffff
+    anchors.top: iconBg.top
+    anchors.left: iconBg.right
+    margin-left: 12
+    text-align: left
+    
+  Label
+    id: description
+    font: verdana-10px-regular
+    color: #888888
+    anchors.bottom: iconBg.bottom
+    anchors.left: iconBg.right
+    margin-left: 12
+    text-align: left
+    
+  Label
+    id: timer
+    font: verdana-12px-bold
+    color: #1fbf6e
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 12
+    margin-right: 12
+
 EffectCard < UIWidget
   height: 60
   background-color: #15221a
@@ -104,7 +161,7 @@ EffectCard < UIWidget
       id: image
       size: 20 20
       anchors.centerIn: parent
-      image-source: /images/game/icons/icon_flash
+      image-source: /images/profile/ninja/icon_flash
       image-color: #15221a
       
   Label
@@ -379,7 +436,7 @@ MainWindow
       UIWidget
         id: specialIcon
         size: 14 14
-        image-source: /images/game/icons/icon_star
+        image-source:/images/profile/ninja/icon_star
         image-color: #e5bc6d
         anchors.top: parent.top
         anchors.right: parent.right
@@ -535,55 +592,11 @@ MainWindow
       anchors.fill: parent
       visible: false
       
-      UIWidget
-        id: headerIcon
-        size: 14 14
-        image-source: /images/game/icons/icon_swords
-        image-color: #1fbf6e
-        anchors.top: parent.top
-        anchors.left: parent.left
-        margin-top: 2
-        
-      Label
-        text: "NINJA PATH"
-        font: verdana-14px-bold
-        color: #1fbf6e
-        anchors.verticalCenter: headerIcon.verticalCenter
-        anchors.left: headerIcon.right
-        margin-left: 8
-        
-      Label
-        id: className
-        text: "Assassin"
-        font: verdana-20px-bold
-        color: #ffffff
-        anchors.top: headerIcon.bottom
-        anchors.left: parent.left
-        margin-top: 10
-        
-      Label
-        id: rankText
-        text: "ELITE RANK IV"
-        font: verdana-10px-bold
-        color: #e5bc6d
-        anchors.bottom: className.bottom
-        anchors.right: parent.right
-        margin-bottom: 4
-        
-      UIWidget
-        id: separator1
-        height: 1
-        background-color: #333333
-        anchors.top: className.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-top: 15
-
       Label
         text: "EXPANDED AFFINITIES"
         font: verdana-10px-bold
         color: #555555
-        anchors.top: separator1.bottom
+        anchors.top: parent.top
         anchors.left: parent.left
         margin-top: 15
         
@@ -596,8 +609,8 @@ MainWindow
         margin-top: 15
         layout:
           type: grid
-          cell-size: 400 40
-          cell-spacing: 20
+          cell-size: 205 40
+          cell-spacing: 10
           flow: true
 
       UIWidget
@@ -610,38 +623,10 @@ MainWindow
         margin-top: 15
           
       Label
-        text: "ATTRIBUTES"
-        font: verdana-10px-bold
-        color: #555555
-        anchors.top: separator2.bottom
-        anchors.left: parent.left
-        margin-top: 15
-        
-      Panel
-        id: attributesRow
-        height: 90
-        anchors.top: prev.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-top: 15
-        layout:
-          type: horizontalBox
-          spacing: 15
-
-      UIWidget
-        id: separator3
-        height: 1
-        background-color: #333333
-        anchors.top: attributesRow.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-top: 15
-          
-      Label
         text: "ACTIVE EFFECTS"
         font: verdana-10px-bold
         color: #555555
-        anchors.top: separator3.bottom
+        anchors.top: separator2.bottom
         anchors.left: parent.left
         margin-top: 15
         
@@ -653,8 +638,10 @@ MainWindow
         anchors.bottom: parent.bottom
         margin-top: 15
         layout:
-          type: verticalBox
-          spacing: 5
+          type: grid
+          cell-size: 280 65
+          cell-spacing: 15
+          flow: true
 
     Panel
       id: contentBetrayals
@@ -687,7 +674,7 @@ MainWindow
       UIWidget
         id: filterIcon
         size: 10 10
-        image-source: /images/game/icons/icon_arrow
+        image-source: /images/profile/bingo/icon-target
         image-color: #ff5555
         anchors.verticalCenter: prev.verticalCenter
         anchors.right: prev.left
@@ -738,23 +725,32 @@ MainWindow
       UIWidget
         id: filterIcon
         size: 10 10
-        image-source: /images/game/icons/icon_arrow
+        image-source: /images/profile/icon_filter
         image-color: #1fbf6e
         anchors.verticalCenter: prev.verticalCenter
         anchors.right: prev.left
         margin-right: 5
         rotation: 90
 
-      Panel
+      ScrollablePanel
         id: transactionList
         anchors.top: prev.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         margin-top: 15
+        vertical-scrollbar: transactionListScrollBar
         layout:
           type: verticalBox
           spacing: 10
+
+      VerticalScrollBar
+        id: transactionListScrollBar
+        anchors.top: transactionList.top
+        anchors.bottom: transactionList.bottom
+        anchors.right: transactionList.right
+        step: 14
+        pixels-scroll: true
 
     Panel
       id: contentSpecial

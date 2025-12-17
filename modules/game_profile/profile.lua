@@ -19,9 +19,9 @@ local profileData = {
   combatRecord = {
       season = 5,
       stats = {
-          {title = "K/D RATIO", value = "4.5", color = "#1fbf6e"},
-          {title = "STREAK", value = "18", color = "#e5bc6d"},
-          {title = "NEMESIS", value = "Orochi_X", color = "#ff5555"}
+          {title = "K/D RATIO", value = "4.5", color = "#1fbf6e", icon = "/images/profile/combat/icon_analytics"},
+          {title = "WIN STREAK", value = "18", color = "#e5bc6d", icon = "/images/profile/combat/icon_fire"},
+          {title = "NEMESIS", value = "Orochi_X", color = "#ff5555", icon = "/images/profile/combat/icon_skull"}
       },
       guildWar = {
           contribution = "2,450",
@@ -33,7 +33,9 @@ local profileData = {
           {level = 38, name = "Sand_Puppet", location = "Desert Border", time = "1h ago", type = "victory"},
           {level = 55, name = "Madara_U", location = "Final Valley", time = "Yesterday", type = "defeat"},
           {level = 42, name = "Mist_Assassin", location = "Hidden Mist Lake", time = "3d ago", type = "victory"},
-          {level = 60, name = "Hokage_Pro", location = "Konoha Gates", time = "4d ago", type = "defeat"}
+          {level = 60, name = "Hokage_Pro", location = "Konoha Gates", time = "4d ago", type = "defeat"},
+          {level = 48, name = "Rogue_Shinobi", location = "Forest of Death", time = "5d ago", type = "victory"},
+          {level = 52, name = "Akatsuki_Scout", location = "River Country", time = "1w ago", type = "defeat"}
       }
   },
   missionLog = {
@@ -52,24 +54,29 @@ local profileData = {
       rank = "ELITE RANK IV",
       stars = 4,
       affinities = {
-          {name = "Ninjutsu", value = "MAX", percent = 100, color = "#ffcc00"},
-          {name = "Taijutsu", value = "LV.8", percent = 80, color = "#3399ff"},
-          {name = "Genjutsu", value = "MAX", percent = 100, color = "#cc66ff"},
-          {name = "Kenjutsu", value = "LV.6", percent = 60, color = "#ff5555"},
-          {name = "Fuinjutsu", value = "LV.4", percent = 40, color = "#00cc66"},
-          {name = "Medical", value = "LV.3", percent = 30, color = "#00cc66"}
-      },
+            {name = "Ninjutsu", value = "MAX", percent = 100, color = "#ffaa00", icon = "/images/profile/stats/icon-ninjutsu"},
+            {name = "Taijutsu", value = "LV.8", percent = 80, color = "#3399ff", icon = "/images/profile/stats/icon-taijutsu"},
+            {name = "Genjutsu", value = "MAX", percent = 100, color = "#cc66ff", icon = "/images/profile/stats/icon-genjutsu"},
+            {name = "Kenjutsu", value = "LV.6", percent = 60, color = "#ff5555", icon = "/images/profile/stats/icon-kenjutsu"},
+            {name = "Fuinjutsu", value = "LV.4", percent = 40, color = "#1fbf6e", icon = "/images/profile/stats/icon-chakra"},
+            {name = "Medical", value = "LV.2", percent = 20, color = "#ffffff", icon = "/images/profile/stats/icon-hp"},
+            {name = "Senjutsu", value = "LV.1", percent = 10, color = "#00ffaa", icon = "/images/profile/stats/icon-chakra"},
+            {name = "Kinjutsu", value = "LV.3", percent = 30, color = "#ff0000", icon = "/images/profile/stats/icon-ninjutsu"}
+        },
       attributes = {
-          {name = "STR", value = "85", icon = "/images/game/icons/icon_sword"},
-          {name = "AGI", value = "92", icon = "/images/game/icons/icon_boot"},
-          {name = "INT", value = "64", icon = "/images/game/icons/icon_brain"},
-          {name = "CON", value = "78", icon = "/images/game/icons/icon_shield"},
-          {name = "WIS", value = "55", icon = "/images/game/icons/icon_book"}
+          {name = "STRENGTH", value = "85", icon = "/images/profile/stats/icon-strengh"},
+          {name = "AGILITY", value = "92", icon = "/images/profile/stats/icon-agility"},
+          {name = "CHAKRA", value = "64", icon = "/images/profile/stats/icon-chakra"},
+          {name = "STAMINA", value = "78", icon = "/images/profile/stats/icon-stamina"},
+          {name = "VITALITY", value = "55", icon = "/images/profile/stats/icon-hp"}
       },
       activeEffects = {
-          {name = "Lightning Reflexes", desc = "+15% Evasion, +5% Movement Speed", time = "14:59", icon = "/images/game/icons/icon_flash", color = "#00ff00"},
-          {name = "Chakra Surge", desc = "Regenerate 5% Chakra every 3s", time = "04:12", icon = "/images/game/icons/icon_fire", color = "#ffaa00"},
-          {name = "Blindness", desc = "-50% Accuracy on Physical Attacks", time = "00:45", icon = "/images/game/icons/icon_eye", color = "#ff5555"}
+          {name = "Lightning Reflexes", desc = "+15% Evasion", time = "14:59", icon = "/images/profile/ninja/icon_flash", color = "#1fbf6e"},
+          {name = "Chakra Surge", desc = "Regenerate 5% Chakra", time = "04:12", icon = "/images/profile/stats/icon-chakra", color = "#e5bc6d"},
+          {name = "Blindness", desc = "-50% Accuracy", time = "00:45", icon = "/images/profile/ninja/icon_blind", color = "#ff5555"},
+          {name = "Blindness", desc = "-50% Accuracy", time = "00:45", icon = "/images/profile/ninja/icon_blind", color = "#ff5555"},
+          {name = "Blindness", desc = "-50% Accuracy", time = "00:45", icon = "/images/profile/ninja/icon_blind", color = "#ff5555"},
+          {name = "Blindness", desc = "-50% Accuracy", time = "00:45", icon = "/images/profile/ninja/icon_blind", color = "#ff5555"}
       }
   },
   ninjaWorld = {
@@ -80,9 +87,9 @@ local profileData = {
           next = "Legend"
       },
       factions = {
-          {name = "Leaf Village", desc = "Homeland", status = "ALLY", statusColor = "#1fbf6e", icon = "/images/icons/icon_location"},
-          {name = "Merchants", desc = "Trade Guild", status = "NEUTRAL", statusColor = "#e5bc6d", icon = "/images/game/npcicons/icon_trade"},
-          {name = "Underworld", desc = "Crime Syndicate", status = "INFAMOUS", statusColor = "#ff5555", icon = "/images/game/battle/icon-battlelist-skull"}
+          {name = "Leaf Village", desc = "Homeland", status = "ALLY", statusColor = "#1fbf6e", icon = "/images/profile/icon_location"},
+          {name = "Merchants", desc = "Trade Guild", status = "NEUTRAL", statusColor = "#e5bc6d", icon = "/images/profile/npcicons/icon_trade"},
+          {name = "Underworld", desc = "Crime Syndicate", status = "INFAMOUS", statusColor = "#ff5555", icon = "/images/profile/battle/icon-battlelist-skull"}
       },
       lineage = {
           clan = "Uchiha",
@@ -106,14 +113,17 @@ local profileData = {
             {title = "Sent to Sasuke", date = "Yesterday, 14:20 PM", amount = "- ¥5,000", detail = "CLAN FEE", type = "expense"},
             {title = "Market Sale", date = "Yesterday, 09:15 AM", amount = "+ ¥12,500", detail = "Rare Ore x5", type = "income"},
             {title = "Equipment Repair", date = "2 days ago", amount = "- ¥2,400", detail = "Blacksmith", type = "expense"},
-            {title = "Tournament Prize", date = "3 days ago", amount = "+ ¥50,000", detail = "1st Place", type = "income"}
+            {title = "Tournament Prize", date = "3 days ago", amount = "+ ¥50,000", detail = "1st Place", type = "income"},
+            {title = "Potion Restock", date = "4 days ago", amount = "- ¥1,200", detail = "General Store", type = "expense"},
+            {title = "Bounty Claim", date = "5 days ago", amount = "+ ¥15,000", detail = "Rogue Ninja", type = "income"},
+            {title = "House Tax", date = "1 week ago", amount = "- ¥10,000", detail = "Konoha Treasury", type = "expense"}
         }
     },
     betrayalData = {
         actions = {
-            {text = "Place Bounty", icon = "/images/icons/icon_skull", color = "#ff5555"},
-            {text = "My Bounties", icon = "/images/icons/icon_list", color = "#e5bc6d"},
-            {text = "Top Hunters", icon = "/images/icons/icon_trophy", color = "#ffffff"}
+            {text = "Place Bounty", icon = "/images/profile/bingo/icon_skull", color = "#ff5555"},
+            {text = "My Bounties", icon = "/images/profile/bingo/icon-target", color = "#e5bc6d"},
+            {text = "Top Hunters", icon = "/images/profile/bingo/icon_trophy", color = "#ffffff"}
         },
         bingoBook = {
             {name = "Kisame Hoshigaki", rank = "S-Rank Criminal", bounty = "¥45,000,000", status = "Alive"},
@@ -271,6 +281,15 @@ function profileController:refreshUI()
               card:getChildById('title'):setText(stat.title)
               card:getChildById('value'):setText(stat.value)
               card:getChildById('underline'):setBackgroundColor(stat.color)
+              
+              if stat.icon then
+                  local iconWidget = card:getChildById('icon')
+                  if iconWidget then
+                      iconWidget:setImageSource(stat.icon)
+                      iconWidget:setVisible(true)
+                      iconWidget:setImageColor('#ffffff') -- Ensure original color
+                  end
+              end
           end
       end
       
@@ -358,9 +377,6 @@ function profileController:refreshUI()
   -- Content: Ninja Path
   local contentNinjaPath = ui:recursiveGetChildById('contentNinjaPath')
   if contentNinjaPath and contentNinjaPath:isVisible() then
-      -- Header
-      contentNinjaPath:recursiveGetChildById('className'):setText(profileData.ninjaPath.class)
-      contentNinjaPath:recursiveGetChildById('rankText'):setText(profileData.ninjaPath.rank)
       
       -- Affinities
       local affinitiesGrid = contentNinjaPath:getChildById('affinitiesGrid')
@@ -371,6 +387,14 @@ function profileController:refreshUI()
               bar:getChildById('name'):setText(aff.name)
               bar:getChildById('level'):setText(aff.value)
               bar:getChildById('level'):setColor(aff.color)
+              
+              if aff.icon then
+                local icon = bar:getChildById('icon')
+                if icon then
+                    icon:setImageSource(aff.icon)
+                    icon:setVisible(true)
+                end
+              end
               
               local progress = bar:getChildById('progress')
               progress:setPercent(aff.percent)
@@ -395,12 +419,19 @@ function profileController:refreshUI()
       if activeEffectsList then
           activeEffectsList:destroyChildren()
           for _, effect in ipairs(profileData.ninjaPath.activeEffects) do
-              local card = g_ui.createWidget('EffectCard', activeEffectsList)
-              card:setWidth(activeEffectsList:getWidth())
+              local card = g_ui.createWidget('GridEffectCard', activeEffectsList)
               card:getChildById('name'):setText(effect.name)
               card:getChildById('description'):setText(effect.desc)
               card:getChildById('timer'):setText(effect.time)
-              -- card:getChildById('image'):setImageSource(effect.icon)
+              card:getChildById('timer'):setColor(effect.color)
+              card:setBorderColor(effect.color)
+              
+              local iconBg = card:getChildById('iconBg')
+              if iconBg then
+                  iconBg:setBackgroundColor(effect.color)
+              end
+              
+              card:getChildById('icon'):setImageSource(effect.icon)
           end
       end
   end
@@ -427,7 +458,7 @@ function profileController:refreshUI()
           list:destroyChildren()
           for _, trans in ipairs(profileData.bankData.transactions) do
               local card = g_ui.createWidget('BankTransactionCard', list)
-              card:setWidth(list:getWidth())
+              card:setWidth(list:getWidth() - 14)
               card:getChildById('title'):setText(trans.title)
               card:getChildById('date'):setText(trans.date)
               card:getChildById('amount'):setText(trans.amount)
@@ -435,11 +466,11 @@ function profileController:refreshUI()
               
               if trans.type == 'income' then
                   card:getChildById('amount'):setColor('#1fbf6e')
-                  card:getChildById('icon'):setImageSource('/images/game/profile/icon_down')
+                  card:getChildById('icon'):setImageSource('/images/profile/bank/icon_down')
                   card:getChildById('icon'):setImageColor('#1fbf6e')
               else
                   card:getChildById('amount'):setColor('#888888')
-                  card:getChildById('icon'):setImageSource('/images/game/profile/icon_up')
+                  card:getChildById('icon'):setImageSource('/images/profile/bank/icon_up')
                   card:getChildById('icon'):setImageColor('#ff5555')
               end
           end
