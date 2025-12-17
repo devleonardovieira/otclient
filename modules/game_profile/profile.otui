@@ -9,17 +9,15 @@ ProfileTabButton < UIWidget
     background-color: #15221a
     border-color: #1fbf6e
 
-  Label
+  Label-13px-Bold
     id: title
-    font: verdana-9px-bold
     color: #555555
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 8
 
-  Label
+  Label-16px-Bold
     id: value
-    font: verdana-16px-bold
     color: red
     anchors.centerIn: parent
     margin-top: 5
@@ -30,23 +28,20 @@ MissionRankCard < Panel
   border-color: #1f2b24
   border-radius: 8
   
-  Label
+  Label-13px-Bold
     id: rankTitle
-    font: verdana-10px-bold
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 15
     
-  Label
+  Label-20px-Bold 
     id: mainValue
-    font: verdana-20px-bold
     color: #ffffff
     anchors.centerIn: parent
     margin-top: 5
     
-  Label
+  Label-13px-Bold
     id: subValue
-    font: verdana-12px-bold
     color: #555555
     anchors.left: mainValue.right
     anchors.bottom: mainValue.bottom
@@ -67,7 +62,7 @@ MissionRankCard < Panel
 MainWindow
   id: profileWindow
   size: 900 650
-  !text: tr('')
+  !text: tr('Shinobi Profile')
   @onEscape: modules.game_profile.profileController:toggle()
   padding: 0
 
@@ -77,6 +72,7 @@ MainWindow
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
+    margin-top: 40
     
     UICreature
       id: portrait
@@ -90,7 +86,7 @@ MainWindow
       border-color: #1fbf6e
       border-radius: 36
 
-    Label
+    Label-16px-Bold
       id: levelBadge
       text: "42"
       color: #ffffff
@@ -98,25 +94,22 @@ MainWindow
       size: 20 20
       border-radius: 10
       text-align: center
-      font: verdana-11px-bold
       anchors.bottom: portrait.bottom
       anchors.right: portrait.right
       margin-bottom: 0
       margin-right: 0
 
-    Label
+    Label-14px-Regular
       id: nameLabel
       text: "Kenji Zero"
-      font: verdana-18px-bold
       color: #ffffff
       anchors.top: portrait.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 10
 
-    Label
+    Label-16px-Bold
       id: rankLabel
       text: "SHADOW WALKER"
-      font: verdana-10px-bold
       color: #1fbf6e
       background-color: #15221a
       padding: 4 10
@@ -124,11 +117,11 @@ MainWindow
       anchors.top: nameLabel.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       text-auto-resize: true
+      text-align: center
 
-    Label
+    Label-14px-Regular
       id: titleLabel
       text: "Master Assassin • Night Operative"
-      font: verdana-11px-rounded
       color: #6a8c75
       anchors.top: rankLabel.bottom
       anchors.horizontalCenter: parent.horizontalCenter
@@ -140,6 +133,7 @@ MainWindow
     anchors.top: headerPanel.bottom
     anchors.left: parent.left
     anchors.right: parent.right
+    margin-top: 15
     margin-left: 10
     margin-right: 10
     layout:
@@ -151,18 +145,16 @@ MainWindow
       width: 170
       @onClick: modules.game_profile.profileController:selectTab('Missions')
       
-      Label
-        text: "S-RANK MISSIONS"
-        font: verdana-9px-bold
+      Label-16px-Bold
+        text: "RANK MISSIONS"
         color: #555555
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 8
         
-      Label
+      Label-20px-Bold 
         id: missionValue
         text: "12"
-        font: verdana-16px-bold
         color: #ffffff
         anchors.centerIn: parent
         margin-top: 5
@@ -172,18 +164,16 @@ MainWindow
       width: 165
       @onClick: modules.game_profile.profileController:selectTab('PvP')
       
-      Label
+      Label-16px-Bold
         text: "PVP KILLS"
-        font: verdana-9px-bold
         color: #555555
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 8
         
-      Label
+      Label-20px-Bold 
         id: killsValue
         text: "27"
-        font: verdana-16px-bold
         color: #ffffff
         anchors.centerIn: parent
         margin-top: 5
@@ -193,18 +183,16 @@ MainWindow
       width: 170
       @onClick: modules.game_profile.profileController:selectTab('Betrayals')
       
-      Label
+      Label-16px-Bold
         text: "BETRAYALS"
-        font: verdana-9px-bold
         color: #8c5050
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 8
         
-      Label
+      Label-20px-Bold 
         id: betrayalValue
         text: "2"
-        font: verdana-16px-bold
         color: #ff5555
         anchors.centerIn: parent
         margin-top: 5
@@ -214,19 +202,16 @@ MainWindow
       width: 165
       @onClick: modules.game_profile.profileController:selectTab('Bank')
       
-      Label
+      Label-16px-Bold
         text: "BANK BALANCE"
-        font: verdana-9px-bold
         color: #6a8c75
         anchors.top: parent.top
-        anchors.left: parent.left
-        margin-left: 10
+        anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 8
         
-      Label
+      Label-20px-Bold 
         id: bankValue
         text: "¥1,400,000"
-        font: verdana-16px-bold
         color: #ffffff
         anchors.centerIn: parent
         margin-top: 5
@@ -234,7 +219,7 @@ MainWindow
       UIWidget
         id: bankIcon
         size: 14 14
-        image-source: /images/profile/icon-balance
+        image-source: /images/profile/bank/icon-balance
         image-color: #1fbf6e
         anchors.top: parent.top
         anchors.right: parent.right
@@ -246,19 +231,16 @@ MainWindow
       width: 165
       @onClick: modules.game_profile.profileController:selectTab('Special')
       
-      Label
+      Label-16px-Bold
         text: "SPECIAL"
-        font: verdana-9px-bold
         color: #8c7a50
         anchors.top: parent.top
-        anchors.left: parent.left
-        margin-left: 10
+        anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 8
         
-      Label
+      Label-20px-Bold 
         id: specialValue
         text: "850"
-        font: verdana-16px-bold
         color: #e5bc6d
         anchors.centerIn: parent
         margin-top: 5
@@ -302,18 +284,16 @@ MainWindow
           margin-top: 2
           border-radius: 1
           
-        Label
+        Label-13px-Bold
           text: "MISSION LOG"
-          font: verdana-14px-bold
           color: #ffffff
           anchors.verticalCenter: iconLog.verticalCenter
           anchors.left: iconLog.right
           margin-left: 10
           
-        Label
+        Label-13px-Bold
           id: totalCompleted
           text: "TOTAL COMPLETED: 342"
-          font: verdana-9px-bold
           color: #555555
           anchors.verticalCenter: iconLog.verticalCenter
           anchors.right: parent.right
@@ -345,17 +325,15 @@ MainWindow
         margin-top: 2
         border-radius: 1
         
-      Label
+      Label-16px-Bold 
         text: "COMBAT RECORD"
-        font: verdana-14px-bold
         color: #ffffff
         anchors.verticalCenter: combatHeaderIcon.verticalCenter
         anchors.left: combatHeaderIcon.right
         margin-left: 10
         
-      Label
+      Label-13px-Bold
         text: "SEASON 5"
-        font: verdana-10px-bold
         color: #555555
         anchors.verticalCenter: combatHeaderIcon.verticalCenter
         anchors.right: parent.right
@@ -379,10 +357,9 @@ MainWindow
         anchors.right: parent.right
         margin-top: 25
         
-        Label
+        Label-20px-Bold
           id: title
           text: "RECENT ENCOUNTERS"
-          font: verdana-10px-bold
           color: #555555
           anchors.centerIn: parent
           
@@ -437,17 +414,15 @@ MainWindow
           type: horizontalBox
           spacing: 15
 
-      Label
+      Label-13px-Bold
         text: "BINGO BOOK"
-        font: verdana-12px-bold
         color: #ff5555
         anchors.top: betrayalActions.bottom
         anchors.left: parent.left
         margin-top: 25
 
-      Label
+      Label-13px-Bold
         text: "FILTER: S-RANK"
-        font: verdana-10px-bold
         color: #ff5555
         anchors.verticalCenter: prev.verticalCenter
         anchors.right: parent.right
@@ -490,17 +465,15 @@ MainWindow
           type: horizontalBox
           spacing: 15
           
-      Label
+      Label-13px-Bold
         text: "HISTORY LOG"
-        font: verdana-12px-bold
         color: #ffffff
         anchors.top: bankActions.bottom
         anchors.left: parent.left
         margin-top: 25
         
-      Label
+      Label-13px-Bold
         text: "FILTER"
-        font: verdana-10px-bold
         color: #1fbf6e
         anchors.verticalCenter: prev.verticalCenter
         anchors.right: parent.right
@@ -552,17 +525,15 @@ ProfileAffinityPanel < Panel
     anchors.left: parent.left
     anchors.top: parent.top
     
-  Label
+  Label-13px-Bold
     id: name
-    font: verdana-11px-bold
     color: #cccccc
     anchors.left: icon.right
     anchors.top: parent.top
     margin-left: 8
     
-  Label
+  Label-13px-Bold
     id: value
-    font: verdana-10px-bold
     anchors.right: parent.right
     anchors.top: parent.top
     
@@ -598,27 +569,24 @@ ProfileFactionPanel < Panel
     border-radius: 12
     padding: 4
     
-  Label
+  Label-13px-Bold
     id: name
-    font: verdana-11px-bold
     color: #ffffff
     anchors.top: parent.top
     anchors.left: icon.right
     margin-left: 10
     margin-top: 2
     
-  Label
+  Label-13px-Bold
     id: desc
-    font: verdana-9px-bold
     color: #555555
     anchors.top: name.bottom
     anchors.left: icon.right
     margin-left: 10
     margin-top: 2
     
-  Label
+  Label-13px-Bold
     id: status
-    font: verdana-9px-bold
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
     padding: 4 8
@@ -635,17 +603,15 @@ ProfileLineagePanel < Panel
     anchors.verticalCenter: parent.verticalCenter
     image-color: #ff5555
     
-  Label
+  Label-13px-Bold
     id: label
-    font: verdana-10px-bold
     color: #aaaaaa
     anchors.left: icon.right
     anchors.verticalCenter: parent.verticalCenter
     margin-left: 8
     
-  Label
+  Label-13px-Bold
     id: value
-    font: verdana-11px-bold
     color: #ffffff
     anchors.left: label.right
     anchors.verticalCenter: parent.verticalCenter
@@ -669,16 +635,14 @@ CombatStatCard < Panel
 
   Label
     id: title
-    font: verdana-9px-bold
     color: #888888
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
     margin-top: 15
     text-align: center
 
-  Label
+  Label-20px-Bold
     id: value
-    font: verdana-20px-bold
     color: #ffffff
     anchors.centerIn: parent
     margin-top: 5
@@ -721,26 +685,23 @@ CombatMatchPanel < Panel
     border-radius: 4
     background-color: #15221a
     
-    Label
+    Label-13px-Bold
       id: levelTitle
       text: "LVL"
-      font: verdana-9px-bold
       color: #1fbf6e
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 4
       
-    Label
+    Label-13px-Bold
       id: levelValue
       text: "45"
-      font: verdana-12px-bold
       color: #ffffff
       anchors.centerIn: parent
       margin-top: 5
 
   Label
     id: name
-    font: verdana-11px-bold
     color: #ffffff
     anchors.top: parent.top
     anchors.left: levelBox.right
@@ -749,7 +710,6 @@ CombatMatchPanel < Panel
 
   Label
     id: location
-    font: verdana-9px-bold
     color: #888888
     anchors.top: name.bottom
     anchors.left: levelBox.right
@@ -759,7 +719,6 @@ CombatMatchPanel < Panel
   Label
     id: outcomeLabel
     text: "VICTORY"
-    font: verdana-10px-bold
     color: #1fbf6e
     anchors.top: parent.top
     anchors.right: parent.right
@@ -769,7 +728,6 @@ CombatMatchPanel < Panel
   Label
     id: timeLabel
     text: "2m ago"
-    font: verdana-9px-bold
     color: #888888
     anchors.top: outcomeLabel.bottom
     anchors.right: parent.right
@@ -778,7 +736,6 @@ CombatMatchPanel < Panel
 
   Label
     id: time
-    font: verdana-9px-bold
     color: #555555
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
@@ -817,27 +774,24 @@ FactionRelationCard < Panel
     anchors.centerIn: iconBg
     image-color: #ffffff
 
-  Label
+  Label-13px-Bold
     id: name
-    font: verdana-11px-bold
     color: #ffffff
     anchors.top: parent.top
     anchors.left: iconBg.right
     margin-left: 12
     margin-top: 12
 
-  Label
+  Label-13px-Bold
     id: details
-    font: verdana-9px-bold
     color: #888888
     anchors.top: name.bottom
     anchors.left: iconBg.right
     margin-left: 12
     margin-top: 2
 
-  Label
+  Label-13px-Bold
     id: status
-    font: verdana-9px-bold
     padding: 2 6
     border-radius: 3
     anchors.top: parent.top
@@ -846,9 +800,8 @@ FactionRelationCard < Panel
     margin-top: 12
     text-align: center
 
-  Label
+  Label-13px-Bold
     id: sideNote
-    font: verdana-9px-bold
     color: #555555
     anchors.bottom: parent.bottom
     anchors.right: parent.right
@@ -878,9 +831,8 @@ LineageCard < Panel
     size: 24 24
     anchors.centerIn: iconBg
     
-  Label
+  Label-13px-Bold
     id: type
-    font: verdana-9px-bold
     color: #ff5555
     anchors.top: parent.top
     anchors.left: iconBg.right
@@ -888,18 +840,16 @@ LineageCard < Panel
     margin-top: 15
     text-transform: uppercase
 
-  Label
+  Label-13px-Bold
     id: name
-    font: verdana-14px-bold
     color: #ffffff
     anchors.top: type.bottom
     anchors.left: iconBg.right
     margin-left: 15
     margin-top: 2
 
-  Label
+  Label-13px-Bold
     id: bonus
-    font: verdana-9px-bold
     color: #888888
     anchors.top: name.bottom
     anchors.left: iconBg.right
@@ -909,7 +859,7 @@ LineageCard < Panel
   UIWidget
     id: arrow
     size: 16 16
-    image-source: /images/game/icons/icon_arrow
+    image-source: /images/game/profile/bank/icon_arrow
     image-color: #555555
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
@@ -937,9 +887,8 @@ BankActionButton < UIWidget
     size: 16 16
     anchors.centerIn: iconBg
     
-  Label
+  Label-13px-Bold
     id: text
-    font: verdana-11px-bold
     color: #ffffff
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter
@@ -966,35 +915,31 @@ BankTransactionCard < Panel
     size: 16 16
     anchors.centerIn: iconBg
     
-  Label
+  Label-13px-Bold
     id: title
-    font: verdana-11px-bold
     color: #ffffff
     anchors.top: parent.top
     anchors.left: iconBg.right
     margin-left: 15
     margin-top: 8
     
-  Label
+  Label-13px-Bold
     id: date
-    font: verdana-10px-bold
     color: #888888
     anchors.bottom: parent.bottom
     anchors.left: iconBg.right
     margin-left: 15
     margin-bottom: 8
     
-  Label
+  Label-13px-Bold
     id: amount
-    font: verdana-12px-bold
     color: #ffffff
     anchors.top: parent.top
     anchors.right: parent.right
     margin-top: 8
     
-  Label
+  Label-13px-Bold
     id: detail
-    font: verdana-9px-bold
     color: #555555
     anchors.bottom: parent.bottom
     anchors.right: parent.right
@@ -1017,26 +962,23 @@ BingoBookCard < UIWidget
     border-width: 1
     border-color: #1f2b24
     
-  Label
+  Label-13px-Bold
     id: name
-    font: verdana-11px-bold
     color: #ffffff
     anchors.top: avatar.top
     anchors.left: avatar.right
     margin-left: 15
     
-  Label
+  Label-13px-Bold
     id: rank
-    font: verdana-10px-bold
     color: #ff5555
     anchors.top: name.bottom
     anchors.left: avatar.right
     margin-left: 15
     margin-top: 2
     
-  Label
+  Label-13px-Bold
     id: bounty
-    font: verdana-10px-bold
     color: #e5bc6d
     anchors.bottom: avatar.bottom
     anchors.left: avatar.right
@@ -1047,7 +989,6 @@ BingoBookCard < UIWidget
     width: 60
     height: 24
     text: "TRACK"
-    font: verdana-9px-bold
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
     margin-right: 15

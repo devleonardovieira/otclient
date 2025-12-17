@@ -8,43 +8,54 @@ Label < UILabel
 GameLabel < UILabel
   font: righteous-12px-rounded-solid
   color: #dfdfdf
+  text-auto-resize: true
 
 Label-12px-Regular < UILabel
   font: DMSans-12px-regular
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-13px-Bold < UILabel
   font: DMSans-13px-bold
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-13px-Regular < UILabel
   font: DMSans-13px-regular
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-14px-Medium < UILabel
   font: DMSans-14px-medium
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-14px-Regular < UILabel
   font: DMSans-14px-regular
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-16px-Bold < UILabel
   font: DMSans-16px-bold
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-16px-Regular < UILabel
   font: DMSans-16px-regular
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-20px-Bold < UILabel
   font: DMSans-20px-bold
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-26px-Bold < UILabel
   font: DMSans-26px-bold
   color: #FFFFFF
+  text-auto-resize: true
 
 Label-30px-Bold < UILabel
   font: DMSans-30px-bold
   color: #FFFFFF
+  text-auto-resize: true

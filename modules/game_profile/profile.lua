@@ -85,9 +85,9 @@ local profileData = {
   },
   bankData = {
         actions = {
-            {text = "Deposit", icon = "/images/game/profile/bank/icon_down", color = "#1fbf6e"},
-            {text = "Withdraw", icon = "/images/game/profile/bank/icon_up", color = "#ff5555"},
-            {text = "Transfer", icon = "/images/game/profile/bank/icon_exchange", color = "#55aaff"}
+            {text = "Deposit", icon = "/images/profile/bank/icon_down", color = "#1fbf6e"},
+            {text = "Withdraw", icon = "/images/profile/bank/icon_up", color = "#ff5555"},
+            {text = "Transfer", icon = "/images/profile/bank/icon_exchange", color = "#55aaff"}
         },
         transactions = {
             {title = "Mission Reward", date = "Today, 10:42 AM", amount = "+ ¥25,000", detail = "S-RANK #422", type = "income"},
@@ -99,9 +99,9 @@ local profileData = {
     },
     betrayalData = {
         actions = {
-            {text = "Place Bounty", icon = "/images/game/icons/icon_skull", color = "#ff5555"},
-            {text = "My Bounties", icon = "/images/game/icons/icon_list", color = "#e5bc6d"},
-            {text = "Top Hunters", icon = "/images/game/icons/icon_trophy", color = "#ffffff"}
+            {text = "Place Bounty", icon = "/images/icons/icon_skull", color = "#ff5555"},
+            {text = "My Bounties", icon = "/images/icons/icon_list", color = "#e5bc6d"},
+            {text = "Top Hunters", icon = "/images/icons/icon_trophy", color = "#ffffff"}
         },
         bingoBook = {
             {name = "Kisame Hoshigaki", rank = "S-Rank Criminal", bounty = "¥45,000,000", status = "Alive"},
