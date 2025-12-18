@@ -496,3 +496,114 @@ function getHighlightedText(text, color)
 
 	return tmpData
 end
+function formatAmount(amount)
+	if amount < 10000 then
+		return amount
+	end
+
+	local str
+
+	if amount >= 1000000 then
+		str = string.format("%.1fkk", amount / 1000000)
+	elseif amount >= 1000 then
+		str = string.format("%.1fk", amount / 1000)
+	end
+
+	return str:gsub("%.0", "")
+end
+
+function formatMoney(money)
+	if money < 1 then
+		return 0
+	end
+
+	local moneyMap = {
+		{
+			worth = 1e+17,
+			name = "BB"
+		},
+		{
+			worth = 100000000000000,
+			name = "B"
+		},
+		{
+			worth = 100000000000,
+			name = "KKK"
+		},
+		{
+			worth = 100000000,
+			name = "KK"
+		},
+		{
+			worth = 100000,
+			name = "K"
+		},
+		{
+			worth = 100,
+			name = "D"
+		},
+		{
+			worth = 1,
+			name = "C"
+		}
+	}
+	local formatMoney = {}
+	local value = 0
+
+	for k, v in pairs(moneyMap) do
+		value = math.floor(money / v.worth)
+		money = money - value * v.worth
+
+		while value > 0 do
+			formatMoney[#formatMoney + 1] = math.min(999, value) .. v.name
+			value = value - math.min(999, value)
+		end
+	end
+
+	return table.concat(formatMoney, " ")
+end
+
+function formatTime(seconds)
+	local hour = math.floor(seconds / 3600)
+	local minute = math.floor((seconds - hour * 3600) / 60)
+	local second = math.floor(seconds % 60)
+
+	return string.format("%0.2d:%0.2d:%0.2d", hour, minute, second)
+end
+
+function formatCooldown(cooldown)
+	local result = {}
+	local units = {
+		{
+			86400,
+			"d"
+		},
+		{
+			3600,
+			"h"
+		},
+		{
+			60,
+			"m"
+		},
+		{
+			1,
+			"s"
+		}
+	}
+
+	for i, v in ipairs(units) do
+		local value, symbol = v[1], v[2]
+		local amount = math.floor(cooldown / value)
+
+		cooldown = cooldown % value
+
+		if amount > 0 then
+			table.insert(result, amount .. symbol)
+		end
+	end
+
+	local formatted = table.concat(result, " ")
+
+	return formatted ~= "" and formatted or "0s"
+end

@@ -1,0 +1,160 @@
+MarketSellWindow < MainHeadlessWindow
+  size: 322 432
+  !text: tr('Sell item')
+
+  Label-13px-Regular
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    text-auto-resize: true
+    !text: tr('Amount')
+
+  UIItem
+    id: item
+    size: 32 32
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    font: verdana-11px-rounded
+    margin-top: 32
+    virtual: true
+
+  HorizontalScrollBar
+    id: count
+    anchors.left: prev.right
+    anchors.right: parent.right
+    anchors.verticalCenter: prev.verticalCenter
+    margin: 4 14 0 14
+    focusable: false
+    show-value: true
+    minimum: 0
+    maximum: 100
+    step: 1
+    @onConfig: |
+      self.decrementButton:show()
+      self.incrementButton:show()
+      self.valueLabel:show()
+
+  Label-13px-Regular
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: prev.right
+    text-auto-resize: true
+    margin-top: 18
+    !text: tr('Expira')
+
+  ComboBox
+    id: expire
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    anchors.right: parent.right
+    margin-top: 6
+    @onSetup: |
+      self:addOption("12 horas", 1)
+      self:addOption("1 dia", 2)
+      self:addOption("2 dias", 3)
+      self:addOption("4 dias", 4)
+
+  Label-13px-Regular
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: prev.right
+    text-auto-resize: true
+    margin-top: 8
+    !text: tr('Price per unit')
+
+  TextEdit
+    id: price
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    anchors.right: parent.right
+    margin-top: 8
+    &value: 100
+    @onSetup: self:setValidCharacters('0123456789')
+    @getValue: function(self) return self.value end
+    @onTextChange: |
+      function(self, text)
+        local number = tonumber(text) or 1
+        if number > 999999999 then
+          self:setText(999999999)
+          return
+        end
+        self.value = number * 100
+        signalcall(self.onValueChange, self, self.value)
+      end
+
+  Label-14px-Medium
+    id: lblPriceUnit
+    anchors.top: prev.bottom
+    anchors.left: prev.left
+    text-auto-resize: true
+    margin-top: 10
+    !text: tr('Price per unit')
+    color: #808080
+
+  Label-14px-Regular
+    id: priceUnit
+    anchors.top: prev.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    !text: 123
+
+  Label-14px-Medium
+    anchors.top: lblPriceUnit.bottom
+    anchors.left: lblPriceUnit.left
+    text-auto-resize: true
+    margin-top: 2
+    !text: tr('Total price')
+    color: #808080
+
+  Label-14px-Regular
+    id: totalPrice
+    anchors.top: prev.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    !text: 123
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    text-auto-resize: true
+    margin-top: 2
+    !text: tr('Fee')
+    color: #808080
+
+  Label-14px-Regular
+    id: fee
+    anchors.top: prev.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    !text: 123
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    text-auto-resize: true
+    text-auto-resize: true
+    margin-top: 2
+    !text: tr('Expected profit')
+    color: #808080
+
+  Label-14px-Regular
+    id: expectedProfit
+    anchors.top: prev.top
+    anchors.right: parent.right
+    text-auto-resize: true
+    !text: 123
+
+  ButtonRedSmall
+    id: cancel
+    anchors.left: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-left: 5
+    !text: tr('Cancel')
+
+  ButtonBlueSmall
+    id: confirm
+    anchors.right: parent.horizontalCenter
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    margin-right: 5
+    !text: tr('Sell')

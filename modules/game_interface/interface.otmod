@@ -38,5 +38,6 @@ Module
     - game_viplist
     - game_shop
     - game_profile
+    - game_market
   @onLoad: init()
   @onUnload: terminate()

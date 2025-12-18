@@ -1,0 +1,266 @@
+PagePanel < Panel
+  id: pagePanel
+  size: 180 20
+
+  ButtonFirst
+    id: firstButton
+    anchors.verticalCenter: next.verticalCenter
+    anchors.right: next.left
+    @onClick: modules.game_market.updatePagination(self)
+
+  ButtonPrevious
+    id: prevButton
+    anchors.verticalCenter: next.verticalCenter
+    anchors.right: next.left
+    margin-right: 4
+    @onClick: modules.game_market.updatePagination(self)
+
+  Label-16px-Regular
+    id: page
+    anchors.centerIn: parent
+    text-align: center
+    text-auto-resize: true
+    !text: tr('01 de 01')
+
+  ButtonNext
+    id: nextButton
+    anchors.verticalCenter: prev.verticalCenter
+    anchors.left: prev.right
+    margin-left: 4
+    @onClick: modules.game_market.updatePagination(self)
+
+  ButtonLast
+    id: lastButton
+    anchors.verticalCenter: prev.verticalCenter
+    anchors.left: prev.right
+    @onClick: modules.game_market.updatePagination(self)
+
+MarketSortButton < UIButton
+  height: 25
+  anchors.top: parent.top
+  anchors.left: parent.left
+  icon-source: /images/game/market/sort
+  icon-clip: 0 0 18 15
+  icon-align: left
+  text-align: center
+  text-offset: 12 0
+  color: #FFE255
+  font: DMSans-14px-medium
+  focusable: true
+  change-cursor-image: true
+  cursor: pointer
+  @onClick: |
+    if os.time() > self.timer then
+      self:setOn(not self:isOn())
+    end
+    modules.game_market.refreshOffers()
+
+  $!first:
+    anchors.left: prev.right
+
+  $!focus:
+    background-color: alpha
+    icon-color: alpha
+
+  $focus:
+    background-color: #ffffff10
+    icon-color: white
+
+  $!on:
+    icon-clip: 18 0 18 15
+
+  $on:
+    icon-clip: 0 0 18 15
+
+MarketOfferHeader < Panel
+  height: 28
+  background-color: #212121
+  @onChildFocusChange: |
+    function(self, focusChild, prevChild)
+      focusChild.timer = os.time() + 0.9
+      focusChild:setOn(false)
+    end
+
+  MarketSortButton
+    id: id
+    width: 48
+    !text: tr('#')
+
+  MarketSortButton
+    id: itemId
+    width: 55
+    !text: tr('Item')
+
+  MarketSortButton
+    id: name
+    width: 165
+    !text: tr('Name')
+
+  MarketSortButton
+    id: sellerId
+    width: 152
+    !text: tr('Seller')
+
+  MarketSortButton
+    id: count
+    width: 100
+    !text: tr('Amount')
+
+  MarketSortButton
+    id: price
+    width: 145
+    !text: tr('Unit Price')
+
+MarketOffer < Panel
+  height: 32
+  background-color: #323232
+
+  $alternate:
+    background-color: #212121
+
+  $!focus:
+    border-color: alpha
+
+  $focus:
+    background-color: #057FFA
+
+  Label-14px-Medium
+    id: idx
+    width: 48
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    text-align: center
+    text-auto-resize: false
+
+  UIItem
+    id: item
+    size: 32 32
+    anchors.left: prev.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 11
+    font: verdana-11px-rounded
+    virtual: true
+
+  Label-14px-Medium
+    id: name
+    width: 165
+    anchors.left: prev.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 12
+    text-align: center
+    text-auto-resize: false
+
+  Label-14px-Medium
+    id: playerName
+    width: 152
+    anchors.left: prev.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-align: center
+    text-auto-resize: false
+
+  Label-14px-Medium
+    id: count
+    width: 100
+    anchors.left: prev.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-align: center
+    text-auto-resize: false
+
+  Label-14px-Medium
+    id: price
+    width: 145
+    anchors.left: prev.right
+    anchors.verticalCenter: parent.verticalCenter
+    text-align: center
+    text-auto-resize: false
+
+Panel
+  id: offersPanel
+
+  Label-13px-Bold
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 16
+    text-auto-resize: true
+    !text: tr('Category')
+
+  ComboBoxGame
+    id: categoryList
+    width: 130
+    anchors.left: prev.right
+    anchors.verticalCenter: prev.verticalCenter
+    margin-left: 10
+    @onOptionChange: modules.game_market.refreshOffers(1)
+
+  TextEdit
+    id: searchText
+    anchors.top: prev.top
+    anchors.right: parent.right
+    !placeholder: tr('Search')
+    &delay: 0
+    @onKeyDown: |
+      function(self, keyCode, keyboardModifiers)
+        if os.time() > self.delay and keyboardModifiers == KeyboardNoModifier and keyCode == KeyEnter and self:getText():trim():len() > 0 then
+          self.delay = os.time() + 1.4
+          modules.game_market.refreshOffers(1)
+        end
+      end
+
+  UIButton
+    size: 32 33
+    anchors.right: prev.right
+    anchors.verticalCenter: prev.verticalCenter
+    image-source: /images/game/market/icone
+    image-clip: 31 1 32 33
+    image-color: #A1A1A1
+    change-cursor-image: true
+    cursor: pointer
+    &delay: 0
+    @onClick: |
+      if os.time() > self.delay and self:getParent().searchText:getText():trim():len() > 0 then
+        self.delay = os.time() + 1.4
+        modules.game_market.refreshOffers(1)
+      end
+
+    $hover:
+      image-color: white
+
+    $pressed:
+      image-color: #a1a1a1
+
+  MarketOfferHeader
+    id: headerOffer
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 14
+
+  TextList
+    id: offerList
+    anchors.top: next.top
+    anchors.bottom: next.bottom
+    anchors.left: parent.left
+    anchors.right: next.left
+    vertical-scrollbar: scroll
+    background-color: alpha
+    border-width: 0
+
+  VerticalScrollBar
+    id: scroll
+    anchors.top: headerOffer.bottom
+    anchors.bottom: next.top
+    anchors.right: parent.right
+    margin-bottom: 22
+    step: 14
+    pixels-scroll: true
+
+  PagePanel
+    anchors.verticalCenter: next.verticalCenter
+    anchors.left: parent.left
+
+  ButtonBlueSmall
+    width: 206
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    !text: tr('Buy')
+    @onClick: modules.game_market.openAcceptWindow()

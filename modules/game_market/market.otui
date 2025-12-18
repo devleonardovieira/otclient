@@ -1,0 +1,84 @@
+MarketTabBar < TabBar
+MarketTabBarPanel < TabBarPanel
+MarketTabBarButton < ButtonBlueSmall
+  anchors.top: parent.top
+  anchors.left: parent.left
+  image-color: #69B2FC
+  padding: 46
+  icon-align: left
+  icon-offset: 10 0
+
+  $!first:
+    anchors.left: prev.right
+    margin-left: 6
+
+  $hover !checked:
+    //icon-color: white
+
+  $checked:
+    image-color: #0466C8
+
+  $on !checked:
+    //icon-color: #f55e5e
+
+MarketDragArea < PanelRoundedSolid
+  id: dragArea
+  margin: -15
+  visible: false
+  image-color: #000000E6 
+  phantom: false
+
+  UIWidget
+    anchors.centerIn: parent
+    image-source: /images/game/market/icon_sell
+
+  Label-14px-Medium
+    anchors.top: prev.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 12
+    !text: tr('Drop your item here to sell it')
+    text-auto-resize: true
+
+MainWindow
+  id: marketWindow
+  size: 707 586
+  visible: false
+  @onClose: modules.game_market.onGameEnd()
+  @onEscape: modules.game_market.onGameEnd()
+  !text: tr('Market')
+
+  MarketTabBar
+    id: mainTabBar
+    size: 200 40
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin: 18 0
+
+  UIButton
+    id: refreshOffers
+    size: 32 32
+    anchors.verticalCenter: prev.verticalCenter
+    anchors.right: parent.right
+    image-source: /images/game/market/icon_refresh
+    change-cursor-image: true
+    cursor: pointer
+    &delay: 0
+    @onClick: |
+      function(self)
+        if os.time() > self.delay then
+          self.delay = os.time() + 2.2
+          modules.game_market.refreshOffers()
+        end
+      end
+
+  Panel
+    id: mainTabContent
+    anchors.top: mainTabBar.bottom
+    anchors.left: mainTabBar.left
+    anchors.right: mainTabBar.right
+    anchors.bottom: parent.bottom
+    margin: 14 0 4 0
+
+  MarketDragArea
+    anchors.fill: parent

@@ -4,7 +4,7 @@ profileController = Controller:new()
 
 local profileData = {
   name = "Kenji Zero",
-  level = 42,
+  level = 999,
   rank = "SHADOW WALKER",
   title = "Master Assassin • Night Operative",
   balance = {
@@ -214,7 +214,7 @@ function profileController:refreshUI()
       if portrait then
           local localPlayer = g_game.getLocalPlayer()
           if localPlayer then
-            portrait:setCreature(localPlayer)
+           --[[  portrait:setCreature(localPlayer) ]]
           end
       end
   end

@@ -4,6 +4,7 @@ ProfileTabButton < UIWidget
   border-width: 1
   border-color: #1f2b24
   border-radius: 6
+  margin-top: -4
   
   $checked:
     background-color: #15221a
@@ -243,32 +244,30 @@ MainWindow
     anchors.right: parent.right
     margin-top: 40
     
-    UICreature
+    UIWidget
       id: portrait
-      size: 72 72
       anchors.top: parent.top
       anchors.horizontalCenter: parent.horizontalCenter
+      image-source: /images/profile/perfil/profession_icon_background
       margin-top: 20
-      padding: 4
-      background-color: #000000
-      border-width: 2
-      border-color: #1fbf6e
-      border-radius: 36
+      
+      UIWidget
+        anchors.fill: parent
+        image-source: /images/profile/perfil/level
+        phantom: true
 
     Label-16px-Bold
       id: levelBadge
-      text: "42"
+      text: "999"
       color: #ffffff
-      background-color: #1fbf6e
-      size: 20 20
-      border-radius: 10
+      icon-source: /images/profile/archetypeLock
       text-align: center
       anchors.bottom: portrait.bottom
       anchors.right: portrait.right
-      margin-bottom: 0
-      margin-right: 0
+      margin-bottom: -5
+      margin-right: -5
 
-    Label-14px-Regular
+    Label-16px-Bold
       id: nameLabel
       text: "Kenji Zero"
       color: #ffffff
@@ -287,6 +286,9 @@ MainWindow
       anchors.horizontalCenter: parent.horizontalCenter
       text-auto-resize: true
       text-align: center
+      icon-source: /images/profile/icon_edit
+      icon-align: right
+      icon-offset: 30 -6
 
     Label-14px-Regular
       id: titleLabel
@@ -303,7 +305,7 @@ MainWindow
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 15
-    margin-left: 10
+    margin-left: 20
     margin-right: 10
     layout:
       type: horizontalBox

@@ -1,0 +1,27 @@
+MarketHistoric < Panel
+  height: 26
+
+  Label-14px-Regular
+    id: description
+    anchors.fill: parent
+    text-offset: 4 4
+
+Panel
+  id: historicPanel
+
+  TextList
+    id: historicList
+    anchors.top: next.top
+    anchors.bottom: next.bottom
+    anchors.left: parent.left
+    anchors.right: next.left
+    vertical-scrollbar: scroll
+
+  VerticalScrollBar
+    id: scroll
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 14
+    step: 14
+    pixels-scroll: true
