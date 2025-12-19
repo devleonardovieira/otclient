@@ -145,3 +145,14 @@ AttachedEffectManager.register(11, 'Bat', 307, ThingCategoryCreature, {
     offset = { 0, 0 },
     bounce = { 20, 20, 2000 }
 })
+
+-- Casting System
+AttachedEffectManager.register(100, 'Casting Start', 56, ThingCategoryEffect, {
+    hideOwner = true,
+    loop = -1
+})
+
+AttachedEffectManager.register(101, 'Casting Finish', 6, ThingCategoryEffect, {
+    duration = 1000,
+    hideOwner = false
+})

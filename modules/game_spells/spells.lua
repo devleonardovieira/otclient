@@ -39,11 +39,19 @@ function g_spells.cleanupSelection()
     
     -- Set to nil immediately to prevent re-entrancy
     currentSelection = nil
+
+    -- 0. Cancel Timeout Event
+    if s.timeoutEvent then
+        removeEvent(s.timeoutEvent)
+        s.timeoutEvent = nil
+    end
     
     -- 1. Cleanup Preview Widgets
     if s.previewWidgets then
         for _, widget in pairs(s.previewWidgets) do
-            widget:destroy()
+            if widget and not widget:isDestroyed() then
+                widget:destroy()
+            end
         end
         s.previewWidgets = nil
     end
@@ -69,10 +77,37 @@ function g_spells.cleanupSelection()
     if s.onCancel and not s.success then
         pcall(s.onCancel)
     end
+    
+    -- 4. Detach Casting Effect (Fail-safe)
+    if s.castingEffect then
+        local player = g_game.getLocalPlayer()
+        if player then
+            -- Try to detach even if modules are unloaded, provided the method exists
+            if player.detachEffectById then
+                player:detachEffectById(s.castingEffect)
+            end
+        end
+    end
 end
 
--- Alias for backward compatibility
-g_spells.cancelSelection = g_spells.cleanupSelection
+-- Explicit cancel action (sends opcode to server)
+function g_spells.cancelSelection()
+    -- Send cancel opcode if we have an active selection
+    if currentSelection then
+        local protocol = g_game.getProtocolGame()
+        if protocol then
+             local data = {action = "cancel"}
+             if protocol.sendExtendedJSONOpcode then
+                  protocol:sendExtendedJSONOpcode(50, data)
+             else
+                  protocol:sendExtendedOpcode(50, json.encode(data))
+             end
+        end
+    end
+    
+    -- Proceed with local cleanup
+    g_spells.cleanupSelection()
+end
 
 function g_spells.requestPosition(options)
     -- Enforce strict table parameter
@@ -104,6 +139,7 @@ function g_spells.requestPosition(options)
         options = options,
         callback = options.callback,
         onCancel = options.onCancel,
+        castingEffect = options.castingEffect, -- Store for cleanup
         previewWidgets = {},
         lastTilePos = nil, -- Optimization: cache last tile position
         cache = {
@@ -112,6 +148,62 @@ function g_spells.requestPosition(options)
             cameraPos = nil
         }
     }
+    
+    -- Auto-Cancel Timeout (30 seconds)
+    selectionState.timeoutEvent = scheduleEvent(function()
+        if currentSelection == selectionState then
+             g_spells.cancelSelection()
+        end
+    end, 30000)
+    
+    -- Handle Casting Effect (Local Attach)
+    if options.castingEffect then
+        if g_attachedEffects and AttachedEffectManager then
+            local player = g_game.getLocalPlayer()
+            if player then
+                local effectId = options.castingEffect
+                
+                -- If castingEffect is a table (dynamic config from server)
+                if type(options.castingEffect) == "table" then
+                    local config = options.castingEffect
+                    -- Unique ID generation to prevent collisions
+                    -- Base: 5000 + (Time % 10000) + Random(100)
+                    local tempId = 5000 + (g_clock.millis() % 10000) + math.random(1, 100)
+                    
+                    -- Determine Category
+                    local category = ThingCategoryEffect
+                    if config.type == "outfit" then
+                        category = ThingCategoryCreature
+                    elseif config.type == "item" then
+                        category = ThingCategoryItem
+                    end
+                    
+                    -- Ensure category is valid (fallback if global constants are missing or nil)
+                    if not category then
+                        if config.type == "outfit" then category = 1 end -- ThingCategoryCreature
+                        if config.type == "item" then category = 2 end -- ThingCategoryItem
+                        if config.type == "effect" then category = 3 end -- ThingCategoryEffect
+                    end
+                    
+                    -- Register/Update the dynamic effect
+                    AttachedEffectManager.register(tempId, "DynamicCasting", config.thingId or 1, category, config)
+                    
+                    effectId = tempId
+                    
+                    -- Update selection state to point to the temp ID for cleanup
+                    selectionState.castingEffect = tempId
+                end
+                
+                local effect = g_attachedEffects.getById(effectId)
+                if effect then
+                    player:attachEffect(effect)
+                end
+            end
+        else
+            if not g_attachedEffects then g_logger.error("Spells: g_attachedEffects is nil") end
+            if not AttachedEffectManager then g_logger.error("Spells: AttachedEffectManager is nil (Check game_attachedeffects dependency)") end
+        end
+    end
     
     -- 4. Setup Preview (Asset-Driven)
     if options.asset then
@@ -140,16 +232,30 @@ function g_spells.requestPosition(options)
             
             -- OPTIMIZATION: Only recalculate if tile changed
             local centerPos = centerTile:getPosition()
+            local cache = selectionState.cache
+            
+            -- Invalidate mapRect cache if window size changed
+            local root = modules.game_interface.getRootPanel()
+            if root and cache.rootSize then
+                if root:getWidth() ~= cache.rootSize.width or root:getHeight() ~= cache.rootSize.height then
+                     cache.mapRect = nil -- Force recalcultion
+                     cache.tileSize = nil
+                     cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
+                end
+            elseif root then
+                cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
+            end
+
             if selectionState.lastTilePos and 
                selectionState.lastTilePos.x == centerPos.x and 
                selectionState.lastTilePos.y == centerPos.y and 
-               selectionState.lastTilePos.z == centerPos.z then
+               selectionState.lastTilePos.z == centerPos.z and
+               cache.mapRect ~= nil then -- Only skip if mapRect is valid
                 return
             end
             selectionState.lastTilePos = centerPos
 
             -- Calculate Metrics (Cached)
-            local cache = selectionState.cache
             local dimension = gameMapPanel:getVisibleDimension()
             local currentTileSize = gameMapPanel:getHeight() / dimension.height
             
@@ -266,7 +372,7 @@ function g_spells.requestPosition(options)
             end
             return true
         elseif mouseButton == MouseRightButton then
-            g_spells.cleanupSelection()
+            g_spells.cancelSelection()
             return true
         end
         return true
@@ -274,7 +380,7 @@ function g_spells.requestPosition(options)
     
     mouseGrabber.onKeyPress = function(widget, keyCode, keyboardModifiers)
         if keyCode == KeyEscape then
-            g_spells.cleanupSelection()
+            g_spells.cancelSelection()
             return true
         end
         
@@ -304,16 +410,15 @@ end
 function g_spells.sendCast(spellName, pos)
     local response = {
         action = "cast",
+        version = 2,
         spellName = spellName,
         position = {x = pos.x, y = pos.y, z = pos.z}
     }
     local protocol = g_game.getProtocolGame()
     if protocol then
-        if protocol.sendExtendedJSONOpcode then
-            protocol:sendExtendedJSONOpcode(50, response)
-        else
-            protocol:sendExtendedOpcode(50, json.encode(response))
-        end
+        -- Force standard sendExtendedOpcode (String) to ensure compatibility
+        -- Some server implementations struggle with auto-JSON opcodes
+        protocol:sendExtendedOpcode(50, json.encode(response))
     end
 end
 
@@ -338,6 +443,7 @@ function g_spells.onExtendedOpcode(protocol, opcode, buffer)
             asset = data.asset,
             tiles = data.tiles,
             range = data.range,
+            castingEffect = data.castingEffect, -- Pass through effect ID
             callback = function(pos)
                 g_spells.sendCast(data.spellName, pos)
             end

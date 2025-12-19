@@ -49,12 +49,22 @@ local executeConfig = function(attachedEffect, config)
         attachedEffect:setFade(config.fade[1], config.fade[2], config.fade[3] or 1000)
     end
 
-    if config.duration ~= nil and config.duration > 0 then
-        attachedEffect:setDuration(config.duration)
+    if config.duration ~= nil then
+        if config.duration > 0 then
+            attachedEffect:setDuration(config.duration)
+        else
+             -- Reset to default/infinite if <= 0
+             attachedEffect:setDuration(0)
+        end
     end
 
-    if config.loop ~= nil and config.loop > 0 then
-        attachedEffect:setLoop(config.loop)
+    if config.loop ~= nil then
+        if config.loop > 0 then
+            attachedEffect:setLoop(config.loop)
+        else
+            -- Reset to default/infinite if <= 0
+            attachedEffect:setLoop(0)
+        end
     end
 
     attachedEffect:setPermanent(type(config.permanent) ~= "boolean" or config.permanent)
@@ -199,3 +209,6 @@ AttachedEffectManager = {
         return ThingInvalidCategory, 0
     end
 }
+
+-- Export to global scope
+_G.AttachedEffectManager = AttachedEffectManager
