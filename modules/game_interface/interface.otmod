@@ -39,5 +39,6 @@ Module
     - game_shop
     - game_profile
     - game_market
+    - game_spells
   @onLoad: init()
   @onUnload: terminate()

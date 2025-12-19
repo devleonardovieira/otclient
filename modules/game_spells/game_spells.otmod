@@ -1,0 +1,10 @@
+Module
+  name: game_spells
+  description: Spell System
+  author: Me
+  website: 
+  scripts: [ spells ]
+  sandboxed: true
+  dependencies: [ game_interface ]
+  @onLoad: init()
+  @onUnload: terminate()
