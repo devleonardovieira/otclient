@@ -4,10 +4,22 @@ local currentSelection = nil
 
 function init()
     _G.g_spells = g_spells
+    if ProtocolGame and ProtocolGame.registerExtendedJSONOpcode then
+        ProtocolGame.registerExtendedJSONOpcode(50, g_spells.onExtendedOpcode)
+    else
+        ProtocolGame.registerExtendedOpcode(50, g_spells.onExtendedOpcode)
+    end
 end
 
 function terminate()
     g_spells.cancelSelection()
+    
+    if ProtocolGame and ProtocolGame.unregisterExtendedJSONOpcode then
+        ProtocolGame.unregisterExtendedJSONOpcode(50, g_spells.onExtendedOpcode)
+    else
+        ProtocolGame.unregisterExtendedOpcode(50, g_spells.onExtendedOpcode)
+    end
+    
     _G.g_spells = nil
     g_spells = nil
 end
@@ -64,7 +76,6 @@ end
 function g_spells.requestPosition(options)
     -- Enforce strict table parameter
     if type(options) ~= "table" then
-        perror("g_spells.requestPosition: options must be a table")
         return
     end
 
@@ -253,100 +264,58 @@ function g_spells.requestPosition(options)
     currentSelection = selectionState
 end
 
--- ========================================================
--- CONFIG & SPELL REGISTRY
--- ========================================================
-local SpellsConfig = {
-    ["exevo gran mas flam"] = {
-        asset = "/images/spell_assets/Lightning - 15 ft. radius - 8x8.png",
-        tiles = {width = 8, height = 8},
-        range = 7, -- Max cast distance
-        mana = 1100,
-        cooldown = 40000,
-        cast = "position" -- self | position | target
-    },
-    ["exevo vis hur"] = {
-        asset = "/images/spell_assets/Lightning - 15 ft. cone - 4x4.png",
-        tiles = {width = 4, height = 4},
-        range = 5,
-        mana = 170,
-        cooldown = 8000,
-        cast = "position"
-    },
-    ["exura vita"] = {
-        mana = 160,
-        cooldown = 1000,
-        cast = "self"
+function g_spells.sendCast(spellName, pos)
+    local response = {
+        action = "cast",
+        spellName = spellName,
+        position = {x = pos.x, y = pos.y, z = pos.z}
     }
-}
+    local protocol = g_game.getProtocolGame()
+    if protocol then
+        if protocol.sendExtendedJSONOpcode then
+            protocol:sendExtendedJSONOpcode(50, response)
+        else
+            protocol:sendExtendedOpcode(50, json.encode(response))
+        end
+    end
+end
 
 -- ========================================================
--- SPELL CONTROLLER (THE BRAIN)
+-- OPCODE HANDLER
+-- ========================================================
+function g_spells.onExtendedOpcode(protocol, opcode, buffer)
+    if opcode ~= 50 then return end
+
+    local data = buffer
+    if type(buffer) == 'string' then
+        local status, result = pcall(json.decode, buffer)
+        if not status or not result then
+            return
+        end
+        data = result
+    end
+    
+    if data.action == "request_position" then
+        local options = {
+            spellName = data.spellName,
+            asset = data.asset,
+            tiles = data.tiles,
+            range = data.range,
+            callback = function(pos)
+                g_spells.sendCast(data.spellName, pos)
+            end
+        }
+        g_spells.requestPosition(options)
+    end
+end
+
+-- ========================================================
+-- SPELL CONTROLLER (SIMPLIFIED)
 -- ========================================================
 SpellController = {}
 
 function SpellController.cast(spellName)
-    local spell = SpellsConfig[spellName]
-   --[[  if not spell then
-        g_game.talk(spellName) -- Fallback for unknown spells
-        return
-    end ]]
-
-    local player = g_game.getLocalPlayer()
-    if not player then return end
-
-    -- 1. Validate Mana (Client-side check)
-  --[[   if player:getMana() < spell.mana then
-        modules.game_textmessage.displayGameMessage(TextMessageCenterRed, "Not enough mana.")
-        return
-    end
- ]]
-    -- 2. Validate Cooldown (Client-side check)
-    -- This requires storing last cast time. For now, we skip or implement basic storage.
-    -- if isCooldown(spellName) then return end
-
-    -- 3. Decide Input Type based on Cast Mode
-    if spell.cast == "self" then
-        SpellController.execute(spellName, player:getPosition())
-    elseif spell.cast == "position" then
-        -- Request Mouse Position with Asset Preview
-        g_spells.requestPosition({
-            asset = spell.asset,
-            tiles = spell.tiles,
-            range = spell.range,
-            validate = function(pos, playerPos)
-                -- Custom validation logic (e.g., line of sight, range)
-                local dist = math.max(math.abs(playerPos.x - pos.x), math.abs(playerPos.y - pos.y))
-                local inRange = not spell.range or (dist <= spell.range)
-                local visible = true
-                if g_map.isSightClear and not g_map.isSightClear(playerPos, pos) then
-                    visible = false
-                end
-                return inRange and visible
-            end,
-            callback = function(pos)
-                SpellController.execute(spellName, pos)
-            end
-        })
-    elseif spell.cast == "instant_mouse" then 
-        -- Fallback if we want instant mouse cast without preview (just in case)
-        g_spells.requestPosition({
-            instant = true,
-            callback = function(pos)
-                SpellController.execute(spellName, pos)
-            end
-        })
-    end
-end
-
-function SpellController.execute(spellName, targetPos)
-    local spell = SpellsConfig[spellName]
-    
-    -- 1. Client Side Prediction: REMOVED EFFECTS as requested
-    
-    -- 2. Send Command to Server
+    -- Just send the words to the server. 
+    -- If the spell requires a target, the server will send an Opcode back.
     g_game.talk(spellName)
-    
-    -- 3. Trigger Cooldown (Visual only)
-    -- startCooldown(spellName)
 end
