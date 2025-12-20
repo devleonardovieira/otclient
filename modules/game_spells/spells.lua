@@ -1,6 +1,150 @@
 g_spells = {}
 
-local currentSelection = nil
+-- ========================================================
+-- UTILS
+-- ========================================================
+local function computeTileScreenRect(gameMapPanel, tilePos, tiles, cache)
+    if not gameMapPanel or not tilePos then return nil end
+
+    local tileSize = cache.tileSize
+    local mapRect = cache.mapRect
+    
+    -- Recalculate basic metrics if missing
+    if not tileSize or not mapRect then
+        local dimension = gameMapPanel:getVisibleDimension()
+        tileSize = gameMapPanel:getHeight() / dimension.height
+        mapRect = gameMapPanel:getRect()
+        
+        -- Write back to cache
+        cache.tileSize = tileSize
+        cache.mapRect = mapRect
+    end
+    
+    local cameraPos = cache.cameraPos
+    if not cameraPos then
+        if gameMapPanel.getCameraPosition then
+            cameraPos = gameMapPanel:getCameraPosition()
+        end
+        if not cameraPos then
+            local player = g_game.getLocalPlayer()
+            if player then cameraPos = player:getPosition() end
+        end
+    end
+    
+    if not cameraPos then return nil end
+
+    local screenCenterX = mapRect.x + (mapRect.width / 2)
+    local screenCenterY = mapRect.y + (mapRect.height / 2)
+    
+    local diffX = tilePos.x - cameraPos.x
+    local diffY = tilePos.y - cameraPos.y
+    
+    local baseX = screenCenterX + (diffX * tileSize) - (tileSize / 2)
+    local baseY = screenCenterY + (diffY * tileSize) - (tileSize / 2)
+    
+    local width = (tiles and tiles.width or 1) * tileSize
+    local height = (tiles and tiles.height or 1) * tileSize
+    
+    -- Center offset
+    local finalX = baseX + (tileSize / 2) - (width / 2)
+    local finalY = baseY + (tileSize / 2) - (height / 2)
+    
+    return { x = finalX, y = finalY, width = width, height = height }
+end
+
+-- ========================================================
+-- INPUT HELPER (Modal Manager)
+-- ========================================================
+function g_spells.captureInput(callbacks)
+    local mouseGrabber = modules.game_interface.getRootPanel():recursiveGetChildById('mouseGrabber')
+    if not mouseGrabber then return nil end
+    
+    local handle = {
+        mouseGrabber = mouseGrabber,
+        active = true,
+        prevKeyPress = mouseGrabber.onKeyPress,
+        mouseReleaseConnected = false,
+        mouseMoveConnected = false,
+        callbacks = callbacks
+    }
+    
+    -- Connect Mouse Release
+    if callbacks.onMouseRelease then
+        connect(mouseGrabber, { onMouseRelease = callbacks.onMouseRelease })
+        handle.mouseReleaseConnected = true
+    end
+    
+    -- Connect Mouse Move
+    if callbacks.onMouseMove then
+        connect(mouseGrabber, { onMouseMove = callbacks.onMouseMove })
+        handle.mouseMoveConnected = true
+    end
+    
+    -- Safe KeyPress Stack (Chain of Responsibility)
+    -- This ensures that if we are overwritten, we stay in the chain but become passive if released.
+    local prevKeyPress = handle.prevKeyPress
+    handle.proxyKeyPress = function(widget, keyCode, keyboardModifiers)
+        -- 1. If we are no longer active, pass through immediately (we are a "dead" node in the chain)
+        if not handle.active then
+            if prevKeyPress then
+                return prevKeyPress(widget, keyCode, keyboardModifiers)
+            end
+            return false
+        end
+        
+        -- 2. Try to handle it
+        if callbacks.onKeyPress then
+            if callbacks.onKeyPress(widget, keyCode, keyboardModifiers) then
+                return true
+            end
+        end
+        
+        -- 3. Pass to previous handler
+        if prevKeyPress then
+            return prevKeyPress(widget, keyCode, keyboardModifiers)
+        end
+        return false
+    end
+    
+    mouseGrabber.onKeyPress = handle.proxyKeyPress
+    
+    -- Grab
+    mouseGrabber:grabMouse()
+    mouseGrabber:grabKeyboard()
+    
+    return handle
+end
+
+function g_spells.releaseInput(handle)
+    if not handle or not handle.mouseGrabber then return end
+    
+    -- Mark as inactive (turns the proxy into a pass-through)
+    handle.active = false
+    
+    local mg = handle.mouseGrabber
+    
+    if handle.mouseReleaseConnected and handle.callbacks.onMouseRelease then
+        disconnect(mg, { onMouseRelease = handle.callbacks.onMouseRelease })
+    end
+    
+    if handle.mouseMoveConnected and handle.callbacks.onMouseMove then
+        disconnect(mg, { onMouseMove = handle.callbacks.onMouseMove })
+    end
+    
+    mg:ungrabMouse()
+    mg:ungrabKeyboard()
+    
+    -- Restore KeyPress Optimistically
+    -- If we are still the top handler, pop us off.
+    -- If we are NOT the top handler, we leave our "pass-through" proxy in the chain.
+    if mg.onKeyPress == handle.proxyKeyPress then
+        if handle.prevKeyPress then
+            mg.onKeyPress = handle.prevKeyPress
+        else
+            mg.onKeyPress = nil
+        end
+    end
+end
 
 function init()
     _G.g_spells = g_spells
@@ -10,11 +154,19 @@ function init()
         ProtocolGame.registerExtendedOpcode(50, g_spells.onExtendedOpcode)
     end
     
-    connect(g_game, { onGameEnd = g_spells.cleanupSelection })
+    connect(g_game, { onGameEnd = g_spells.onGameEnd })
+end
+
+function g_spells.onGameEnd()
+    g_spells.cleanupSelection()
+    g_spells.RegisteredEffects = {}
 end
 
 function terminate()
     g_spells.cleanupSelection()
+    
+    -- Clear Session Cache
+    g_spells.RegisteredEffects = nil
     
     if ProtocolGame and ProtocolGame.unregisterExtendedJSONOpcode then
         ProtocolGame.unregisterExtendedJSONOpcode(50, g_spells.onExtendedOpcode)
@@ -22,308 +174,146 @@ function terminate()
         ProtocolGame.unregisterExtendedOpcode(50, g_spells.onExtendedOpcode)
     end
     
-    disconnect(g_game, { onGameEnd = g_spells.cleanupSelection })
+    disconnect(g_game, { onGameEnd = g_spells.onGameEnd })
     
     _G.g_spells = nil
     g_spells = nil
 end
 
 -- ========================================================
--- SELECTION CONTROLLER (THE HAND)
+-- SELECTION CONTROLLER (Singleton)
 -- ========================================================
+local SelectionController = {
+    active = nil
+}
 
--- Unified cleanup function (safe to call anytime)
-function g_spells.cleanupSelection()
-    local s = currentSelection
-    if not s then return end
-    
-    -- Set to nil immediately to prevent re-entrancy
-    currentSelection = nil
-
-    -- 0. Cancel Timeout Event
-    if s.timeoutEvent then
-        removeEvent(s.timeoutEvent)
-        s.timeoutEvent = nil
-    end
-    
-    -- 1. Cleanup Preview Widgets
-    if s.previewWidgets then
-        for _, widget in pairs(s.previewWidgets) do
-            if widget and not widget:isDestroyed() then
-                widget:destroy()
-            end
-        end
-        s.previewWidgets = nil
-    end
-    
-    -- 2. Restore Mouse/Keyboard State
-    local mouseGrabber = modules.game_interface.getRootPanel():recursiveGetChildById('mouseGrabber')
-    if mouseGrabber then
-        if s.onMouseMove then
-            disconnect(mouseGrabber, { onMouseMove = s.onMouseMove })
-        end
-        
-        mouseGrabber:ungrabMouse()
-        mouseGrabber:ungrabKeyboard()
-        
-        -- Restore original handlers
-        mouseGrabber.onMouseRelease = modules.game_interface.onMouseGrabberRelease
-        mouseGrabber.onKeyPress = nil
-    end
-    
-    g_mouse.popCursor("target")
-    
-    -- 3. Trigger onCancel callback if it exists (and not triggered by success)
-    if s.onCancel and not s.success then
-        pcall(s.onCancel)
-    end
-    
-    -- 4. Detach Casting Effect (Fail-safe)
-    if s.castingEffect then
-        local player = g_game.getLocalPlayer()
-        if player then
-            -- Try to detach even if modules are unloaded, provided the method exists
-            if player.detachEffectById then
-                player:detachEffectById(s.castingEffect)
-            end
-        end
-    end
+function SelectionController:isActive()
+    return self.active ~= nil
 end
 
--- Explicit cancel action (sends opcode to server)
-function g_spells.cancelSelection()
-    -- Send cancel opcode if we have an active selection
-    if currentSelection then
-        local protocol = g_game.getProtocolGame()
-        if protocol then
-             local data = {action = "cancel"}
-             if protocol.sendExtendedJSONOpcode then
-                  protocol:sendExtendedJSONOpcode(50, data)
-             else
-                  protocol:sendExtendedOpcode(50, json.encode(data))
-             end
-        end
-    end
-    
-    -- Proceed with local cleanup
-    g_spells.cleanupSelection()
-end
-
-function g_spells.requestPosition(options)
-    -- Enforce strict table parameter
-    if type(options) ~= "table" then
-        return
+function SelectionController:start(params)
+    -- 1. Auto-cancel existing selection
+    if self.active then
+        self:cancel()
     end
 
-    -- 1. Cancel any existing selection
-    g_spells.cleanupSelection()
-    
-    local gameMapPanel = modules.game_interface.getGameMapPanel()
-    if not gameMapPanel then return end
-
-    -- 2. Handle Instant Mode (No preview, just click)
-    if options.instant then
-        local mousePos = g_window.getMousePosition()
-        local tile = gameMapPanel:getTile(mousePos)
-        if tile and options.callback then
-            pcall(options.callback, tile:getPosition())
-        end
-        return
-    end
-
-    -- 3. Setup Selection Mode
-    local mouseGrabber = modules.game_interface.getRootPanel():recursiveGetChildById('mouseGrabber')
-    if not mouseGrabber then return end
-    
-    local selectionState = {
-        options = options,
-        callback = options.callback,
-        onCancel = options.onCancel,
-        castingEffect = options.castingEffect, -- Store for cleanup
+    local state = {
+        options = params,
+        callback = params.callback,
+        onCancel = params.onCancel,
+        isValid = false,
+        success = false,
+        inputHandle = nil,
         previewWidgets = {},
-        lastTilePos = nil, -- Optimization: cache last tile position
+        lastTilePos = nil,
         cache = {
             tileSize = nil,
             mapRect = nil,
             cameraPos = nil
         }
     }
-    
-    -- Auto-Cancel Timeout (30 seconds)
-    selectionState.timeoutEvent = scheduleEvent(function()
-        if currentSelection == selectionState then
-             g_spells.cancelSelection()
-        end
-    end, 30000)
-    
-    -- Handle Casting Effect (Local Attach)
-    if options.castingEffect then
-        if g_attachedEffects and AttachedEffectManager then
-            local player = g_game.getLocalPlayer()
-            if player then
-                local effectId = options.castingEffect
-                
-                -- If castingEffect is a table (dynamic config from server)
-                if type(options.castingEffect) == "table" then
-                    local config = options.castingEffect
-                    -- Unique ID generation to prevent collisions
-                    -- Base: 5000 + (Time % 10000) + Random(100)
-                    local tempId = 5000 + (g_clock.millis() % 10000) + math.random(1, 100)
-                    
-                    -- Determine Category
-                    local category = ThingCategoryEffect
-                    if config.type == "outfit" then
-                        category = ThingCategoryCreature
-                    elseif config.type == "item" then
-                        category = ThingCategoryItem
-                    end
-                    
-                    -- Ensure category is valid (fallback if global constants are missing or nil)
-                    if not category then
-                        if config.type == "outfit" then category = 1 end -- ThingCategoryCreature
-                        if config.type == "item" then category = 2 end -- ThingCategoryItem
-                        if config.type == "effect" then category = 3 end -- ThingCategoryEffect
-                    end
-                    
-                    -- Register/Update the dynamic effect
-                    AttachedEffectManager.register(tempId, "DynamicCasting", config.thingId or 1, category, config)
-                    
-                    effectId = tempId
-                    
-                    -- Update selection state to point to the temp ID for cleanup
-                    selectionState.castingEffect = tempId
-                end
-                
-                local effect = g_attachedEffects.getById(effectId)
-                if effect then
-                    player:attachEffect(effect)
-                end
-            end
-        else
-            if not g_attachedEffects then g_logger.error("Spells: g_attachedEffects is nil") end
-            if not AttachedEffectManager then g_logger.error("Spells: AttachedEffectManager is nil (Check game_attachedeffects dependency)") end
-        end
-    end
-    
-    -- 4. Setup Preview (Asset-Driven)
-    if options.asset then
-         local w = g_ui.createWidget('UIWidget', modules.game_interface.getRootPanel())
-         w:setPhantom(true)
-         w:setOpacity(0.7)
-         w:setImageSource(options.asset)
-         table.insert(selectionState.previewWidgets, w)
-         
-         selectionState.onMouseMove = function(widget, mousePos, mouseMoved)
-            -- Force update mouse position to be safe
-            mousePos = g_window.getMousePosition()
-            
-            local gameMapPanel = modules.game_interface.getGameMapPanel()
-            if not gameMapPanel then return end
-            
-            local centerTile = gameMapPanel:getTile(mousePos)
-            local w = selectionState.previewWidgets[1]
-            if not w then return end
 
-            if not centerTile then
-                w:setVisible(false)
-                selectionState.lastTilePos = nil
-                return
+    -- 2. Setup Event Handlers
+    state.onMouseMove = function(widget, mousePos, mouseMoved)
+        -- THROTTLE: 16ms (approx 60 FPS)
+        local now = g_clock.millis()
+        if state.lastMoveTime and (now - state.lastMoveTime) < 16 then
+            return
+        end
+        state.lastMoveTime = now
+
+        -- Force update mouse position to be safe
+        mousePos = g_window.getMousePosition()
+        
+        local gameMapPanel = modules.game_interface.getGameMapPanel()
+        if not gameMapPanel then return end
+        
+        -- Optimization: Pre-calculate player position once per frame
+        local player = g_game.getLocalPlayer()
+        local playerPos = player and player:getPosition() or nil
+        
+        local centerTile = gameMapPanel:getTile(mousePos)
+        
+        -- Cache Invalidations
+        local cache = state.cache
+        local root = modules.game_interface.getRootPanel()
+        if root and cache.rootSize then
+            if root:getWidth() ~= cache.rootSize.width or root:getHeight() ~= cache.rootSize.height then
+                 cache.mapRect = nil
+                 cache.tileSize = nil
+                 cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
             end
-            
-            -- OPTIMIZATION: Only recalculate if tile changed
+        elseif root then
+            cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
+        end
+        
+        -- Cache Camera Position per frame (validation + render)
+        cache.cameraPos = nil -- Always refresh camera pos in dynamic movement
+        if gameMapPanel.getCameraPosition then
+            cache.cameraPos = gameMapPanel:getCameraPosition()
+        end
+        if not cache.cameraPos and playerPos then
+            cache.cameraPos = playerPos
+        end
+
+        -- Render Pipeline
+        local isValid = false
+        if centerTile then
             local centerPos = centerTile:getPosition()
-            local cache = selectionState.cache
             
-            -- Invalidate mapRect cache if window size changed
-            local root = modules.game_interface.getRootPanel()
-            if root and cache.rootSize then
-                if root:getWidth() ~= cache.rootSize.width or root:getHeight() ~= cache.rootSize.height then
-                     cache.mapRect = nil -- Force recalcultion
-                     cache.tileSize = nil
-                     cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
-                end
-            elseif root then
-                cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
-            end
-
-            if selectionState.lastTilePos and 
-               selectionState.lastTilePos.x == centerPos.x and 
-               selectionState.lastTilePos.y == centerPos.y and 
-               selectionState.lastTilePos.z == centerPos.z and
-               cache.mapRect ~= nil then -- Only skip if mapRect is valid
-                return
-            end
-            selectionState.lastTilePos = centerPos
-
-            -- Calculate Metrics (Cached)
+            -- Recalculate basic metrics if needed
             local dimension = gameMapPanel:getVisibleDimension()
-            local currentTileSize = gameMapPanel:getHeight() / dimension.height
+            local zoom = gameMapPanel:getZoom()
             
-            -- Recalculate cache if needed (e.g. zoom changed)
-            if not cache.tileSize or math.abs(cache.tileSize - currentTileSize) > 0.1 then
-                cache.tileSize = currentTileSize
-                cache.mapRect = gameMapPanel:getRect() -- Cache rect too as it likely changed
-            end
-            local tileSize = cache.tileSize
-
-            -- Calculate Position
-            local cameraPos = nil
-            if gameMapPanel.getCameraPosition then
-                cameraPos = gameMapPanel:getCameraPosition()
-            end
-            if not cameraPos then
-                local player = g_game.getLocalPlayer()
-                if player then cameraPos = player:getPosition() end
-            end
-            
-            -- Invalidate mapRect cache if camera moved (optional, but safer for edge scrolling)
-            -- But for now we trust mapRect doesn't change position on screen unless window resizes
-            -- Actually mapRect is the UI panel position, it doesn't change when player walks.
-            -- So we can keep cache.mapRect constant unless window resizes.
-            if not cache.mapRect then
+            if not cache.tileSize or not cache.mapRect or 
+               not cache.lastZoom or cache.lastZoom ~= zoom or 
+               not cache.lastDimension or (cache.lastDimension.width ~= dimension.width or cache.lastDimension.height ~= dimension.height) then
+                
+                cache.tileSize = gameMapPanel:getHeight() / dimension.height
                 cache.mapRect = gameMapPanel:getRect()
+                cache.lastZoom = zoom
+                cache.lastDimension = {width = dimension.width, height = dimension.height}
             end
 
-            local baseX, baseY = 0, 0
-            if cameraPos then
-                local mapRect = cache.mapRect
-                local screenCenterX = mapRect.x + (mapRect.width / 2)
-                local screenCenterY = mapRect.y + (mapRect.height / 2)
-                
-                local diffX = centerPos.x - cameraPos.x
-                local diffY = centerPos.y - cameraPos.y
-                
-                baseX = screenCenterX + (diffX * tileSize) - (tileSize / 2)
-                baseY = screenCenterY + (diffY * tileSize) - (tileSize / 2)
-            else
-                baseX = mousePos.x - (tileSize / 2)
-                baseY = mousePos.y - (tileSize / 2)
+            -- Update All Widgets
+            if state.previewWidgets then
+                -- Check if position changed to avoid redundant calculations
+                local posChanged = true
+                if state.lastTilePos and 
+                   state.lastTilePos.x == centerPos.x and 
+                   state.lastTilePos.y == centerPos.y and 
+                   state.lastTilePos.z == centerPos.z then
+                    posChanged = false
+                end
+
+                if posChanged then
+                    state.lastTilePos = centerPos
+                    for _, entry in ipairs(state.previewWidgets) do
+                        local w = entry.widget
+                        local config = entry.config or {}
+                        
+                        local rect = computeTileScreenRect(gameMapPanel, centerPos, config.tiles or params.tiles, cache)
+                        
+                        if rect then
+                            w:setSize({width = rect.width, height = rect.height})
+                            w:setPosition({x = rect.x, y = rect.y})
+                            w:setVisible(true)
+                        else
+                            w:setVisible(false)
+                        end
+                    end
+                end
             end
-
-            -- Calculate Size & Offset based on Tiles count
-            local pWidth = (options.tiles and options.tiles.width or 1) * tileSize
-            local pHeight = (options.tiles and options.tiles.height or 1) * tileSize
             
-            w:setSize({width = pWidth, height = pHeight})
-            w:setVisible(true)
-            
-            -- Center the image on the tile
-            local finalX = baseX + (tileSize / 2) - (pWidth / 2)
-            local finalY = baseY + (tileSize / 2) - (pHeight / 2)
-            w:setPosition({x = finalX, y = finalY})
-
-            -- Validation Logic (Cached Result implicitly by tile change check)
-            local player = g_game.getLocalPlayer()
-            local isValid = false
-            if player then
-                local playerPos = player:getPosition()
-                local targetPos = centerTile:getPosition()
-                if options.validate then
-                    isValid = options.validate(targetPos, playerPos)
+            -- Validation Logic
+            if playerPos then
+                local targetPos = centerPos
+                if params.validate then
+                    isValid = params.validate(targetPos, playerPos)
                 else
                     -- Standard validation
                     local dist = math.max(math.abs(playerPos.x - targetPos.x), math.abs(playerPos.y - targetPos.y))
-                    local inRange = not options.range or (dist <= options.range)
+                    local inRange = not params.range or (dist <= params.range)
                     local visible = true
                     if g_map.isSightClear and not g_map.isSightClear(playerPos, targetPos) then
                         visible = false
@@ -331,60 +321,75 @@ function g_spells.requestPosition(options)
                     isValid = inRange and visible
                 end
             end
-            
-            selectionState.isValid = isValid
-            local color = isValid and '#ffffff' or '#ff4444' -- White (normal) or Red (blocked)
-            w:setImageColor(color)
+        else
+            -- No tile selected
+            if state.previewWidgets then
+                for _, entry in ipairs(state.previewWidgets) do
+                    if entry.widget then entry.widget:setVisible(false) end
+                end
+            end
+            state.lastTilePos = nil
         end
         
-        connect(mouseGrabber, { onMouseMove = selectionState.onMouseMove })
+        state.isValid = isValid
         
-        -- Trigger immediately to set initial validity/position
-        selectionState.onMouseMove(nil, g_window.getMousePosition(), nil)
+        -- Visual Feedback (Widget Color)
+        if state.previewWidgets then
+            local color = isValid and '#ffffff' or '#ff4444'
+            for _, entry in ipairs(state.previewWidgets) do
+                if entry.widget then
+                    entry.widget:setImageColor(color)
+                end
+            end
+        end
+        
+        -- Cursor Feedback
+        local cursorW = modules.game_interface.getRootPanel():recursiveGetChildById('targetCursor')
+        if cursorW then
+            local color = isValid and '#ffffff' or '#ff4444'
+            cursorW:setImageColor(color)
+        end
     end
-    
-    -- 5. Grab Input
-    mouseGrabber:grabMouse()
-    mouseGrabber:grabKeyboard()
-    g_mouse.pushCursor("target")
-    
-    -- 6. Event Handlers
-    mouseGrabber.onMouseRelease = function(widget, mousePos, mouseButton)
+
+    state.onMouseRelease = function(widget, mousePos, mouseButton)
+        local gameMapPanel = modules.game_interface.getGameMapPanel()
+        if not gameMapPanel then return false end
+
         if mouseButton == MouseLeftButton then
-            -- Check validation before proceeding
-            if selectionState.isValid == false then
-                return true -- Block invalid selection
+            if state.isValid == false then
+                return true -- Block invalid
             end
 
             local tile = gameMapPanel:getTile(mousePos)
             if tile then
                 local pos = tile:getPosition()
-                local callback = selectionState.callback
                 
-                -- Mark success to avoid onCancel trigger
-                selectionState.success = true
-                g_spells.cleanupSelection()
+                -- Mark success
+                state.success = true
                 
-                -- Execute Callback
+                -- Cleanup before callback to allow callback to start new selection if needed
+                local callback = state.callback
+                SelectionController:finish() 
+                
                 if callback then
                     pcall(callback, pos)
                 end
             end
             return true
         elseif mouseButton == MouseRightButton then
-            g_spells.cancelSelection()
+            SelectionController:cancel()
             return true
         end
-        return true
+        return false
     end
-    
-    mouseGrabber.onKeyPress = function(widget, keyCode, keyboardModifiers)
+
+    local onKeyPress = function(widget, keyCode, keyboardModifiers)
         if keyCode == KeyEscape then
-            g_spells.cancelSelection()
+            SelectionController:cancel()
             return true
         end
         
-        -- Movement Support (WASD + Arrows)
+        -- Movement Support
         local direction = nil
         if keyCode == KeyUp or keyCode == KeyW then direction = North
         elseif keyCode == KeyRight or keyCode == KeyD then direction = East
@@ -398,13 +403,115 @@ function g_spells.requestPosition(options)
         
         if direction then
             g_game.walk(direction)
-            return true -- Consume the event so it doesn't do anything else
+            return true
         end
-        
-        return false -- Pass other keys
+        return false
+    end
+
+    -- 3. Setup Preview (Asset-Driven)
+    if params.asset then
+         local w = g_ui.createWidget('UIWidget', modules.game_interface.getRootPanel())
+         w:setPhantom(true)
+         w:setOpacity(0.7)
+         w:setImageSource(params.asset)
+         -- Pipeline Structure: { widget, config }
+         table.insert(state.previewWidgets, { widget = w, config = { tiles = params.tiles } })
+    end
+
+    -- 4. Auto-Cancel Timeout (30 seconds)
+    state.timeoutEvent = scheduleEvent(function()
+        if self.active == state then
+             self:cancel()
+        end
+    end, 30000)
+
+    -- 5. Capture Input
+    state.inputHandle = g_spells.captureInput({
+        onMouseRelease = state.onMouseRelease,
+        onMouseMove = state.onMouseMove,
+        onKeyPress = onKeyPress
+    })
+    
+    g_mouse.pushCursor("target")
+    
+    self.active = state
+    
+    -- Trigger initial move to set cursor color
+    state.onMouseMove(nil, g_window.getMousePosition(), nil)
+end
+
+function SelectionController:cancel()
+    if not self.active then return end
+    
+    local s = self.active
+    
+    -- Notify Cancel (only if not successful)
+    if not s.success then
+        if s.onCancel then
+            pcall(s.onCancel)
+        end
     end
     
-    currentSelection = selectionState
+    self:finish()
+end
+
+function SelectionController:finish()
+    if not self.active then return end
+    
+    local s = self.active
+    self.active = nil
+    
+    -- Cleanup Timeout
+    if s.timeoutEvent then
+        removeEvent(s.timeoutEvent)
+        s.timeoutEvent = nil
+    end
+
+    -- Cleanup Widgets
+    if s.previewWidgets then
+        for _, entry in ipairs(s.previewWidgets) do
+            local widget = entry.widget
+            if widget and not widget:isDestroyed() then
+                widget:destroy()
+            end
+        end
+    end
+
+    -- Restore Input
+    if s.inputHandle then
+        g_spells.releaseInput(s.inputHandle)
+    end
+    g_mouse.popCursor("target")
+end
+
+-- ========================================================
+-- PUBLIC API
+-- ========================================================
+
+function g_spells.requestPosition(options)
+    if type(options) ~= "table" then return end
+
+    -- Handle Instant Mode
+    if options.instant then
+        local gameMapPanel = modules.game_interface.getGameMapPanel()
+        if not gameMapPanel then return end
+        local mousePos = g_window.getMousePosition()
+        local tile = gameMapPanel:getTile(mousePos)
+        if tile and options.callback then
+            pcall(options.callback, tile:getPosition())
+        end
+        return
+    end
+
+    SelectionController:start(options)
+end
+
+function g_spells.cancelSelection()
+    SelectionController:cancel()
+end
+
+function g_spells.cleanupSelection()
+    SelectionController:finish()
 end
 
 function g_spells.sendCast(spellName, pos)
@@ -443,7 +550,6 @@ function g_spells.onExtendedOpcode(protocol, opcode, buffer)
             asset = data.asset,
             tiles = data.tiles,
             range = data.range,
-            castingEffect = data.castingEffect, -- Pass through effect ID
             callback = function(pos)
                 g_spells.sendCast(data.spellName, pos)
             end
