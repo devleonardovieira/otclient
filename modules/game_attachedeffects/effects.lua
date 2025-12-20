@@ -23,7 +23,7 @@ AttachedEffectManager.register(1, 'Spoke Lighting', 12, ThingCategoryEffect, {
     end
 })
 
-AttachedEffectManager.register(2, 'Bat Wings', 307, ThingCategoryCreature, {
+AttachedEffectManager.register(2, 'Bat Wings', 4, ThingCategoryCreature, {
     speed = 5,
     disableWalkAnimation = true,
     shader = 'Outfit - Rainbow',

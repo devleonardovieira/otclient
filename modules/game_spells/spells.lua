@@ -449,6 +449,34 @@ function g_spells.onExtendedOpcode(protocol, opcode, buffer)
             end
         }
         g_spells.requestPosition(options)
+    elseif data.action == "register_effect" then
+        if AttachedEffectManager then
+            local id = data.id
+            
+            -- Client-side Cache to prevent re-registration lag
+            if not g_spells.RegisteredEffects then g_spells.RegisteredEffects = {} end
+            
+            if not g_spells.RegisteredEffects[id] then
+                local config = data.config
+                local category = ThingCategoryEffect
+                
+                if config.type == "outfit" then
+                    category = ThingCategoryCreature
+                elseif config.type == "item" then
+                    category = ThingCategoryItem
+                end
+                
+                -- Ensure valid category constant (fallback)
+                if not category then
+                    if config.type == "outfit" then category = 1 end
+                    if config.type == "item" then category = 2 end
+                    if config.type == "effect" then category = 3 end
+                end
+                
+                AttachedEffectManager.register(id, data.name or "DynamicEffect", config.thingId, category, config)
+                g_spells.RegisteredEffects[id] = true
+            end
+        end
     end
 end
 

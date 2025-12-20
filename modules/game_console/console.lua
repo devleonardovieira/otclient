@@ -1794,7 +1794,7 @@ function onTalk(name, level, mode, message, channelId, creaturePos)
 			staticText:setColor(speaktype.color)
 		else
 			staticText:addMessage(name, mode, staticMessage)
-			g_map.addStaticText(staticText, creaturePos)
+			--[[ g_map.addStaticText(staticText, creaturePos) ]]
 		end
 
 		g_map.addThing(staticText, creaturePos, -1)
