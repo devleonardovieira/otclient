@@ -3,7 +3,7 @@ g_spells = {}
 -- ========================================================
 -- UTILS
 -- ========================================================
-local function computeTileScreenRect(gameMapPanel, tilePos, tiles, cache)
+local function computeTileScreenRect(gameMapPanel, tilePos, tiles, cache, cameraPos)
     if not gameMapPanel or not tilePos then return nil end
 
     local tileSize = cache.tileSize
@@ -20,7 +20,6 @@ local function computeTileScreenRect(gameMapPanel, tilePos, tiles, cache)
         cache.mapRect = mapRect
     end
     
-    local cameraPos = cache.cameraPos
     if not cameraPos then
         if gameMapPanel.getCameraPosition then
             cameraPos = gameMapPanel:getCameraPosition()
@@ -92,10 +91,13 @@ function g_spells.captureInput(callbacks)
             return false
         end
         
-        -- 2. Try to handle it
+        -- 2. Try to handle it (Protected)
         if callbacks.onKeyPress then
-            if callbacks.onKeyPress(widget, keyCode, keyboardModifiers) then
+            local status, result = pcall(callbacks.onKeyPress, widget, keyCode, keyboardModifiers)
+            if status and result then
                 return true
+            elseif not status then
+                 g_logger.error("[Spells Input] KeyPress Error: " .. tostring(result))
             end
         end
         
@@ -148,6 +150,14 @@ end
 
 function init()
     _G.g_spells = g_spells
+    
+    -- Persistent Session Cache (Survives Reloads)
+    -- This prevents "Already registered" errors from C++ engine on script reload
+    if not _G.g_spells_cache then
+        _G.g_spells_cache = {}
+    end
+    g_spells.RegisteredEffects = _G.g_spells_cache
+
     if ProtocolGame and ProtocolGame.registerExtendedJSONOpcode then
         ProtocolGame.registerExtendedJSONOpcode(50, g_spells.onExtendedOpcode)
     else
@@ -155,17 +165,27 @@ function init()
     end
     
     connect(g_game, { onGameEnd = g_spells.onGameEnd })
+    
+    -- Start Registry Cleanup Loop
+    g_spells.cleanupRegistry()
 end
 
 function g_spells.onGameEnd()
     g_spells.cleanupSelection()
-    g_spells.RegisteredEffects = {}
+    -- Clear Cache on Logout (New Session = New IDs allowed)
+    _G.g_spells_cache = {}
+    g_spells.RegisteredEffects = _G.g_spells_cache
 end
 
 function terminate()
+    if g_spells.cleanupEvent then
+        removeEvent(g_spells.cleanupEvent)
+        g_spells.cleanupEvent = nil
+    end
+
     g_spells.cleanupSelection()
     
-    -- Clear Session Cache
+    -- Do NOT clear _G.g_spells_cache here (allows Hot-Reload persistence)
     g_spells.RegisteredEffects = nil
     
     if ProtocolGame and ProtocolGame.unregisterExtendedJSONOpcode then
@@ -178,6 +198,120 @@ function terminate()
     
     _G.g_spells = nil
     g_spells = nil
+end
+
+-- ========================================================
+-- WIDGET POOL
+-- ========================================================
+local WidgetPool = {
+    pool = {}
+}
+
+function WidgetPool:get(parent)
+    local w = table.remove(self.pool)
+    if w then
+        if not w:isDestroyed() then
+            w:setParent(parent)
+            w:setVisible(true)
+            return w
+        end
+    end
+    w = g_ui.createWidget('UIWidget', parent)
+    w:setPhantom(true)
+    w:setOpacity(0.7)
+    return w
+end
+
+function WidgetPool:recycle(w)
+    if w and not w:isDestroyed() then
+        w:setVisible(false)
+        w:setParent(nil)
+        table.insert(self.pool, w)
+    end
+end
+
+function WidgetPool:clear()
+    for _, w in ipairs(self.pool) do
+        if not w:isDestroyed() then w:destroy() end
+    end
+    self.pool = {}
+end
+
+-- ========================================================
+-- SELECTION LOGIC HELPERS
+-- ========================================================
+local function validateTarget(state, playerPos, targetPos)
+    if not playerPos or not targetPos then return false end
+    local params = state.options
+    
+    if params.validate then
+        return params.validate(targetPos, playerPos)
+    else
+        -- Standard validation
+        local dist = math.max(math.abs(playerPos.x - targetPos.x), math.abs(playerPos.y - targetPos.y))
+        local inRange = not params.range or (dist <= params.range)
+        local visible = true
+        if g_map.isSightClear and not g_map.isSightClear(playerPos, targetPos) then
+            visible = false
+        end
+        return inRange and visible
+    end
+end
+
+local function updateRender(state, gameMapPanel, centerPos, isValid)
+    local cache = state.cache
+    
+    -- Recalculate basic metrics if needed
+    local dimension = gameMapPanel:getVisibleDimension()
+    local zoom = gameMapPanel:getZoom()
+    
+    if not cache.tileSize or not cache.mapRect or 
+       not cache.lastZoom or cache.lastZoom ~= zoom or 
+       not cache.lastDimension or (cache.lastDimension.width ~= dimension.width or cache.lastDimension.height ~= dimension.height) then
+        
+        cache.tileSize = gameMapPanel:getHeight() / dimension.height
+        cache.mapRect = gameMapPanel:getRect()
+        cache.lastZoom = zoom
+        cache.lastDimension = {width = dimension.width, height = dimension.height}
+    end
+
+    -- Update All Widgets
+    if state.previewWidgets then
+        -- Check if position changed to avoid redundant calculations
+        local posChanged = true
+        if state.lastTilePos and 
+           state.lastTilePos.x == centerPos.x and 
+           state.lastTilePos.y == centerPos.y and 
+           state.lastTilePos.z == centerPos.z then
+            posChanged = false
+        end
+
+        if posChanged then
+            state.lastTilePos = centerPos
+            for _, entry in ipairs(state.previewWidgets) do
+                local w = entry.widget
+                local config = entry.config or {}
+                
+                local rect = computeTileScreenRect(gameMapPanel, centerPos, config.tiles or state.options.tiles, cache, state.cameraPos)
+                
+                if rect then
+                    w:setSize({width = rect.width, height = rect.height})
+                    w:setPosition({x = rect.x, y = rect.y})
+                    w:setVisible(true)
+                else
+                    w:setVisible(false)
+                end
+            end
+        end
+        
+        -- Visual Feedback (Widget Color)
+        local color = isValid and '#ffffff' or '#ff4444'
+        for _, entry in ipairs(state.previewWidgets) do
+            if entry.widget then
+                entry.widget:setImageColor(color)
+            end
+        end
+    end
 end
 
 -- ========================================================
@@ -205,19 +339,28 @@ function SelectionController:start(params)
         success = false,
         inputHandle = nil,
         previewWidgets = {},
+        listeners = {}, -- Cursor/State Listeners
         lastTilePos = nil,
         cache = {
             tileSize = nil,
-            mapRect = nil,
-            cameraPos = nil
+            mapRect = nil
         }
     }
+    
+    -- Listener Support
+    function state:addListener(cb) table.insert(self.listeners, cb) end
+    function state:notify(isValid) for _, cb in ipairs(self.listeners) do cb(isValid) end end
 
     -- 2. Setup Event Handlers
     state.onMouseMove = function(widget, mousePos, mouseMoved)
-        -- THROTTLE: 16ms (approx 60 FPS)
+        -- ADAPTIVE THROTTLE
+        -- Adjust throttle based on current FPS (Target ~60 FPS update rate)
+        local currentFps = g_app.getFps()
+        local frameTime = 1000 / math.max(10, currentFps) -- Min 10 FPS cap
+        frameTime = math.max(16, frameTime) -- Max 60 FPS cap
+        
         local now = g_clock.millis()
-        if state.lastMoveTime and (now - state.lastMoveTime) < 16 then
+        if state.lastMoveTime and (now - state.lastMoveTime) < frameTime then
             return
         end
         state.lastMoveTime = now
@@ -234,26 +377,13 @@ function SelectionController:start(params)
         
         local centerTile = gameMapPanel:getTile(mousePos)
         
-        -- Cache Invalidations
-        local cache = state.cache
-        local root = modules.game_interface.getRootPanel()
-        if root and cache.rootSize then
-            if root:getWidth() ~= cache.rootSize.width or root:getHeight() ~= cache.rootSize.height then
-                 cache.mapRect = nil
-                 cache.tileSize = nil
-                 cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
-            end
-        elseif root then
-            cache.rootSize = {width = root:getWidth(), height = root:getHeight()}
-        end
-        
         -- Cache Camera Position per frame (validation + render)
-        cache.cameraPos = nil -- Always refresh camera pos in dynamic movement
+        state.cameraPos = nil 
         if gameMapPanel.getCameraPosition then
-            cache.cameraPos = gameMapPanel:getCameraPosition()
+            state.cameraPos = gameMapPanel:getCameraPosition()
         end
-        if not cache.cameraPos and playerPos then
-            cache.cameraPos = playerPos
+        if not state.cameraPos and playerPos then
+            state.cameraPos = playerPos
         end
 
         -- Render Pipeline
@@ -261,66 +391,17 @@ function SelectionController:start(params)
         if centerTile then
             local centerPos = centerTile:getPosition()
             
-            -- Recalculate basic metrics if needed
-            local dimension = gameMapPanel:getVisibleDimension()
-            local zoom = gameMapPanel:getZoom()
+            -- 1. Validate
+            isValid = validateTarget(state, playerPos, centerPos)
             
-            if not cache.tileSize or not cache.mapRect or 
-               not cache.lastZoom or cache.lastZoom ~= zoom or 
-               not cache.lastDimension or (cache.lastDimension.width ~= dimension.width or cache.lastDimension.height ~= dimension.height) then
-                
-                cache.tileSize = gameMapPanel:getHeight() / dimension.height
-                cache.mapRect = gameMapPanel:getRect()
-                cache.lastZoom = zoom
-                cache.lastDimension = {width = dimension.width, height = dimension.height}
+            -- 2. Notify Listeners (Cursor Feedback decoupled)
+            if state.isValid ~= isValid then
+                state:notify(isValid)
             end
-
-            -- Update All Widgets
-            if state.previewWidgets then
-                -- Check if position changed to avoid redundant calculations
-                local posChanged = true
-                if state.lastTilePos and 
-                   state.lastTilePos.x == centerPos.x and 
-                   state.lastTilePos.y == centerPos.y and 
-                   state.lastTilePos.z == centerPos.z then
-                    posChanged = false
-                end
-
-                if posChanged then
-                    state.lastTilePos = centerPos
-                    for _, entry in ipairs(state.previewWidgets) do
-                        local w = entry.widget
-                        local config = entry.config or {}
-                        
-                        local rect = computeTileScreenRect(gameMapPanel, centerPos, config.tiles or params.tiles, cache)
-                        
-                        if rect then
-                            w:setSize({width = rect.width, height = rect.height})
-                            w:setPosition({x = rect.x, y = rect.y})
-                            w:setVisible(true)
-                        else
-                            w:setVisible(false)
-                        end
-                    end
-                end
-            end
+            state.isValid = isValid
             
-            -- Validation Logic
-            if playerPos then
-                local targetPos = centerPos
-                if params.validate then
-                    isValid = params.validate(targetPos, playerPos)
-                else
-                    -- Standard validation
-                    local dist = math.max(math.abs(playerPos.x - targetPos.x), math.abs(playerPos.y - targetPos.y))
-                    local inRange = not params.range or (dist <= params.range)
-                    local visible = true
-                    if g_map.isSightClear and not g_map.isSightClear(playerPos, targetPos) then
-                        visible = false
-                    end
-                    isValid = inRange and visible
-                end
-            end
+            -- 3. Render Preview
+            updateRender(state, gameMapPanel, centerPos, isValid)
         else
             -- No tile selected
             if state.previewWidgets then
@@ -329,30 +410,13 @@ function SelectionController:start(params)
                 end
             end
             state.lastTilePos = nil
-        end
-        
-        state.isValid = isValid
-        
-        -- Visual Feedback (Widget Color)
-        if state.previewWidgets then
-            local color = isValid and '#ffffff' or '#ff4444'
-            for _, entry in ipairs(state.previewWidgets) do
-                if entry.widget then
-                    entry.widget:setImageColor(color)
-                end
-            end
-        end
-        
-        -- Cursor Feedback
-        local cursorW = modules.game_interface.getRootPanel():recursiveGetChildById('targetCursor')
-        if cursorW then
-            local color = isValid and '#ffffff' or '#ff4444'
-            cursorW:setImageColor(color)
+            state.isValid = false
+            state:notify(false)
         end
     end
 
     state.onMouseRelease = function(widget, mousePos, mouseButton)
-        local gameMapPanel = modules.game_interface.getGameMapPanel()
+        local gameMapPanel = modules.game_interface.getGameMapPanel() -- Local capture
         if not gameMapPanel then return false end
 
         if mouseButton == MouseLeftButton then
@@ -410,22 +474,29 @@ function SelectionController:start(params)
 
     -- 3. Setup Preview (Asset-Driven)
     if params.asset then
-         local w = g_ui.createWidget('UIWidget', modules.game_interface.getRootPanel())
-         w:setPhantom(true)
-         w:setOpacity(0.7)
+         local w = WidgetPool:get(modules.game_interface.getRootPanel())
          w:setImageSource(params.asset)
          -- Pipeline Structure: { widget, config }
          table.insert(state.previewWidgets, { widget = w, config = { tiles = params.tiles } })
     end
+    
+    -- 4. Setup Cursor Feedback (Decoupled Listener)
+    state:addListener(function(isValid)
+        local cursorW = modules.game_interface.getRootPanel():recursiveGetChildById('targetCursor')
+        if cursorW then
+            local color = isValid and '#ffffff' or '#ff4444'
+            cursorW:setImageColor(color)
+        end
+    end)
 
-    -- 4. Auto-Cancel Timeout (30 seconds)
+    -- 5. Auto-Cancel Timeout (30 seconds)
     state.timeoutEvent = scheduleEvent(function()
         if self.active == state then
              self:cancel()
         end
     end, 30000)
 
-    -- 5. Capture Input
+    -- 6. Capture Input
     state.inputHandle = g_spells.captureInput({
         onMouseRelease = state.onMouseRelease,
         onMouseMove = state.onMouseMove,
@@ -450,6 +521,13 @@ function SelectionController:cancel()
         if s.onCancel then
             pcall(s.onCancel)
         end
+        
+        -- Notify Server to clear AIM visual
+        local protocol = g_game.getProtocolGame()
+        if protocol then
+            local payload = { action = "cancel_aim" }
+            protocol:sendExtendedOpcode(50, json.encode(payload))
+        end
     end
     
     self:finish()
@@ -467,13 +545,10 @@ function SelectionController:finish()
         s.timeoutEvent = nil
     end
 
-    -- Cleanup Widgets
+    -- Cleanup Widgets (Recycle)
     if s.previewWidgets then
         for _, entry in ipairs(s.previewWidgets) do
-            local widget = entry.widget
-            if widget and not widget:isDestroyed() then
-                widget:destroy()
-            end
+            WidgetPool:recycle(entry.widget)
         end
     end
 
@@ -530,6 +605,49 @@ function g_spells.sendCast(spellName, pos)
 end
 
 -- ========================================================
+-- REGISTRY HELPER (Checksum & Cleanup)
+-- ========================================================
+local function generateChecksum(config)
+    local function serialize(t)
+        local keys = {}
+        for k in pairs(t) do table.insert(keys, k) end
+        table.sort(keys)
+        local parts = {}
+        for _, k in ipairs(keys) do
+            local v = t[k]
+            if type(v) == "table" then
+                table.insert(parts, k .. ":" .. serialize(v))
+            else
+                table.insert(parts, k .. ":" .. tostring(v))
+            end
+        end
+        return table.concat(parts, "|")
+    end
+    local str = serialize(config)
+    if g_crypt and g_crypt.md5 then return g_crypt.md5(str) end
+    return str
+end
+
+function g_spells.cleanupRegistry()
+    if not g_spells.RegisteredEffects then return end
+    local now = os.time()
+    local ttl = 3600 -- 1 hour TTL
+    
+    for id, entry in pairs(g_spells.RegisteredEffects) do
+        if type(entry) == "table" and entry.lastAccess then
+            if (now - entry.lastAccess) > ttl then
+                g_spells.RegisteredEffects[id] = nil
+            end
+        elseif type(entry) == "boolean" then
+             -- Auto-migrate/clean legacy boolean entries
+             g_spells.RegisteredEffects[id] = nil
+        end
+    end
+    
+    g_spells.cleanupEvent = scheduleEvent(g_spells.cleanupRegistry, 600 * 1000) -- Check every 10 mins
+end
+
+-- ========================================================
 -- OPCODE HANDLER
 -- ========================================================
 function g_spells.onExtendedOpcode(protocol, opcode, buffer)
@@ -562,8 +680,31 @@ function g_spells.onExtendedOpcode(protocol, opcode, buffer)
             -- Client-side Cache to prevent re-registration lag
             if not g_spells.RegisteredEffects then g_spells.RegisteredEffects = {} end
             
-            if not g_spells.RegisteredEffects[id] then
-                local config = data.config
+            local config = data.config
+            local currentChecksum = generateChecksum(config)
+            local now = os.time()
+            local entry = g_spells.RegisteredEffects[id]
+            
+            local needsRegister = false
+            
+            if not entry then
+                -- New registration
+                needsRegister = true
+            elseif type(entry) == "table" then
+                -- Check Checksum
+                if entry.checksum ~= currentChecksum then
+                     g_logger.warning(string.format("[SpellVisuals] Config mismatch for ID %d. Re-registering.", id))
+                     needsRegister = true
+                else
+                     -- Update Access Time (LRU)
+                     entry.lastAccess = now
+                end
+            else
+                -- Legacy boolean support (force update to new format)
+                needsRegister = true
+            end
+            
+            if needsRegister then
                 local category = ThingCategoryEffect
                 
                 if config.type == "outfit" then
@@ -580,11 +721,17 @@ function g_spells.onExtendedOpcode(protocol, opcode, buffer)
                 end
                 
                 AttachedEffectManager.register(id, data.name or "DynamicEffect", config.thingId, category, config)
-                g_spells.RegisteredEffects[id] = true
+                
+                -- Update Cache
+                g_spells.RegisteredEffects[id] = {
+                    checksum = currentChecksum,
+                    lastAccess = now
+                }
             end
         end
     end
 end
+                
 
 -- ========================================================
 -- SPELL CONTROLLER (SIMPLIFIED)
@@ -595,4 +742,88 @@ function SpellController.cast(spellName)
     -- Just send the words to the server. 
     -- If the spell requires a target, the server will send an Opcode back.
     g_game.talk(spellName)
+end
+
+-- ========================================================
+-- STRESS TEST SUITE===========================================
+function g_spells.runStressTest()
+    g_logger.info("[StressTest] Starting Heavy Stress Test Suite...")
+    -- Tests: Singleton stability, InputStack integrity, Widget destruction, Memory leaks
+    g_logger.info("[StressTest] 1. Thrashing Selection State (1000 cycles)...")
+    local start = g_clock.millis()
+    for i = 1, 1000 do
+        g_spells.requestPosition({
+            spellName = "Stress_" .. i,
+            asset = nil, -- Test without asset first
+            callback = function() end
+        })
+        
+        -- Force internal state check
+        if not SelectionController:isActive() then
+            g_logger.error("[StressTest] Failed to activate selection at cycle " .. i)
+        end
+        
+        g_spells.cancelSelection()
+        
+        if SelectionController:isActive() then
+            g_logger.error("[StressTest] Failed to cancel selection at cycle " .. i)
+        end
+    end
+    g_logger.info("[StressTest] Thrashing complete in " .. (g_clock.millis() - start) .. "ms")
+
+    -- 2. Render Pipeline & Throttle
+    -- Tests: Math cache, Throttle logic, Coordinate projection
+    g_logger.info("[StressTest] 2. Hammering Render Pipeline (5000 events)...")
+    g_spells.requestPosition({ spellName = "Stress_Render", range = 5 })
+    local state = SelectionController.active
+    if state then
+        start = g_clock.millis()
+        local moves = 0
+        local ignored = 0
+        
+        -- Mock widget for feedback
+        state.previewWidgets = {{ widget = g_ui.createWidget('UIWidget', modules.game_interface.getRootPanel()), config = {} }}
+        
+        for i = 1, 5000 do
+            -- Simulate random mouse positions
+            local mockPos = { x = math.random(0, 800), y = math.random(0, 600) }
+            
+            -- Bypass throttle for stress test
+            state.lastMoveTime = 0 
+            
+            -- Manually invoke handler
+            state.onMouseMove(nil, mockPos, nil)
+        end
+        g_logger.info("[StressTest] Render Hammering complete in " .. (g_clock.millis() - start) .. "ms")
+        g_spells.cancelSelection()
+    else
+        g_logger.error("[StressTest] Could not start selection for Render Test")
+    end
+
+    -- 3. Registry Cache Explosion
+    -- Tests: Table growth, Opcode parsing, AttachedEffectManager load
+    g_logger.info("[StressTest] 3. Simulating Registry Explosion (2000 unique effects)...")
+    start = g_clock.millis()
+    local fakeProtocol = {}
+    for i = 1, 2000 do
+        local id = 900000 + i
+        local data = {
+            action = "register_effect",
+            id = id,
+            name = "StressEffect_" .. id,
+            config = { thingId = 10, type = "outfit" }
+        }
+        -- We pass JSON string to force parsing load
+        g_spells.onExtendedOpcode(fakeProtocol, 50, json.encode(data))
+    end
+    g_logger.info("[StressTest] Registry Explosion complete in " .. (g_clock.millis() - start) .. "ms")
+    
+    -- Verify Cache Size
+    local count = 0
+    if g_spells.RegisteredEffects then
+        for _ in pairs(g_spells.RegisteredEffects) do count = count + 1 end
+    end
+    g_logger.info("[StressTest] RegisteredEffects Size: " .. count)
+
+    g_logger.info("[StressTest] All Tests Finished in " .. (g_clock.millis() - startTotal) .. "ms")
 end

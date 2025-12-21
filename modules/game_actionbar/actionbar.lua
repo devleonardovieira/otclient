@@ -355,7 +355,7 @@ function setupAction(action)
 
 				if action.spell and action.spell.icon and profile then
 					action.text:setImageSource(SpelllistSettings[profile].iconFile)
-					action.text:setImageClip(Spells.getImageClip(SpellIcons[action.spell.icon][1], profile))
+					--[[ action.text:setImageClip(Spells.getImageClip(SpellInfo[action.spell.icon][1], profile)) ]]
 					action.text:setText("")
 				end
 			end

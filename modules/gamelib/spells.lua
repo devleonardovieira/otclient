@@ -29,6 +29,8 @@ SpelllistSettings = {
 }]]
 }
 
+
+
 -- check "/docs/generate_spell_data.py"
 -- spells from canary
 SpellInfo = {
