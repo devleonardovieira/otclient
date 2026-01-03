@@ -4,6 +4,7 @@ local defaultOptions = {
     showPing = false,
     fullscreen = false,
     classicControl = false,
+    smartCast = false,
     smartWalk = false,
     preciseControl = false,
     autoChaseOverride = true,

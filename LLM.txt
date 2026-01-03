@@ -1,0 +1,940 @@
+## Project Overview
+OTClient is an open-source Tibia game client implementation. This document provides comprehensive context for understanding and modifying the codebase.
+
+---
+
+## 1. PROJECT STRUCTURE
+
+### Root Directory Layout
+```
+ClientRedemption/
+├── src/                    # C++ source code
+│   ├── framework/          # Core engine framework
+│   │   ├── core/           # Application, modules, events (42 files)
+│   │   ├── graphics/       # Rendering system (56 files)
+│   │   ├── ui/             # Widget system (32 files)
+│   │   ├── luaengine/      # Lua integration
+│   │   ├── net/            # Networking
+│   │   ├── sound/          # Audio system
+│   │   ├── otml/           # OTML parser
+│   │   └── platform/       # OS-specific code
+│   ├── client/             # Game-specific code (103 files)
+│   │   ├── creature.cpp    # Creature rendering/movement
+│   │   ├── localplayer.cpp # Player-specific logic
+│   │   ├── map.cpp         # Map management
+│   │   ├── mapview.cpp     # Map rendering
+│   │   ├── tile.cpp        # Tile logic
+│   │   ├── game.cpp        # Game state management
+│   │   └── protocolgame*.cpp # Network protocol
+│   └── protobuf/           # Protobuf definitions
+├── modules/                # Lua modules (74 directories)
+├── data/                   # Static resources
+│   ├── styles/             # OTUI style definitions (35 files)
+│   ├── fonts/              # Bitmap fonts
+│   ├── images/             # UI images
+│   └── things/             # Game assets
+├── mods/                   # Optional mods
+├── init.lua                # Application entry point
+└── meta.lua                # Type definitions for IDE
+```
+
+---
+
+## 2. MODULE SYSTEM
+
+### How Modules Work
+Modules are the primary way to extend OTClient functionality. Each module is a directory containing:
+
+1. **`.otmod` file** - Module descriptor (YAML-like format)
+2. **`.lua` files** - Lua scripts
+3. **`.otui` files** - UI definitions (optional)
+4. **Assets** - Images, sounds, etc. (optional)
+
+### Module Descriptor Format (.otmod)
+```yaml
+Module
+  name: game_example           # Unique module name
+  description: Example module  # Description
+  author: Your Name
+  website: https://example.com
+  reloadable: true            # Can be hot-reloaded
+  sandboxed: true             # Isolated Lua environment
+  autoload: true              # Auto-load on startup
+  autoload-priority: 500      # Loading order (0-9999)
+  
+  # Scripts to load (order matters)
+  scripts: [ script1, script2, widgets/* ]
+  
+  # Required modules (loaded first)
+  dependencies: [ corelib, gamelib ]
+  
+  # Modules to load after this one
+  load-later:
+    - game_console
+    - game_battle
+  
+  # Device restrictions (optional)
+  devices:
+    - mobile:android
+    - desktop:windows
+  
+  # Lifecycle hooks
+  @onLoad: init()             # Called when loaded
+  @onUnload: terminate()      # Called when unloaded
+```
+
+### Module Loading Sequence
+1. `init.lua` starts the application
+2. `g_modules.discoverModules()` scans for .otmod files
+3. Modules are auto-loaded by priority (0-99 libraries, 100-499 client, 500-999 game)
+4. Key modules loaded in order:
+   - `corelib` (0-99) - Core Lua utilities
+   - `gamelib` (0-99) - Game utilities
+   - `modulelib` (0-99) - Module helpers
+   - `startup` (0-99) - Startup screen
+   - `client` (100-499) - Main client
+   - `game_interface` (500-999) - Game UI
+
+### Creating a New Module
+1. Create directory: `modules/game_mymodule/`
+2. Create `mymodule.otmod`:
+```yaml
+Module
+  name: game_mymodule
+  description: My custom module
+  author: Me
+  sandboxed: true
+  scripts: [ mymodule ]
+  dependencies: [ corelib, gamelib ]
+  @onLoad: init()
+  @onUnload: terminate()
+```
+3. Create `mymodule.lua`:
+```lua
+-- Global variables
+myWindow = nil
+
+function init()
+    -- Load UI
+    myWindow = g_ui.displayUI('mymodule')
+    
+    -- Connect to game events
+    connect(g_game, {
+        onGameStart = onGameStart,
+        onGameEnd = onGameEnd
+    })
+end
+
+function terminate()
+    disconnect(g_game, {
+        onGameStart = onGameStart,
+        onGameEnd = onGameEnd
+    })
+    
+    if myWindow then
+        myWindow:destroy()
+        myWindow = nil
+    end
+end
+
+function onGameStart()
+    myWindow:show()
+end
+
+function onGameEnd()
+    myWindow:hide()
+end
+```
+
+### Controller Pattern (Modern Approach)
+```lua
+MyController = Controller:new()
+
+function MyController:onInit()
+    -- Called once when module loads
+    Keybind.new('Windows', 'Toggle MyModule', 'Ctrl+M', '')
+    Keybind.bind('Windows', 'Toggle MyModule', {
+        { type = KEY_DOWN, callback = function() self:toggle() end }
+    })
+end
+
+function MyController:onTerminate()
+    Keybind.delete('Windows', 'Toggle MyModule')
+end
+
+function MyController:onGameStart()
+    -- Called when player enters game
+    self:registerEvents(g_game, {
+        onTeleport = self.onTeleport,
+        onDeath = self.onDeath
+    })
+end
+
+function MyController:onGameEnd()
+    -- Called when player leaves game
+end
+```
+
+---
+
+## 3. OTUI SYSTEM (User Interface)
+
+### OTUI File Format
+OTUI uses a YAML-like syntax with indentation-based hierarchy.
+
+### Basic Syntax
+```yaml
+# Widget definition: WidgetName < ParentType
+MainWindow
+  id: myWindow
+  text: Window Title
+  size: 400 300
+  anchors.centerIn: parent
+  
+  # Child widgets
+  Label
+    id: myLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 10
+    text: Hello World
+    
+  Button
+    id: myButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 10
+    margin-right: 10
+    size: 100 30
+    text: Click Me
+    @onClick: onButtonClick()
+```
+
+### Base Widget Types (from src/framework/ui/)
+- `UIWidget` - Base widget
+- `UIWindow` - Window with title bar
+- `UIButton` - Clickable button
+- `UILabel` - Text display
+- `UITextEdit` - Text input
+- `UICheckBox` - Toggle checkbox
+- `UIComboBox` - Dropdown selection
+- `UIScrollArea` - Scrollable container
+- `UIProgressBar` - Progress indicator
+- `UIScrollBar` - Scrollbar control
+
+### Game-Specific Widgets (from src/client/)
+- `UIGameMap` - Game map display
+- `UIItem` - Item display
+- `UICreature` - Creature display
+- `UIMinimap` - Minimap display
+- `UIProgressRect` - Progress rectangle
+- `UISprite` - Sprite display
+- `UIGraph` - Graph display
+
+### Common Properties
+```yaml
+# Size and position
+size: 100 50              # width height
+position: 10 20           # x y
+width: 100
+height: 50
+
+# Anchoring (relative positioning)
+anchors.top: parent.top
+anchors.left: parent.left
+anchors.bottom: prev.top
+anchors.right: next.left
+anchors.centerIn: parent
+
+# Margins
+margin: 5                 # all sides
+margin-top: 10
+margin-right: 10
+margin-bottom: 10
+margin-left: 10
+
+# Padding
+padding: 5
+padding-top: 10
+
+# Visual
+background-color: #1a1a1a
+color: #ffffff
+opacity: 0.8
+visible: true
+enabled: true
+phantom: true             # Click-through
+
+# Image
+image-source: /images/ui/button
+image-border: 3           # 9-slice border
+image-clip: 0 0 100 50    # Sprite sheet clip
+image-color: #ffffff
+
+# Text
+text: Hello
+text-align: center
+text-offset: 0 5
+font: verdana-11px-antialised
+text-wrap: true
+text-auto-resize: true
+
+# Focus and interaction
+focusable: true
+draggable: true
+```
+
+### State Modifiers
+```yaml
+Button < UIButton
+  # Normal state properties
+  color: #ffffff
+  image-clip: 0 0 22 23
+  
+  # Hover state
+  $hover:
+    color: #ffff00
+  
+  # Pressed state
+  $pressed:
+    image-clip: 0 46 22 23
+    text-offset: 1 1
+  
+  # Disabled state
+  $disabled:
+    color: #888888
+    opacity: 0.5
+  
+  # On/active state
+  $on:
+    image-clip: 0 23 22 23
+  
+  # Combined states
+  $hover !disabled:
+    color: #ffff00
+```
+
+### Style Inheritance
+```yaml
+# Define a style
+MyButton < Button
+  size: 100 30
+  font: cipsoftFont
+  
+# Use the style
+Panel
+  MyButton
+    id: button1
+    text: Button 1
+  MyButton
+    id: button2
+    text: Button 2
+```
+
+### Event Handlers
+```yaml
+Button
+  @onClick: onButtonClicked()
+  @onDoubleClick: onButtonDoubleClicked()
+  
+TextEdit
+  @onTextChange: onTextChanged(self:getText())
+  @onKeyDown: onKeyPressed(self, keyCode)
+  
+CheckBox
+  @onCheckChange: onCheckChanged(self:isChecked())
+  
+ComboBox
+  @onOptionChange: onOptionChanged(text, data)
+```
+
+### Loading UI in Lua
+```lua
+-- Import styles
+g_ui.importStyle('styles/mystyles')
+
+-- Display UI (creates and shows window)
+local window = g_ui.displayUI('mywindow')
+
+-- Create UI (creates but doesn't show)
+local widget = g_ui.createWidget('MyWidget', parentWidget)
+
+-- Load UI from string
+local widget = g_ui.loadUI([[
+  Panel
+    id: myPanel
+    size: 100 100
+]], parentWidget)
+```
+
+### HTML-Style UI (Modern)
+```html
+<!-- In .html file -->
+<div id="myPanel" class="Panel" style="size: 100 100">
+  <button onclick="self:onButtonClick()">Click</button>
+  <input type="text" *value="self.inputValue" onchange="self:onInputChange(event)"/>
+  <div *for="let item in self.items">
+    <span>{{ item.name }}</span>
+  </div>
+</div>
+```
+
+---
+
+## 4. GRAPHICS AND RENDERING
+
+### Rendering Pipeline
+1. **DrawPoolManager** manages multiple draw pools
+2. **DrawPool** batches draw calls by type
+3. **Painter** executes OpenGL commands
+4. **Framebuffer** for off-screen rendering
+5. **Shaders** for visual effects
+
+### Key Graphics Classes
+```
+src/framework/graphics/
+├── drawpoolmanager.cpp    # Pool management
+├── drawpool.cpp           # Draw call batching
+├── painter.cpp            # OpenGL rendering
+├── framebuffer.cpp        # FBO management
+├── texture.cpp            # Texture handling
+├── texturemanager.cpp     # Texture caching
+├── shadermanager.cpp      # Shader management
+├── shaderprogram.cpp      # Shader compilation
+└── bitmapfont.cpp         # Text rendering
+```
+
+### MapView Rendering (src/client/mapview.cpp)
+```cpp
+// Key methods:
+void MapView::drawFloor()              // Draw floor tiles
+void MapView::drawLights()             // Draw lighting
+void MapView::drawCreatureInformation() // Draw names/health
+void MapView::drawForeground()         // Draw UI overlays
+void MapView::updateVisibleTiles()     // Calculate visible area
+void MapView::followCreature()         // Camera follow
+void MapView::setShader()              // Apply map shader
+```
+
+### Shader System
+Shaders are GLSL fragment shaders applied to map/creatures.
+
+**Shader Types:**
+- **Map Shaders**: Applied to entire map view
+- **Outfit Shaders**: Applied to creature outfits
+- **Mount Shaders**: Applied to mounts
+
+**Creating a Shader (modules/game_shaders/):**
+```lua
+-- Register shader
+g_shaders.createFragmentShader('MyShader', 'shaders/fragment/myshader.frag', false)
+g_shaders.addMultiTexture('MyShader', 'images/texture1')
+g_shaders.setupMapShader('MyShader')
+
+-- Apply to map
+local map = modules.game_interface.getMapPanel()
+map:setShader('MyShader')
+
+-- Apply to creature
+local player = g_game.getLocalPlayer()
+player:setShader('MyShader')
+```
+
+**Example Fragment Shader:**
+```glsl
+// shaders/fragment/grayscale.frag
+uniform sampler2D u_Tex0;
+varying vec2 v_TexCoord;
+
+void main() {
+    vec4 color = texture2D(u_Tex0, v_TexCoord);
+    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    gl_FragColor = vec4(vec3(gray), color.a);
+}
+```
+
+---
+
+## 5. WALKING AND MOVEMENT SYSTEM
+
+### Walk System Architecture
+```
+modules/game_walk/walk.lua    # Lua controller
+src/client/localplayer.cpp    # C++ player movement
+src/client/creature.cpp       # Base creature movement
+```
+
+### WalkController (walk.lua)
+```lua
+WalkController = Controller:new()
+
+-- Key bindings
+local keys = {
+    { "Up",      North },
+    { "Right",   East },
+    { "Down",    South },
+    { "Left",    West },
+    { "Numpad8", North },
+    { "Numpad9", NorthEast },
+    -- etc.
+}
+
+-- Walk function
+local function walk(dir)
+    local player = g_game.getLocalPlayer()
+    if not player or g_game.isDead() then return end
+    
+    if player:isWalkLocked() then return end
+    
+    -- Pre-walk (client-side prediction)
+    if g_game.getFeature(GameAllowPreWalk) then
+        local toPos = Position.translatedToDirection(player:getPosition(), dir)
+        local toTile = g_map.getTile(toPos)
+        if toTile and toTile:isWalkable() then
+            player:preWalk(dir)
+        end
+    end
+    
+    g_game.walk(dir)
+end
+
+-- Smart walk (diagonal with combined keys)
+local function changeWalkDir(dir, pop)
+    local diagonalMap = {
+        [North] = { [West] = NorthWest, [East] = NorthEast },
+        [South] = { [West] = SouthWest, [East] = SouthEast },
+        -- etc.
+    }
+    -- Combine directions for diagonal movement
+end
+```
+
+### LocalPlayer Walk Methods (C++)
+```cpp
+void LocalPlayer::walk(const Position& oldPos, const Position& newPos);
+void LocalPlayer::preWalk(Otc::Direction direction);
+void LocalPlayer::cancelWalk(Otc::Direction direction);
+bool LocalPlayer::autoWalk(const Position& destination, bool retry);
+void LocalPlayer::stopAutoWalk();
+void LocalPlayer::lockWalk(uint16_t millis);
+bool LocalPlayer::canWalk(bool ignoreLock);
+```
+
+### Creature Walk Animation (C++)
+```cpp
+void Creature::walk(const Position& oldPos, const Position& newPos);
+void Creature::updateWalk();
+void Creature::updateWalkAnimation();
+void Creature::updateWalkOffset(uint8_t totalPixelsWalked);
+void Creature::terminateWalk();
+```
+
+### Floor Changes
+```lua
+-- Check if player can change floor
+local function canChangeFloor(pos, deltaZ)
+    local toPos = {x = pos.x, y = pos.y, z = pos.z + deltaZ}
+    local toTile = g_map.getTile(toPos)
+    if not toTile then return false end
+    
+    if deltaZ > 0 then  -- Going DOWN
+        return toTile:isWalkable() and (toTile:hasElevation(3) or toTile:hasFloorChange())
+    else  -- Going UP
+        local fromTile = g_map.getTile(player:getPosition())
+        return fromTile and fromTile:hasElevation(3) and toTile:isWalkable()
+    end
+end
+```
+
+---
+
+## 6. PROTOCOL AND NETWORKING
+
+### Protocol Classes
+```
+src/client/
+├── protocolgame.h          # Game protocol header (22KB)
+├── protocolgame.cpp        # Game protocol base
+├── protocolgameparse.cpp   # Incoming packet parsing (225KB, 6341 lines)
+├── protocolgamesend.cpp    # Outgoing packet creation (45KB)
+└── protocolcodes.h         # Opcode definitions
+```
+
+### Key Protocol Parse Methods (209 methods)
+```cpp
+void ProtocolGame::parseMessage(const InputMessagePtr& msg);
+void ProtocolGame::parseLogin(const InputMessagePtr& msg);
+void ProtocolGame::parseMapDescription(const InputMessagePtr& msg);
+void ProtocolGame::parseFloorDescription(const InputMessagePtr& msg);
+void ProtocolGame::parseCreatureMove(const InputMessagePtr& msg);
+void ProtocolGame::parseCreatureSay(const InputMessagePtr& msg);
+void ProtocolGame::parsePlayerStats(const InputMessagePtr& msg);
+void ProtocolGame::parsePlayerSkills(const InputMessagePtr& msg);
+// ... 200+ more parse methods
+```
+
+### Lua Protocol Extension
+```lua
+-- modules/gamelib/protocol.lua
+ProtocolGame = extends(Protocol, "ProtocolGame")
+
+-- Custom opcode handler
+ProtocolGame.registerExtendedOpcode(100, function(protocol, opcode, buffer)
+    local msg = InputMessage.create()
+    msg:setBuffer(buffer)
+    
+    local value = msg:getString()
+    -- Handle custom packet
+end)
+
+-- Sending custom packets
+function ProtocolGame:sendExtendedOpcode(opcode, buffer)
+    local msg = OutputMessage.create()
+    msg:addU8(ClientExtendedOpcode)
+    msg:addU8(opcode)
+    msg:addString(buffer)
+    self:send(msg)
+end
+```
+
+---
+
+## 7. LUA BINDINGS
+
+### Global Objects
+```lua
+g_app          -- Application (name, version, etc.)
+g_game         -- Game state (online, player, features)
+g_map          -- Map management
+g_things       -- ThingType manager (items, creatures, effects)
+g_sprites      -- Sprite manager
+g_shaders      -- Shader manager
+g_fonts        -- Font manager
+g_textures     -- Texture manager
+g_sounds       -- Sound manager
+g_modules      -- Module manager
+g_ui           -- UI manager
+g_window       -- Platform window
+g_mouse        -- Mouse state
+g_keyboard     -- Keyboard state
+g_clock        -- Time functions
+g_logger       -- Logging
+g_resources    -- File resources
+g_configs      -- Configuration manager
+g_settings     -- User settings
+g_dispatcher   -- Event dispatcher
+g_platform     -- Platform info
+g_html         -- HTML rendering
+```
+
+### Common Game Functions
+```lua
+-- Game state
+g_game.isOnline()
+g_game.getLocalPlayer()
+g_game.getClientVersion()
+g_game.getProtocolVersion()
+g_game.getFeature(feature)
+g_game.enableFeature(feature)
+g_game.disableFeature(feature)
+
+-- Player actions
+g_game.walk(direction)
+g_game.turn(direction)
+g_game.stop()
+g_game.use(thing)
+g_game.useWith(item, target)
+g_game.attack(creature)
+g_game.follow(creature)
+g_game.cancelAttack()
+g_game.cancelFollow()
+g_game.look(thing)
+
+-- Communication
+g_game.talk(text)
+g_game.talkChannel(mode, channelId, text)
+g_game.openPrivateChannel(name)
+
+-- Map
+g_map.getTile(position)
+g_map.getCreatureById(id)
+g_map.cleanTexts()
+```
+
+### Event System
+```lua
+-- Connect to events
+connect(g_game, {
+    onGameStart = onGameStart,
+    onGameEnd = onGameEnd,
+    onTextMessage = onTextMessage,
+    onTalk = onTalk,
+    onCreatureAppear = onCreatureAppear,
+    onCreatureDisappear = onCreatureDisappear,
+    onCreatureMove = onCreatureMove,
+})
+
+-- Disconnect events
+disconnect(g_game, {
+    onGameStart = onGameStart,
+    -- ...
+})
+
+-- Custom events
+signalcall(object.onSomeEvent, arg1, arg2)
+```
+
+### Scheduling
+```lua
+-- One-time event
+scheduleEvent(function() print("Hello") end, 1000)
+
+-- Repeating event
+local event = cycleEvent(function() print("Tick") end, 500)
+event:cancel()
+
+-- Add to main loop
+addEvent(function() print("Next frame") end)
+
+-- Remove event
+removeEvent(scheduledEvent)
+```
+
+---
+
+## 8. KEY SOURCE FILES REFERENCE
+
+### Framework Core
+| File | Purpose |
+|------|---------|
+| `src/framework/core/application.cpp` | Application lifecycle |
+| `src/framework/core/module.cpp` | Module loading (274 lines) |
+| `src/framework/core/modulemanager.cpp` | Module discovery/management |
+| `src/framework/core/eventdispatcher.cpp` | Event loop |
+| `src/framework/core/resourcemanager.cpp` | File/resource loading (24KB) |
+| `src/framework/luafunctions.cpp` | Lua bindings (85KB) |
+
+### Framework UI
+| File | Purpose |
+|------|---------|
+| `src/framework/ui/uiwidget.cpp` | Base widget (66KB) |
+| `src/framework/ui/uimanager.cpp` | UI management (23KB) |
+| `src/framework/ui/uitextedit.cpp` | Text input (62KB) |
+| `src/framework/ui/uianchorlayout.cpp` | Anchor positioning |
+
+### Framework Graphics
+| File | Purpose |
+|------|---------|
+| `src/framework/graphics/drawpool.cpp` | Draw batching |
+| `src/framework/graphics/drawpoolmanager.cpp` | Pool management |
+| `src/framework/graphics/painter.cpp` | GL rendering |
+| `src/framework/graphics/texture.cpp` | Texture handling |
+| `src/framework/graphics/shadermanager.cpp` | Shader management |
+
+### Client
+| File | Purpose |
+|------|---------|
+| `src/client/game.cpp` | Game state (59KB) |
+| `src/client/map.cpp` | Map storage (52KB) |
+| `src/client/mapview.cpp` | Map rendering (35KB) |
+| `src/client/creature.cpp` | Creature logic (47KB) |
+| `src/client/localplayer.cpp` | Player logic (20KB) |
+| `src/client/tile.cpp` | Tile logic (32KB) |
+| `src/client/thing.cpp` | Base thing (15KB) |
+| `src/client/item.cpp` | Item logic (13KB) |
+| `src/client/protocolgameparse.cpp` | Protocol parsing (225KB) |
+| `src/client/protocolgamesend.cpp` | Protocol sending (45KB) |
+| `src/client/luafunctions.cpp` | Client Lua bindings (92KB) |
+
+### Key Modules
+| Module | Purpose |
+|--------|---------|
+| `modules/corelib/` | Core Lua utilities (51 files) |
+| `modules/gamelib/` | Game utilities (18 files) |
+| `modules/game_interface/` | Main game UI (7 files) |
+| `modules/game_walk/` | Movement system |
+| `modules/game_console/` | Chat system |
+| `modules/game_battle/` | Battle list |
+| `modules/game_inventory/` | Inventory UI |
+| `modules/game_skills/` | Skills panel |
+| `modules/game_hotkeys/` | Hotkey management |
+| `modules/game_shaders/` | Shader effects |
+| `modules/game_minimap/` | Minimap |
+
+---
+
+## 9. COMMON PATTERNS
+
+### Module Initialization
+```lua
+-- Standard module pattern
+local myWindow = nil
+
+function init()
+    myWindow = g_ui.displayUI('myui')
+    myWindow:hide()
+    
+    connect(g_game, {
+        onGameStart = show,
+        onGameEnd = hide
+    })
+    
+    if g_game.isOnline() then
+        show()
+    end
+end
+
+function terminate()
+    disconnect(g_game, {
+        onGameStart = show,
+        onGameEnd = hide
+    })
+    
+    if myWindow then
+        myWindow:destroy()
+        myWindow = nil
+    end
+end
+
+function show()
+    myWindow:show()
+    myWindow:raise()
+    myWindow:focus()
+end
+
+function hide()
+    myWindow:hide()
+end
+
+function toggle()
+    if myWindow:isVisible() then
+        hide()
+    else
+        show()
+    end
+end
+```
+
+### MiniWindow Pattern
+```lua
+-- For draggable/closeable panel windows
+function init()
+    myWindow = g_ui.loadUI('mywindow', modules.game_interface.getLeftPanel())
+    myWindow:setup()  -- MiniWindow setup
+    myWindow.onClose = hide
+end
+```
+
+### Event-Driven Updates
+```lua
+function init()
+    connect(LocalPlayer, {
+        onHealthChange = updateHealth,
+        onManaChange = updateMana,
+        onStatesChange = updateStates
+    })
+end
+
+function updateHealth(localPlayer, health, maxHealth)
+    healthBar:setValue(health)
+    healthBar:setMaxValue(maxHealth)
+    healthLabel:setText(health .. ' / ' .. maxHealth)
+end
+```
+
+### Right-Click Menu
+```lua
+function onMapMouseRelease(self, mousePos, mouseButton)
+    if mouseButton == MouseRightButton then
+        local menu = g_ui.createWidget('PopupMenu')
+        menu:addOption('Look', function() g_game.look(thing) end)
+        menu:addOption('Use', function() g_game.use(thing) end)
+        menu:addSeparator()
+        menu:addOption('Attack', function() g_game.attack(creature) end)
+        menu:display(mousePos)
+    end
+end
+```
+
+### Settings Persistence
+```lua
+local settings = {
+    enabled = true,
+    showNames = true,
+    opacity = 0.8
+}
+
+function init()
+    local saved = g_settings.getNode('mymodule')
+    if saved then
+        for k, v in pairs(saved) do
+            settings[k] = v
+        end
+    end
+end
+
+function terminate()
+    g_settings.setNode('mymodule', settings)
+end
+```
+
+---
+
+## 10. DEBUGGING & DEVELOPMENT
+
+### Logging
+```lua
+g_logger.debug("Debug message")
+g_logger.info("Info message")
+g_logger.warning("Warning message")
+g_logger.error("Error message")
+g_logger.fatal("Fatal error - exits app")
+```
+
+### Hot Reloading
+- Modules with `reloadable: true` can be reloaded
+- Use `g_modules.reloadModule('module_name')`
+- Auto-reload enabled in init.lua: `g_modules.enableAutoReload()`
+
+### Terminal Commands
+- Press Ctrl+Shift+T to open terminal
+- Execute Lua code directly
+- View logs and errors
+
+### Common Issues
+1. **Module not loading**: Check dependencies, verify .otmod syntax
+2. **UI not showing**: Verify anchors, check parent widget
+3. **Events not firing**: Ensure proper connect/disconnect
+4. **Walk issues**: Check GameFeatures, verify tile walkability
+
+---
+
+## 11. FEATURE FLAGS
+```lua
+-- Check/enable game features
+g_game.getFeature(GameAllowPreWalk)
+g_game.getFeature(GameForceFirstAutoWalkStep)
+g_game.getFeature(GamePlayerMounts)
+g_game.getFeature(GameThingMarks)
+g_game.getFeature(GameBrowseField)
+-- See src/client/const.h for full list
+```
+
+---
+
+## 12. FILE LOCATIONS QUICK REFERENCE
+
+**To add a new module:** `modules/game_yourmodule/`
+**To modify UI styles:** `data/styles/`
+**To add images:** `data/images/`
+**To add fonts:** `data/fonts/`
+**To modify core rendering:** `src/framework/graphics/`
+**To modify game logic:** `src/client/`
+**To add Lua bindings:** `src/client/luafunctions.cpp` or `src/framework/luafunctions.cpp`
+**To modify protocol:** `src/client/protocolgame*.cpp`
+
+---
+
+This document covers the essential knowledge needed to work with the OTClient codebase.
+For specific implementations, refer to the source files listed above.

@@ -4,6 +4,11 @@ Panel
     !text: tr('Classic control')
 
   OptionCheckBox
+    id: smartCast
+    !text: tr('Smart Magic (Instant)')
+    !tooltip: tr('Cast spells immediately at mouse position without confirmation')
+
+  OptionCheckBox
     id: autoChaseOverride
     !text: tr('Allow auto chase override')
 

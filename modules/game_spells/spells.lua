@@ -663,7 +663,9 @@ function g_spells.onExtendedOpcode(protocol, opcode, buffer)
     end
     
     if data.action == "request_position" then
+        local smartCast = modules.client_options.getOption("smartCast")
         local options = {
+            instant = smartCast,
             spellName = data.spellName,
             asset = data.asset,
             tiles = data.tiles,
