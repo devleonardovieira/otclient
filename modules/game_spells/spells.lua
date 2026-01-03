@@ -48,7 +48,8 @@ local function computeTileScreenRect(gameMapPanel, tilePos, tiles, cache, camera
     local finalX = baseX + (tileSize / 2) - (width / 2)
     local finalY = baseY + (tileSize / 2) - (height / 2)
     
-    return { x = finalX, y = finalY, width = width, height = height }
+    -- Rounding to prevent gaps/lines between tiles
+    return { x = math.floor(finalX), y = math.floor(finalY), width = math.ceil(width), height = math.ceil(height) }
 end
 
 -- ========================================================
@@ -173,8 +174,8 @@ end
 function g_spells.onGameEnd()
     g_spells.cleanupSelection()
     -- Clear Cache on Logout (New Session = New IDs allowed)
-    _G.g_spells_cache = {}
-    g_spells.RegisteredEffects = _G.g_spells_cache
+    --[[ _G.g_spells_cache = {}
+    g_spells.RegisteredEffects = _G.g_spells_cache ]]
 end
 
 function terminate()
@@ -292,7 +293,12 @@ local function updateRender(state, gameMapPanel, centerPos, isValid)
                 local w = entry.widget
                 local config = entry.config or {}
                 
-                local rect = computeTileScreenRect(gameMapPanel, centerPos, config.tiles or state.options.tiles, cache, state.cameraPos)
+                local renderPos = centerPos
+                if config.offset then
+                    renderPos = { x = centerPos.x + config.offset.x, y = centerPos.y + config.offset.y, z = centerPos.z }
+                end
+                
+                local rect = computeTileScreenRect(gameMapPanel, renderPos, config.tiles or state.options.tiles, cache, state.cameraPos)
                 
                 if rect then
                     w:setSize({width = rect.width, height = rect.height})
@@ -305,10 +311,14 @@ local function updateRender(state, gameMapPanel, centerPos, isValid)
         end
         
         -- Visual Feedback (Widget Color)
-        local color = isValid and '#ffffff' or '#ff4444'
+        local mainColor = isValid and '#00FF00' or '#FF0000' -- Solid for Border
+        local bgColor = isValid and '#00FF0044' or '#FF000044' -- Transparent for Fill
+        
         for _, entry in ipairs(state.previewWidgets) do
             if entry.widget then
-                entry.widget:setImageColor(color)
+                entry.widget:setBorderColor(mainColor)
+                entry.widget:setBackgroundColor(bgColor)
+                entry.widget:setImageColor('#ffffff') -- Keep icon original color (white tint)
             end
         end
     end
@@ -474,10 +484,19 @@ function SelectionController:start(params)
 
     -- 3. Setup Preview (Asset-Driven)
     if params.asset then
-         local w = WidgetPool:get(modules.game_interface.getRootPanel())
-         w:setImageSource(params.asset)
-         -- Pipeline Structure: { widget, config }
-         table.insert(state.previewWidgets, { widget = w, config = { tiles = params.tiles } })
+        if params.areaOffsets and #params.areaOffsets > 0 then
+            for _, offset in ipairs(params.areaOffsets) do
+                local w = WidgetPool:get(modules.game_interface.getRootPanel())
+               --[[  w:setImageSource(params.asset) ]]
+                w:setOpacity(0.8)
+                table.insert(state.previewWidgets, { widget = w, config = { tiles = {width=1, height=1}, offset = offset } })
+            end
+        else
+             local w = WidgetPool:get(modules.game_interface.getRootPanel())
+            --[[  w:setImageSource(params.asset) ]]
+             -- Pipeline Structure: { widget, config }
+             table.insert(state.previewWidgets, { widget = w, config = { tiles = params.tiles } })
+        end
     end
     
     -- 4. Setup Cursor Feedback (Decoupled Listener)
@@ -670,6 +689,7 @@ function g_spells.onExtendedOpcode(protocol, opcode, buffer)
             asset = data.asset,
             tiles = data.tiles,
             range = data.range,
+            areaOffsets = data.areaOffsets,
             callback = function(pos)
                 g_spells.sendCast(data.spellName, pos)
             end
