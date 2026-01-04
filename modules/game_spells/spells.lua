@@ -357,12 +357,34 @@ local function updateRender(state, gameMapPanel, centerPos, isValid, cameraPos)
                 local rect = computeTileScreenRect(gameMapPanel, renderPos, tiles, cache, cameraPos)
                 
                 if rect then
-                    w:setSize({width = rect.width, height = rect.height})
+                    -- Visual Improvement: 1px Gap + Border same as background
+                    w:setSize({width = math.max(1, rect.width - 1), height = math.max(1, rect.height - 1)})
                     w:setPosition({x = rect.x, y = rect.y})
+                    
+                    -- Define cores
+                    local bgColor = state.isValid and '#00FF0066' or '#FF000066' -- mesma cor do fundo
+                    w:setBackgroundColor(bgColor)
+                    w:setBorderColor(bgColor)
+                    w:setBorderWidth(1)
+                    
                     w:setVisible(true)
                 else
                     w:setVisible(false)
                 end
+            end
+
+            
+            -- Hide Unused Widgets (if area shrank or widgets exceed needed)
+            if #state.previewWidgets > 0 then
+                -- Note: Logic above iterates all widgets. But if we dynamically resize pool?
+                -- Current logic iterates ALL previewWidgets. So "unused" means handled inside loop?
+                -- Actually, if logic is "one widget per tile", we just iterate all.
+                -- BUT if we want to support dynamic area size (not current case), we would need to hide extras.
+                -- For now, all widgets in state.previewWidgets ARE used.
+                -- The "Hide Unused" logic is relevant if we were reusing a pool > needed.
+                -- Since we create exactly needed count in init, this is fine.
+                -- But for safety/robustness if logic changes:
+                -- for i = #needed + 1, #state.previewWidgets do ... end
             end
         end
     end
@@ -474,10 +496,10 @@ function SelectionController:start(params)
                 -- Optimization: Color Update only on state change
                 if state.previewWidgets then
                     local mainColor = isValid and '#00FF00' or '#FF0000'
-                    local bgColor = isValid and '#00FF0044' or '#FF000044'
+                    local bgColor = isValid and '#00FF0066' or '#FF000066' -- Slightly more opaque for better visibility without borders
                     for _, entry in ipairs(state.previewWidgets) do
                         if entry.widget then
-                            entry.widget:setBorderColor(mainColor)
+                            -- entry.widget:setBorderColor(mainColor) -- Removed to clean up the grid
                             entry.widget:setBackgroundColor(bgColor)
                             entry.widget:setImageColor('#ffffff')
                         end
@@ -568,10 +590,41 @@ function SelectionController:start(params)
                 table.insert(state.previewWidgets, { widget = w, config = { tiles = {width=1, height=1}, offset = offset } })
             end
         else
-             local w = WidgetPool:get(rootPanel)
-            --[[  w:setImageSource(params.asset) ]]
-             -- Pipeline Structure: { widget, config }
-             table.insert(state.previewWidgets, { widget = w, config = { tiles = params.tiles } })
+            -- Grid Generation: Populate widgets for each tile in the area
+            -- This ensures updateRender has enough widgets to display the full grid
+            local tiles = params.tiles or {width=1, height=1}
+            local width = tiles.width or 1
+            local height = tiles.height or 1
+            
+            for x = 0, width - 1 do
+                for y = 0, height - 1 do
+                    local w = WidgetPool:get(rootPanel)
+                    w:setOpacity(0.8) -- Default opacity
+                    -- Note: offset is relative to center (0,0)
+                    -- Adjusting so (0,0) is center, or top-left? 
+                    -- Standard: Center is target. Grid usually expands around.
+                    -- If 3x3, offsets: -1,-1 to 1,1? Or 0,0 to 2,2?
+                    -- Assuming 0,0 is Top-Left of the area relative to target? 
+                    -- Actually, computeTileScreenRect handles 'tiles' dimension centering.
+                    -- But if we split into 1x1 widgets, we need manual offsets.
+                    
+                    -- Let's use 0,0 as top-left of the multi-tile area relative to center?
+                    -- No, computeTileScreenRect with 'tiles' param handles the whole area centering.
+                    -- BUT the user wants a GRID (1x1 tiles), not one big stretched image.
+                    
+                    -- Correct Approach: Generate 1x1 widgets with Offsets centered around 0,0
+                    local offsetX = x - math.floor(width / 2)
+                    local offsetY = y - math.floor(height / 2)
+                    
+                    table.insert(state.previewWidgets, { 
+                        widget = w, 
+                        config = { 
+                            tiles = {width=1, height=1}, 
+                            offset = {x=offsetX, y=offsetY, z=0} 
+                        } 
+                    })
+                end
+            end
         end
     end
     
