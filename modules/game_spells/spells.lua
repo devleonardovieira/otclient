@@ -723,8 +723,28 @@ function g_spells.requestPosition(options)
         if not gameMapPanel then return end
         local mousePos = g_window.getMousePosition()
         local tile = gameMapPanel:getTile(mousePos)
-        if tile and options.callback then
-            pcall(options.callback, tile:getPosition())
+        
+        local valid = false
+        if tile then
+            local pos = tile:getPosition()
+            local player = g_game.getLocalPlayer()
+            local playerPos = player and player:getPosition()
+            
+            -- Validate target using the same logic as the cursor
+            -- We create a temporary state object to pass options
+            if validateTarget({ options = options }, playerPos, pos) then
+                if options.callback then
+                    pcall(options.callback, pos)
+                end
+                valid = true
+            end
+        end
+        
+        -- If invalid or no tile, fallback to manual selection (Cursor)
+        -- This ensures the user can see WHY it failed (red cursor) and correct it.
+        if not valid then
+            options.instant = false
+            SelectionController:start(options)
         end
         return
     end
