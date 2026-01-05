@@ -1,0 +1,9 @@
+Module
+  name: client_camera
+  description: Camera control system
+  author: otclient.ovh
+  website: https://github.com/edubart/otclient
+  sandboxed: true
+  scripts: [ camera ]
+  @onLoad: init()
+  @onUnload: terminate()
