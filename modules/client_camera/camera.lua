@@ -2,10 +2,11 @@ Camera = {}
 
 local moveEvent = nil
 local gameMapPanel = nil
+local lastValidCamPos = nil -- Armazena a última posição válida conhecida da câmera
 
 -- Configuration
-local SMOOTH_SPEED = 0.1 -- Factor for interpolation (0.0 to 1.0). Higher = faster.
-local SNAP_DISTANCE = 0.5 -- Distance in tiles to snap to target
+local SMOOTH_SPEED = 1.0 -- Instant snap (was 0.1)
+local SNAP_DISTANCE = 30.0 -- Always snap if visible (was 0.5)
 
 function init()
     connect(g_game, {
@@ -33,6 +34,7 @@ end
 function onGameEnd()
     Camera.stop()
     gameMapPanel = nil
+    lastValidCamPos = nil
 end
 
 -- Public Functions
@@ -42,15 +44,23 @@ function Camera.stop()
         removeEvent(moveEvent)
         moveEvent = nil
     end
+    
+    -- [NOVO] Avisa o servidor para parar de espectar (retorna o char para posição original)
+    local protocolGame = g_game.getProtocolGame()
+    if protocolGame then
+        protocolGame:sendExtendedOpcode(100, json.encode({action = "stop"}))
+    end
 end
 
 function Camera.follow(target)
     if not gameMapPanel then return end
     
+    local targetName = nil
     local creature = target
     
-    -- Handle string input (name)
+    -- Lógica para buscar pelo nome
     if type(target) == 'string' then
+        targetName = target
         creature = nil
         local spectators = gameMapPanel:getSpectators()
         for _, spec in ipairs(spectators) do
@@ -59,42 +69,85 @@ function Camera.follow(target)
                 break
             end
         end
-        
-        if not creature then
-            print("[Camera] Creature not found: " .. target)
-            return
-        end
+    elseif target then
+        targetName = target:getName()
     end
 
-    if not creature then return end
+    -- [NOVO] Envia solicitação ao servidor
+    -- O servidor vai registrar o espectador e enviar os dados do mapa (remote view).
+    if targetName then
+        local protocolGame = g_game.getProtocolGame()
+        if protocolGame then
+            -- Verifica se é o próprio jogador para enviar "stop" em vez de "start"
+            local localPlayer = g_game.getLocalPlayer()
+            if localPlayer and targetName:lower() == localPlayer:getName():lower() then
+                 protocolGame:sendExtendedOpcode(100, json.encode({action = "stop"}))
+            else
+                 protocolGame:sendExtendedOpcode(100, json.encode({action = "start", target = targetName}))
+            end
+        end
+    end
+    
+    -- Se a criatura não está na tela ainda (longe), esperamos o servidor teleportar
+    if not creature then
+        if type(target) == 'string' then
+            -- Tenta focar novamente em 500ms (tempo para o teleporte ocorrer)
+            scheduleEvent(function() 
+                local specs = gameMapPanel:getSpectators()
+                for _, spec in ipairs(specs) do
+                    if spec:getName():lower() == target:lower() then
+                        Camera.follow(spec) -- Chama recursivamente agora com o objeto criatura
+                        break
+                    end
+                end
+            end, 500)
+        end
+        return 
+    end
 
-    -- Start Smooth Transition
-    Camera.stop()
-    gameMapPanel:followCreature(nil) -- Unlock camera
+    -- Inicia a transição suave da câmera (Código original mantido para suavidade)
+    if moveEvent then
+        removeEvent(moveEvent)
+        moveEvent = nil
+    end
+    gameMapPanel:followCreature(nil) -- Solta a câmera do player local
 
     local function updateFollow()
         local camPos = gameMapPanel:getCameraPosition()
         local destPos = creature:getPosition()
 
-        -- Safety check: If creature disappears (out of range/logged out), stop to avoid crash
-        if not camPos or not destPos then
-            Camera.stop()
+        if not destPos then
+            -- Se perdeu o alvo, tenta recuperar ou para
+            if lastValidCamPos then
+                gameMapPanel:setCameraPosition(lastValidCamPos)
+            else
+                Camera.stop()
+            end
+            moveEvent = scheduleEvent(updateFollow, 100) 
             return
         end
+        
+        lastValidCamPos = {x=camPos.x, y=camPos.y, z=camPos.z}
 
-        -- Handle Z change: If floor is different, update Z instantly and continue smoothing X/Y
+        -- Safety check
+        if not camPos then
+             camPos = lastValidCamPos
+             if not camPos then Camera.stop() return end
+        end
+
+        -- Atualiza Z instantaneamente
         if camPos.z ~= destPos.z then
              camPos.z = destPos.z
              gameMapPanel:setCameraPosition(camPos)
+             lastValidCamPos = camPos
         end
 
-        -- Interpolate (Ease-Out)
+        -- Interpolação (Suavização)
         local dx = destPos.x - camPos.x
         local dy = destPos.y - camPos.y
         local dist = math.sqrt(dx*dx + dy*dy)
 
         if dist <= SNAP_DISTANCE then
-            -- Arrived
             gameMapPanel:followCreature(creature)
             moveEvent = nil
             return
@@ -104,7 +157,7 @@ function Camera.follow(target)
         local nextY = camPos.y + dy * SMOOTH_SPEED
 
         gameMapPanel:setCameraPosition({x = nextX, y = nextY, z = camPos.z})
-        moveEvent = scheduleEvent(updateFollow, 10) -- ~60-100 FPS
+        moveEvent = scheduleEvent(updateFollow, 10)
     end
 
     moveEvent = scheduleEvent(updateFollow, 10)
