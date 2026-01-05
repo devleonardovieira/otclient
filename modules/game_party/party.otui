@@ -1,0 +1,221 @@
+PlayerInfo < UIWidget
+  size: 256 110
+  image-source: /images/profile/playerInfoUI
+  phantom: true
+
+  UICreature
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-top: 26
+    margin-left: 20
+    id: outfit
+    size: 55 55
+    phantom: true
+
+  UIWidget
+    id: hpBar
+    anchors.left: parent.left
+    anchors.top: parent.top
+    image-source: /images/profile/playerHpFill
+    margin-top: 19
+    margin-left: 78
+    image-color: #d3452e
+    phantom: true
+
+  UILabel
+    id: valueHp
+    anchors.left: parent.left
+    anchors.top: parent.top
+    font: verdana-11px-rounded
+    size: 166 29
+    margin-top: 19
+    margin-left: 78
+    text-align: center
+    phantom: true
+
+  UIWidget
+    id: manaBar
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    image-source: /images/profile/playerManaFill
+    margin-bottom: 36
+    margin-left: 87
+    image-color: #3898fd
+    phantom: true
+
+  UILabel
+    id: valueMana
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    font: verdana-11px-rounded
+    size: 139 26
+    margin-bottom: 36
+    margin-left: 87
+    text-align: center
+    phantom: true
+
+  UIWidget
+    image-source: /images/profile/playerBar
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    size: 138 17
+    margin-bottom: 20
+    margin-left: 75
+    phantom: true
+
+  UIWidget
+    id: ultiBar
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    image-source: /images/profile/playerUltimateFill
+    margin-bottom: 20
+    margin-left: 75
+    image-color: #c09752
+    phantom: true
+    size: 138 17
+
+  UILabel
+    id: valueUlti
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    font: verdana-11px-rounded
+    size: 138 17
+    margin-bottom: 20
+    margin-left: 75
+    text-align: center
+    phantom: true
+
+  UIWidget
+    id: icon
+    image-source: /images/profile/playerIconHolder
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-bottom: 15
+    margin-left: 65
+    icon-source: /images/profile/icons-characters
+    icon-size: 20 20
+    icon-offset: 6 6
+
+PartyMember < UIWidget
+  size: 192 83
+  image-source: /images/profile/playerInfoUI
+  phantom: true
+  image-size: 192 83
+
+  UIWidget
+    id: nooutfit
+    image-source: /images/ui/nooutfit
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 11
+    margin-top: 15
+    phantom: true
+    visible: false
+
+  UICreature
+    anchors.centerIn: prev
+    id: outfit
+    size: 44 44
+    phantom: true
+
+  UIWidget
+    id: hpBar
+    anchors.left: parent.left
+    anchors.top: parent.top
+    image-source: /images/profile/partyHpFill
+    margin-top: 13
+    margin-left: 59
+    image-color: #d3452e
+    image-size: 125 22
+    size: 125 22
+    phantom: true
+
+  UILabel
+    id: valueHp
+    anchors.left: parent.left
+    anchors.top: parent.top
+    font: verdana-11px-rounded
+    size: 125 22
+    margin-top: 13
+    margin-left: 59
+    text-align: center
+    phantom: true
+
+  UIWidget
+    id: manaBar
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    image-source: /images/profile/partyManaFill
+    margin-bottom: 27
+    margin-left: 65
+    image-color: #3898fd
+    image-size: 104 20
+    size: 104 20
+    phantom: true
+
+  UILabel
+    id: valueMana
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    font: verdana-11px-rounded
+    size: 104 20
+    margin-bottom: 27
+    margin-left: 65
+    text-align: center
+    phantom: true
+
+  UIWidget
+    id: name
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    text-auto-resize: true
+    margin-left: 70
+    margin-bottom: 8
+    font: Reggae One-10px-bordered
+
+  UIWidget
+    id: icon
+    image-source: /images/profile/playerIconHolder
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-bottom: 10
+    size: 24 24
+    image-size: 24 24
+    margin-left: 45
+    icon-source: /images/profile/icons-characters
+    icon-size: 12 12
+    icon-offset: 6 6
+
+  UIWidget
+    id: shield
+    image-source: /images/profile/playerIconHolder
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    size: 24 24
+    image-size: 24 24
+    margin-left: 25
+    icon-source: /images/profile/shieldsIcons
+    icon-size: 12 12
+    icon-offset: 6 6
+    phantom: true
+
+UIWindow
+  id: partyWindow
+  size: 256 110
+  &save: true
+  focusable: false
+
+  PlayerInfo
+    id: player
+    anchors.top: parent.top
+    anchors.left: parent.left
+
+  Panel
+    id: contentsPanel
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    width: 191
+    margin-left: 20
+    layout:
+      type: verticalBox

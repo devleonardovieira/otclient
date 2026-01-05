@@ -1,0 +1,10 @@
+Module
+  name: party
+  author: BoTeQ
+
+  sandboxed: true
+  autoload: true
+  scripts: [ party ]
+  dependencies: [ game_interface ]
+  @onLoad: init()
+  @onUnload: terminate()
