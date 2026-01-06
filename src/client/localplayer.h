@@ -45,6 +45,7 @@ public:
     void setExperience(uint64_t experience);
     void setLevel(uint16_t level, uint8_t levelPercent);
     void setMana(uint32_t mana, uint32_t maxMana);
+    void setSpecialResource(uint32_t specialResource, uint32_t maxSpecialResource);
     void setManaShield(uint32_t manaShield, uint32_t maxManaShield);
     void setMagicLevel(uint16_t magicLevel, uint16_t magicLevelPercent);
     void setBaseMagicLevel(uint16_t baseMagicLevel);
@@ -79,6 +80,9 @@ public:
     uint16_t getBaseMagicLevel() { return m_baseMagicLevel; }
     uint8_t getSoul() { return m_soul; }
     uint8_t getLevelPercent() { return m_levelPercent; }
+
+    uint32_t getSpecialResource() { return m_specialResource; }
+    uint32_t getMaxSpecialResource() { return m_maxSpecialResource; }
 
     uint16_t getLevel() { return m_level; }
     uint16_t getSkillLevel(const Otc::Skill skill) { return m_skills[skill].level; }
@@ -196,6 +200,8 @@ private:
     uint8_t m_levelPercent{ 0 };
     uint32_t m_mana{ 0 };
     uint32_t m_maxMana{ 0 };
+    uint32_t m_specialResource{ 0 };
+    uint32_t m_maxSpecialResource{ 0 };
     uint32_t m_manaShield{ 0 };
     uint32_t m_maxManaShield{ 0 };
     uint16_t m_magicLevel{ 0 };

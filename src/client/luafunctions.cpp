@@ -866,6 +866,9 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<LocalPlayer>("setExperience", &LocalPlayer::setExperience);
     g_lua.bindClassMemberFunction<LocalPlayer>("setLevel", &LocalPlayer::setLevel);
     g_lua.bindClassMemberFunction<LocalPlayer>("setMana", &LocalPlayer::setMana);
+    g_lua.bindClassMemberFunction<LocalPlayer>("setSpecialResource", &LocalPlayer::setSpecialResource);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getSpecialResource", &LocalPlayer::getSpecialResource);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getMaxSpecialResource", &LocalPlayer::getMaxSpecialResource);
     g_lua.bindClassMemberFunction<LocalPlayer>("setManaShield", &LocalPlayer::setManaShield);
     g_lua.bindClassMemberFunction<LocalPlayer>("setMagicLevel", &LocalPlayer::setMagicLevel);
     g_lua.bindClassMemberFunction<LocalPlayer>("setSoul", &LocalPlayer::setSoul);

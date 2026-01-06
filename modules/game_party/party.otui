@@ -64,7 +64,7 @@ PlayerInfo < UIWidget
     phantom: true
 
   UIWidget
-    id: ultiBar
+    id: specialResourceBar
     anchors.left: parent.left
     anchors.bottom: parent.bottom
     image-source: /images/profile/playerUltimateFill
@@ -75,7 +75,7 @@ PlayerInfo < UIWidget
     size: 138 17
 
   UILabel
-    id: valueUlti
+    id: valueSpecialResource
     anchors.left: parent.left
     anchors.bottom: parent.bottom
     font: verdana-11px-rounded

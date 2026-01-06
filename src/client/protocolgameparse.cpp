@@ -2436,6 +2436,13 @@ void ProtocolGame::parsePlayerStats(const InputMessagePtr& msg) const
         }
     }
 
+    const uint32_t specialResource = msg->getU32();
+    const uint32_t maxSpecialResource = msg->getU32();
+
+    m_localPlayer->setHealth(health, maxHealth);
+    m_localPlayer->setMana(mana, maxMana);
+    m_localPlayer->setSpecialResource(specialResource, maxSpecialResource);
+
     m_localPlayer->setHealth(health, maxHealth);
     m_localPlayer->setFreeCapacity(freeCapacity);
     m_localPlayer->setTotalCapacity(totalCapacity);

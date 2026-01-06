@@ -103,7 +103,7 @@ function init()
     end
 
     connect(g_game, { onGameStart = onStart, onGameEnd = onEnd })
-    connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange })
+    connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onSpecialResourceChange = onSpecialResourceChange })
     ProtocolGame.registerExtendedOpcode(139, creatureUpdate)
     ProtocolGame.registerExtendedOpcode(210, updateUltimateBar)
 
@@ -114,7 +114,7 @@ end
 
 function terminate()
     disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd })
-    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange })
+    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onSpecialResourceChange = onSpecialResourceChange })
 
     local settings = { pos = window:getPosition() }
     g_settings.setNode("partyWindow", settings)
@@ -143,6 +143,7 @@ function onStart()
                 window.player.icon:setTooltip(vocInfo[2])
                 onHealthChange(player, player:getHealth(), player:getMaxHealth())
                 onManaChange(player, player:getMana(), player:getMaxMana())
+                onSpecialResourceChange(player, player:getSpecialResource(), player:getMaxSpecialResource())
                 window.player.outfit:setOutfit(player:getOutfit())
 
                 if player:getShield() > 0 then
@@ -410,6 +411,26 @@ function onManaChange(localPlayer, mana, maxMana)
     local clipRect = { height = 26, x = 0, y = 0, width = clip }
     window.player.manaBar:setImageClip(clipRect)
     window.player.manaBar:setImageRect(clipRect)
+end
+
+function onSpecialResourceChange(localPlayer, specialResource, maxSpecialResource)
+    if not window or not window.player then return end
+
+    if maxSpecialResource <= 0 then
+        maxSpecialResource = 1 -- Prevent division by zero
+    end
+
+    if maxSpecialResource < specialResource then maxSpecialResource = specialResource end
+    local percentSpecialResource = math.floor(specialResource / maxSpecialResource * 100)
+    window.player.valueSpecialResource:setText(specialResource .. " / " .. maxSpecialResource)
+
+    local clip = math.ceil(percentSpecialResource / 100 * 138)
+    window.player.specialResourceBar:show()
+    window.player.specialResourceBar:setWidth(clip)
+    
+    local clipRect = { height = 17, x = 0, y = 0, width = clip }
+    window.player.specialResourceBar:setImageClip(clipRect)
+    window.player.specialResourceBar:setImageRect(clipRect)
 end
 
 function changeHealth(id, health)

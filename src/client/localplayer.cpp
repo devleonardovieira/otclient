@@ -381,6 +381,19 @@ void LocalPlayer::setMana(const uint32_t mana, const uint32_t maxMana)
     callLuaField("onManaChange", mana, maxMana, oldMana, oldMaxMana);
 }
 
+void LocalPlayer::setSpecialResource(const uint32_t specialResource, const uint32_t maxSpecialResource)
+{
+    if (m_specialResource == specialResource && m_maxSpecialResource == maxSpecialResource)
+        return;
+
+    const uint32_t oldSpecialResource = m_specialResource;
+    const uint32_t oldMaxSpecialResource = m_maxSpecialResource;
+    m_specialResource = specialResource;
+    m_maxSpecialResource = maxSpecialResource;
+
+    callLuaField("onSpecialResourceChange", specialResource, maxSpecialResource, oldSpecialResource, oldMaxSpecialResource);
+}
+
 void LocalPlayer::setManaShield(const uint32_t manaShield, const uint32_t maxManaShield)
 {
     if (m_manaShield == manaShield && m_maxManaShield == maxManaShield)

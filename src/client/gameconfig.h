@@ -113,10 +113,10 @@ private:
     bool m_useCropSizeForUIDraw{ true };
     uint16_t m_shieldBlinkTicks{ 500 };
     uint16_t m_volatileSquareDuration{ 1000 };
-    double m_creatureDiagonalWalkSpeed{ 3 };
+    double m_creatureDiagonalWalkSpeed{ 2 };
 
     // Player
-    double m_playerDiagonalWalkSpeed{ 3 };
+    double m_playerDiagonalWalkSpeed{ 2 };
 
     // Render
     uint16_t m_invisibleTicksPerFrame{ 500 };
