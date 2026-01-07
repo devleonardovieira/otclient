@@ -407,6 +407,16 @@ void Game::processVipGroupChange(const std::vector<std::tuple<uint8_t, std::stri
     g_lua.callGlobalField("g_game", "onVipGroupChange", vipGroups, groupsAmountLeft);
 }
 
+void Game::processPartyDetailedInfo(uint32_t partyId, uint32_t leaderId, const std::vector<PartyDetailedMember>& members)
+{
+    g_lua.callGlobalField("g_game", "onPartyDetailedInfo", partyId, leaderId, members);
+}
+
+void Game::processPartyMemberUpdate(const PartyDetailedMember& member)
+{
+    g_lua.callGlobalField("g_game", "onPartyMemberUpdate", member);
+}
+
 void Game::processTutorialHint(const uint8_t id)
 {
     g_lua.callGlobalField("g_game", "onTutorialHint", id);

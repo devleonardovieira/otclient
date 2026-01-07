@@ -126,6 +126,9 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
                 case Proto::GameServerPartyAnalyzer:
                     parsePartyAnalyzer(msg);
                     break;
+                case Proto::GameServerPartyDetailedInfo:
+                    parsePartyDetailedInfo(msg);
+                    break;
                 case Proto::GameServerExtendedOpcode: // otclient only
                     parseExtendedOpcode(msg);
                     break;
@@ -4462,6 +4465,48 @@ void ProtocolGame::parsePartyAnalyzer(const InputMessagePtr& msg)
     if (shouldExecuteCallback) {
         m_lastPartyAnalyzerCall = currentTime;
         g_lua.callGlobalField("g_game", "onPartyAnalyzer", startTime, leaderID, lootType, membersData, membersName);
+    }
+}
+
+void ProtocolGame::parsePartyDetailedInfo(const InputMessagePtr& msg)
+{
+    const uint8_t action = msg->getU8();
+
+    if (action == 0x00) {
+        const uint32_t leaderId = msg->getU32();
+        const uint32_t partyId = leaderId; // Canary uses leaderId as party identifier
+        const uint8_t memberCount = msg->getU8();
+
+        std::vector<PartyDetailedMember> members;
+        members.reserve(memberCount);
+
+        for (uint8_t i = 0; i < memberCount; ++i) {
+            PartyDetailedMember member;
+            member.id = msg->getU32();
+            member.name = msg->getString();
+            member.level = msg->getU16();
+            member.vocation = msg->getU16();
+            member.health = msg->getU32();
+            member.maxHealth = msg->getU32();
+            member.mana = msg->getU32();
+            member.maxMana = msg->getU32();
+            member.isLeader = msg->getU8();
+            members.push_back(std::move(member));
+        }
+
+        g_game.processPartyDetailedInfo(partyId, leaderId, members);
+    } else if (action == 0x01) {
+        PartyDetailedMember member;
+        member.id = msg->getU32();
+        member.level = msg->getU16();
+        member.vocation = msg->getU16();
+        member.health = msg->getU32();
+        member.maxHealth = msg->getU32();
+        member.mana = msg->getU32();
+        member.maxMana = msg->getU32();
+        member.isLeader = 0;
+        
+        g_game.processPartyMemberUpdate(member);
     }
 }
 

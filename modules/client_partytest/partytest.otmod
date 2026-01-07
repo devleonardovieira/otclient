@@ -1,0 +1,10 @@
+Module
+  name: client_partytest
+  description: Test for Party Detailed Info
+  author: AI
+  website:
+  sandboxed: true
+  autoload: true
+  scripts: [ partytest ]
+  @onLoad: init()
+  @onUnload: terminate()

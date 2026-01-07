@@ -94,7 +94,11 @@ protected:
     void processVipStateChange(uint32_t id, uint32_t status);
     void processVipGroupChange(const std::vector<std::tuple<uint8_t, std::string, bool>>& vipGroups, uint8_t groupsAmountLeft);
 
-    // tutorial hint
+    // party related
+    static void processPartyDetailedInfo(uint32_t partyId, uint32_t leaderId, const std::vector<PartyDetailedMember>& members);
+    static void processPartyMemberUpdate(const PartyDetailedMember& member);
+
+    // feature variables hint
     static void processTutorialHint(uint8_t id);
     static void processAddAutomapFlag(const Position& pos, uint8_t icon, std::string_view message);
     static void processRemoveAutomapFlag(const Position& pos, uint8_t icon, std::string_view message);

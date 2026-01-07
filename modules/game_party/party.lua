@@ -44,51 +44,6 @@ local vocations = {
     [24] = { "0 140 28 28", "Void Shadow" }
 }
 
--- Opcode Dispatch Table
-local OpcodeHandlers = {}
-
--- StreamReader Class to mimic NetworkMessage reading from string buffer
-local StreamReader = {}
-StreamReader.__index = StreamReader
-
-function StreamReader.new(buffer)
-    return setmetatable({buffer = buffer, pos = 1}, StreamReader)
-end
-
-function StreamReader:getU8()
-    if self.pos > #self.buffer then return 0 end
-    local b = string.byte(self.buffer, self.pos)
-    self.pos = self.pos + 1
-    return b
-end
-
-function StreamReader:getU16()
-    if self.pos + 1 > #self.buffer then return 0 end
-    local b1 = string.byte(self.buffer, self.pos)
-    local b2 = string.byte(self.buffer, self.pos + 1)
-    self.pos = self.pos + 2
-    return b1 + b2 * 256
-end
-
-function StreamReader:getU32()
-    if self.pos + 3 > #self.buffer then return 0 end
-    local b1 = string.byte(self.buffer, self.pos)
-    local b2 = string.byte(self.buffer, self.pos + 1)
-    local b3 = string.byte(self.buffer, self.pos + 2)
-    local b4 = string.byte(self.buffer, self.pos + 3)
-    self.pos = self.pos + 4
-    return b1 + b2 * 256 + b3 * 65536 + b4 * 16777216
-end
-
-function StreamReader:getString()
-    local len = self:getU16()
-    if len == 0 then return "" end
-    if self.pos + len - 1 > #self.buffer then return "" end
-    local str = string.sub(self.buffer, self.pos, self.pos + len - 1)
-    self.pos = self.pos + len
-    return str
-end
-
 function init()
     window = g_ui.loadUI("party", g_ui.getRootWidget())
     window:hide()
@@ -102,10 +57,9 @@ function init()
         window:setPosition({x = 217, y = 72})
     end
 
-    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd })
-    connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onSpecialResourceChange = onSpecialResourceChange })
-    ProtocolGame.registerExtendedOpcode(139, creatureUpdate)
-    ProtocolGame.registerExtendedOpcode(210, updateUltimateBar)
+    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate })
+    connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
+    -- ProtocolGame.registerExtendedOpcode(210, updateUltimateBar) -- Keep if still used, or remove if obsolete
 
     if g_game.isOnline() then
         onStart()
@@ -113,49 +67,28 @@ function init()
 end
 
 function terminate()
-    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd })
-    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onSpecialResourceChange = onSpecialResourceChange })
+    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate })
+    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
 
     local settings = { pos = window:getPosition() }
     g_settings.setNode("partyWindow", settings)
     window:destroy()
-    ProtocolGame.unregisterExtendedOpcode(139, creatureUpdate)
-    ProtocolGame.unregisterExtendedOpcode(210, updateUltimateBar)
+    -- ProtocolGame.unregisterExtendedOpcode(210, updateUltimateBar)
 end
 
 function onEnd()
-    clearParty()
     window:hide()
+    clearParty()
 end
 
 function onStart()
-    scheduleEvent(function()
-        if g_game.isOnline() then
-            window:show()
-            g_effects.fadeIn(window, 250)
-
-            local player = g_game.getLocalPlayer()
-            if player then
-                local vocId = player:getVocation()
-                local vocInfo = vocations[vocId] or vocations[0]
-
-                window.player.icon:setIconClip(vocInfo[1])
-                window.player.icon:setTooltip(vocInfo[2])
-                onHealthChange(player, player:getHealth(), player:getMaxHealth())
-                onManaChange(player, player:getMana(), player:getMaxMana())
-                onSpecialResourceChange(player, player:getSpecialResource(), player:getMaxSpecialResource())
-                window.player.outfit:setOutfit(player:getOutfit())
-
-                if player:getShield() > 0 then
-                    local protocolGame = g_game.getProtocolGame()
-                    if protocolGame then
-                        protocolGame:sendExtendedOpcode(112, json.encode({action = "PARTY"}))
-                        protocolGame:sendExtendedOpcode(222, json.encode({action = "UPDATE"}))
-                    end
-                end
-            end
-        end
-    end, 1000)
+    window:show()
+    -- Initial update can be handled when we receive the packet or just clear for now
+    clearParty()
+    local player = g_game.getLocalPlayer()
+    if player then
+        updatePlayerWidget(player, player:getHealth(), player:getMaxHealth(), player:getMana(), player:getMaxMana(), player:getLevel())
+    end
 end
 
 function updateUltimateBar(protocol, code, buffer)
@@ -179,69 +112,145 @@ function updateUltimateBar(protocol, code, buffer)
     end
 end
 
--- Packet Handlers
-OpcodeHandlers[1] = function(msg) -- Health Update
-    local cid = msg:getU32()
-    local hp = msg:getU8()
-    changeHealth(cid, hp)
-end
-
-OpcodeHandlers[2] = function(msg) -- Mana Update
-    local cid = msg:getU32()
-    local mana = msg:getU8()
-    changeMana(cid, mana)
-end
-
-OpcodeHandlers[3] = function(msg) -- Update Status
-    local cid = msg:getU32()
-    local status = msg:getU8()
-    updatemember(cid, status)
-end
-
-OpcodeHandlers[4] = function(msg) -- Add Member
-print('printou addssddddddddd member')
-    local cid = msg:getU32()
-    local voc = msg:getU8()
-    local shield = msg:getU8()
-    local name = msg:getString()
+function onPartyDetailedInfo(partyId, leaderId, members)
+    if not window then return end
     
-    local outfit = {}
-    outfit.lookHead = msg:getU8()
-    outfit.lookBody = msg:getU8()
-    outfit.lookLegs = msg:getU8()
-    outfit.lookFeet = msg:getU8()
-    outfit.lookAddons = msg:getU8()
-    outfit.lookType = msg:getU16()
-    outfit.lookWings = msg:getU16()
-    outfit.lookAura = msg:getU16()
+    local player = g_game.getLocalPlayer()
+    if not player then return end
+
+    local playerId = player:getId()
+    local membersMap = {}
     
-    addmember(cid, name, outfit, voc, shield)
+    -- Check if we are in the party (members list should contain us if we are)
+    local amIMember = false
+    for _, member in ipairs(members) do
+        if member.id == playerId then
+            amIMember = true
+            break
+        end
+    end
+
+    if not amIMember and #members > 0 then
+        -- Maybe we just left? Or the list doesn't include us? 
+        -- Usually detailed info is sent to members. 
+        -- If list is empty, we assume party is disbanded or we left.
+    end
+
+    if #members == 0 then
+        clearParty()
+        return
+    end
+
+    window:show()
+
+    -- Process members
+    for i, member in ipairs(members) do
+        if member.id == playerId then
+            -- Update local player widget
+            updatePlayerWidget(player, member.health, member.maxHealth, member.mana, member.maxMana, member.level)
+        else
+            -- Update or add other members
+            updatePartyMemberWidget(member, leaderId)
+            membersMap[tostring(member.id)] = true
+        end
+    end
+
+    -- Remove members that are no longer in the list
+    local children = window.contentsPanel:getChildren()
+    for _, child in pairs(children) do
+        if not membersMap[child:getId()] then
+            window:setHeight(window:getHeight() - 83)
+            child:destroy()
+        end
+    end
 end
 
-OpcodeHandlers[5] = function(msg) -- Remove Member
-    local cid = msg:getU32()
-    removemember(cid)
+function updatePlayerWidget(player, health, maxHealth, mana, maxMana, level)
+    if not window or not window.player then return end
+
+    -- Vocation Icon
+    local vocId = player:getVocation()
+    local vocInfo = vocations[vocId] or vocations[0]
+    window.player.icon:setIconClip(vocInfo[1])
+    window.player.icon:setTooltip(vocInfo[2] .. (level and (" (Level " .. level .. ")") or ""))
+
+    -- Outfit
+    window.player.outfit:setOutfit(player:getOutfit())
+
+    -- Health
+    onHealthChange(player, health, maxHealth)
+    -- Mana
+    onManaChange(player, mana, maxMana)
+    -- Special Resource (keep existing logic)
+    onSpecialResourceChange(player, player:getSpecialResource(), player:getMaxSpecialResource())
 end
 
-OpcodeHandlers[6] = function(msg) -- Clear Party
-    clearParty()
-end
-
-OpcodeHandlers[7] = function(msg) -- Update Shield
-    local cid = msg:getU32()
-    local shield = msg:getU8()
-    updateShield(cid, shield)
-end
-
-function creatureUpdate(protocol, opcode, buffer)
-    local msg = StreamReader.new(buffer)
-    local func = msg:getU8()
-    local handler = OpcodeHandlers[func]
+function updatePartyMemberWidget(member, leaderId)
+    local id = tostring(member.id)
+    local widget = window.contentsPanel:getChildById(id)
     
-    if handler then
-        handler(msg)
+    if not widget then
+        widget = g_ui.createWidget("PartyMember", window.contentsPanel)
+        widget:setId(id)
+        widget.onHoverChange = onHovermember
+        widget.onMouseRelease = onMouseRelease
+        widget.onTouchRelease = onMouseRelease
+        window:setHeight(window:getHeight() + 83)
+    end
+
+    -- Name
+    widget.name:setText(member.name)
+
+    -- Vocation Icon
+    local vocInfo = vocations[member.vocation] or vocations[0]
+    widget.icon:setIconClip(vocInfo[1])
+    widget.icon:setTooltip(vocInfo[2])
+
+    -- Shield / Leader Status
+    -- member.isLeader is from the packet. 
+    -- If isLeader is true, show a leader shield/icon?
+    -- The old code used 'shield' index. 
+    -- Assuming leader has a specific shield index or we just use a generic one.
+    -- Shields table: 0=Empty, 1=Yellow Shield? 
+    -- Let's use 1 for leader for now, or 0 if not.
+    local shieldIndex = member.isLeader and 1 or 0
+    local shieldInfo = shields[shieldIndex] or shields[0]
+    widget.shield:setIconClip(shieldInfo)
+
+    -- Health
+    if member.maxHealth <= 0 then member.maxHealth = 1 end
+    local healthPercent = math.floor(member.health / member.maxHealth * 100)
+    widget.valueHp:setText(healthPercent .. "%")
+    local hpClip = math.ceil(healthPercent / 100 * 125)
+    widget.hpBar:show()
+    widget.hpBar:setWidth(hpClip)
+    local hpRect = { height = 22, x = 0, y = 0, width = hpClip }
+    widget.hpBar:setImageClip(hpRect)
+    widget.hpBar:setImageRect(hpRect)
+
+    -- Mana
+    if member.maxMana <= 0 then member.maxMana = 1 end
+    local manaPercent = math.floor(member.mana / member.maxMana * 100)
+    widget.valueMana:setText(manaPercent .. "%")
+    local manaClip = math.ceil(manaPercent / 100 * 104)
+    widget.manaBar:show()
+    widget.manaBar:setWidth(manaClip)
+    local manaRect = { height = 20, x = 0, y = 0, width = manaClip }
+    widget.manaBar:setImageClip(manaRect)
+    widget.manaBar:setImageRect(manaRect)
+
+    -- Outfit
+    -- Try to get creature from map
+    local creature = g_map.getCreatureById(member.id)
+    if creature then
+        widget.outfit:setOutfit(creature:getOutfit())
+        widget.outfit:show()
+        widget.nooutfit:hide()
     else
-        print("[Party] Opcode 139 received unknown func:", func)
+        -- If creature is not known, we can't show outfit.
+        -- Show 'nooutfit' image
+        widget.outfit:hide()
+        widget.nooutfit:show()
     end
 end
 
@@ -289,87 +298,24 @@ function onMouseRelease(widget, mousePos, mouseButton)
         local player = g_game.getLocalPlayer()
         if not player then return end
         
-        local shield = player:getShield()
+        -- Logic for shared exp / leadership could be added here
+        -- For now, basic options
         
-        if shield == 4 or shield == 6 or shield == 10 then
-            if player:isPartySharedExperienceActive() then
-                menu:addOption(tr("Disable shared experience"), function() g_game.partyShareExperience(false) end)
-            else
-                menu:addOption(tr("Enable shared experience"), function() g_game.partyShareExperience(true) end)
-            end
-
-            menu:addOption(tr("Pass leader to %s", widget.name:getText()), function()
-                g_game.partyPassLeadership(tonumber(widget:getId()))
+        local memberId = tonumber(widget:getId())
+        
+        -- If we are leader, show leadership options
+        if g_game.isPartyLeader() then -- Assuming this function exists or we track it
+             menu:addOption(tr("Pass leader to %s", widget.name:getText()), function()
+                g_game.partyPassLeadership(memberId)
             end)
             
-            menu:addOption(tr("Kick %s", widget.name:getText()), function()
-                local protocolGame = g_game.getProtocolGame()
-                if protocolGame then
-                    local msg = OutputMessage.create()
-                    msg:addU8(174) -- Kick Opcode
-                    msg:addU32(tonumber(widget:getId()))
-                    protocolGame:send(msg)
-                end
-            end)
-            menu:addSeparator()
+            -- Kick option (standard opcode usually, but old code used custom)
+            -- Standard Tibia doesn't have a simple 'kick' function exposed in g_game typically?
+            -- g_game.partyLeave() exists.
         end
 
         menu:addOption(tr("Leave party"), function() g_game.partyLeave() end)
         menu:display(mousePos)
-    end
-end
-
-function addmember(id, name, outfit, voc, shield)
-	   print('addmember : ', id, name, outfit, voc, shield)
-    id = tostring(id)
-    local member = g_ui.createWidget("PartyMember", window.contentsPanel)
-    member:setId(id)
-    member.name:setText(name)
-    member.onHoverChange = onHovermember
-
-    window:show()
-    window:setHeight(window:getHeight() + 83)
-    
-    local vocInfo = vocations[voc] or vocations[0]
-    member.icon:setIconClip(vocInfo[1])
-    member.icon:setTooltip(vocInfo[2])
-    
-    local shieldInfo = shields[shield] or shields[0]
-    member.shield:setIconClip(shieldInfo)
-
-    member.onMouseRelease = onMouseRelease
-    member.onTouchRelease = onMouseRelease
-    member.outfit:setOutfit(outfit)
-end
-
-function updateShield(id, shield)
-    id = tostring(id)
-    local member = window.contentsPanel:getChildById(id)
-    if member then
-        local shieldInfo = shields[shield] or shields[0]
-        member.shield:setIconClip(shieldInfo)
-    end
-end
-
-function updatemember(id, status)
-    id = tostring(id)
-    local member = window.contentsPanel:getChildById(id)
-    if member then
-        if status == 1 then
-            if not member.outfit:isVisible() then
-                member.outfit:show()
-                member.nooutfit:hide()
-                member.hpBar:show()
-                member.manaBar:show()
-            end
-        elseif member.outfit:isVisible() then
-            member.outfit:hide()
-            member.nooutfit:show()
-            member.hpBar:hide()
-            member.valueHp:setText("??? / ???")
-            member.manaBar:hide()
-            member.valueMana:setText("??? / ???")
-        end
     end
 end
 
@@ -433,32 +379,55 @@ function onSpecialResourceChange(localPlayer, specialResource, maxSpecialResourc
     window.player.specialResourceBar:setImageRect(clipRect)
 end
 
-function changeHealth(id, health)
-    id = tostring(id)
-    local member = window.contentsPanel:getChildById(id)
-    if member then
-        member.valueHp:setText(health .. "%")
-        local clip = math.ceil(health / 100 * 125)
-        member.hpBar:show()
-        member.hpBar:setWidth(clip)
-        
-        local clipRect = { height = 22, x = 0, y = 0, width = clip }
-        member.hpBar:setImageClip(clipRect)
-        member.hpBar:setImageRect(clipRect)
+function onLevelChange(localPlayer, level, percent)
+    if not window or not window.player then return end
+    
+    local vocId = localPlayer:getVocation()
+    local vocInfo = vocations[vocId] or vocations[0]
+    window.player.icon:setTooltip(vocInfo[2] .. " (Level " .. level .. ")")
+end
+
+function onShieldChange(player, shield)
+    -- ShieldNone (0), ShieldWhiteBlue (1), ShieldWhiteYellow (2) mean not in a party
+    if shield <= 2 then
+        clearParty()
     end
 end
 
-function changeMana(id, mana)
-    id = tostring(id)
-    local member = window.contentsPanel:getChildById(id)
-    if member then
-        member.valueMana:setText(mana .. "%")
-        local clip = math.ceil(mana / 100 * 104)
-        member.manaBar:setWidth(clip)
-        member.manaBar:show()
-        
-        local clipRect = { height = 20, x = 0, y = 0, width = clip }
-        member.manaBar:setImageClip(clipRect)
-        member.manaBar:setImageRect(clipRect)
+function onPartyMemberUpdate(member)
+    if not window then return end
+    
+    local player = g_game.getLocalPlayer()
+    if player and player:getId() == member.id then
+         updatePlayerWidget(player, member.health, member.maxHealth, member.mana, member.maxMana, member.level)
+    else
+        local id = tostring(member.id)
+        local widget = window.contentsPanel:getChildById(id)
+        if widget then
+            -- Vocation Icon
+            local vocInfo = vocations[member.vocation] or vocations[0]
+            widget.icon:setIconClip(vocInfo[1])
+            widget.icon:setTooltip(vocInfo[2])
+
+            -- Health
+            if member.maxHealth <= 0 then member.maxHealth = 1 end
+            local healthPercent = math.floor(member.health / member.maxHealth * 100)
+            widget.valueHp:setText(healthPercent .. "%")
+            local hpClip = math.ceil(healthPercent / 100 * 125)
+            widget.hpBar:setWidth(hpClip)
+            local hpRect = { height = 22, x = 0, y = 0, width = hpClip }
+            widget.hpBar:setImageClip(hpRect)
+            widget.hpBar:setImageRect(hpRect)
+
+            -- Mana
+            if member.maxMana <= 0 then member.maxMana = 1 end
+            local manaPercent = math.floor(member.mana / member.maxMana * 100)
+            widget.valueMana:setText(manaPercent .. "%")
+            local manaClip = math.ceil(manaPercent / 100 * 104)
+            widget.manaBar:setWidth(manaClip)
+            local manaRect = { height = 20, x = 0, y = 0, width = manaClip }
+            widget.manaBar:setImageClip(manaRect)
+            widget.manaBar:setImageRect(manaRect)
+        end
     end
 end

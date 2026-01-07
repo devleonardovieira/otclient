@@ -195,6 +195,24 @@ struct PartyMemberName
         : memberID(id), memberName(name) {}
 };
 
+struct PartyDetailedMember
+{
+    uint32_t id;
+    std::string name;
+    uint16_t level;
+    uint16_t vocation;
+    uint32_t health;
+    uint32_t maxHealth;
+    uint32_t mana;
+    uint32_t maxMana;
+    bool isLeader;
+
+    PartyDetailedMember(uint32_t id, const std::string& name, uint16_t level, uint16_t vocation, uint32_t health, uint32_t maxHealth, uint32_t mana, uint32_t maxMana, bool isLeader)
+        : id(id), name(name), level(level), vocation(vocation), health(health), maxHealth(maxHealth), mana(mana), maxMana(maxMana), isLeader(isLeader) {}
+    
+    PartyDetailedMember() : id(0), level(0), vocation(0), health(0), maxHealth(0), mana(0), maxMana(0), isLeader(false) {}
+};
+
 struct UnjustifiedPoints
 {
     bool operator==(const UnjustifiedPoints& other) const

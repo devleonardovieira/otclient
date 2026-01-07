@@ -110,3 +110,5 @@ int push_luavalue(const ForgeItemInfo& data);
 int push_luavalue(const BossCooldownData& data);
 int push_luavalue(const PartyMemberData& data);
 int push_luavalue(const PartyMemberName& data);
+int push_luavalue(const PartyDetailedMember& member);
+int push_luavalue(const std::vector<PartyDetailedMember>& data);

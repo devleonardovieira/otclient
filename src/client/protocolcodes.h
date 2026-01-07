@@ -63,6 +63,8 @@ namespace Proto
         GameServerSpecialContainer = 42,
         GameServerPartyAnalyzer = 43,
 
+        GameServerPartyDetailedInfo = 57,
+
         // all in game opcodes must be greater than 50
         GameServerFirstGameOpcode = 50,
 

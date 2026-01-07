@@ -1639,3 +1639,35 @@ int push_luavalue(const PartyMemberName& data) {
     g_lua.setField("memberName");
     return 1;
 }
+
+int push_luavalue(const PartyDetailedMember& member) {
+    g_lua.createTable(0, 9);
+    g_lua.pushInteger(member.id);
+    g_lua.setField("id");
+    g_lua.pushString(member.name);
+    g_lua.setField("name");
+    g_lua.pushInteger(member.level);
+    g_lua.setField("level");
+    g_lua.pushInteger(member.vocation);
+    g_lua.setField("vocation");
+    g_lua.pushInteger(member.health);
+    g_lua.setField("health");
+    g_lua.pushInteger(member.maxHealth);
+    g_lua.setField("maxHealth");
+    g_lua.pushInteger(member.mana);
+    g_lua.setField("mana");
+    g_lua.pushInteger(member.maxMana);
+    g_lua.setField("maxMana");
+    g_lua.pushBoolean(member.isLeader);
+    g_lua.setField("isLeader");
+    return 1;
+}
+
+int push_luavalue(const std::vector<PartyDetailedMember>& data) {
+    g_lua.createTable(data.size(), 0);
+    for (size_t i = 0; i < data.size(); ++i) {
+        push_luavalue(data[i]);
+        g_lua.rawSeti(i + 1);
+    }
+    return 1;
+}
