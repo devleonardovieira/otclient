@@ -210,7 +210,9 @@ struct PartyDetailedMember
     PartyDetailedMember(uint32_t id, const std::string& name, uint16_t level, uint16_t vocation, uint32_t health, uint32_t maxHealth, uint32_t mana, uint32_t maxMana, bool isLeader)
         : id(id), name(name), level(level), vocation(vocation), health(health), maxHealth(maxHealth), mana(mana), maxMana(maxMana), isLeader(isLeader) {}
     
-    PartyDetailedMember() : id(0), level(0), vocation(0), health(0), maxHealth(0), mana(0), maxMana(0), isLeader(false) {}
+    PartyDetailedMember() : id(0), level(0), vocation(0), health(0), maxHealth(0), mana(0), maxMana(0), isLeader(false), mask(0) {}
+
+    uint8_t mask = 0;
 };
 
 struct UnjustifiedPoints

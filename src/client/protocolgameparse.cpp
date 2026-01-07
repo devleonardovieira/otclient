@@ -4498,14 +4498,32 @@ void ProtocolGame::parsePartyDetailedInfo(const InputMessagePtr& msg)
     } else if (action == 0x01) {
         PartyDetailedMember member;
         member.id = msg->getU32();
-        member.level = msg->getU16();
-        member.vocation = msg->getU16();
-        member.health = msg->getU32();
-        member.maxHealth = msg->getU32();
-        member.mana = msg->getU32();
-        member.maxMana = msg->getU32();
+
+        // Canary incremental update format
+        // Flags mapping:
+        // 0x01 -> HP (health and maxHealth)
+        // 0x02 -> MANA (mana and maxMana)
+        // 0x04 -> LEVEL (uint16)
+        // 0x08 -> VOCATION (uint16)
+        const uint8_t flags = msg->getU8();
+        member.mask = flags;
+
+        if (flags & 0x04) {
+            member.level = msg->getU16();
+        }
+        if (flags & 0x08) {
+            member.vocation = msg->getU16();
+        }
+        if (flags & 0x01) {
+            member.health = msg->getU32();
+            member.maxHealth = msg->getU32();
+        }
+        if (flags & 0x02) {
+            member.mana = msg->getU32();
+            member.maxMana = msg->getU32();
+        }
+
         member.isLeader = 0;
-        
         g_game.processPartyMemberUpdate(member);
     }
 }

@@ -1641,7 +1641,7 @@ int push_luavalue(const PartyMemberName& data) {
 }
 
 int push_luavalue(const PartyDetailedMember& member) {
-    g_lua.createTable(0, 9);
+    g_lua.createTable(0, 10);
     g_lua.pushInteger(member.id);
     g_lua.setField("id");
     g_lua.pushString(member.name);
@@ -1660,6 +1660,8 @@ int push_luavalue(const PartyDetailedMember& member) {
     g_lua.setField("maxMana");
     g_lua.pushBoolean(member.isLeader);
     g_lua.setField("isLeader");
+    g_lua.pushInteger(member.mask);
+    g_lua.setField("mask");
     return 1;
 }
 
