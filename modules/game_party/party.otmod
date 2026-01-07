@@ -1,7 +1,6 @@
 Module
   name: party
-  author: BoTeQ
-
+  author: godness
   sandboxed: true
   autoload: true
   scripts: [ party ]

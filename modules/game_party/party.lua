@@ -59,8 +59,8 @@ end
 
 function init()
     window = g_ui.loadUI("party", g_ui.getRootWidget())
-    -- Always show the window (player panel)
-    window:show()
+    -- Hide initially, show onGameStart
+    window:hide()
 
     local settings = g_settings.getNode("partyWindow")
     if settings then
