@@ -96,6 +96,16 @@ PlayerInfo < UIWidget
     icon-size: 20 20
     icon-offset: 6 6
 
+  UIButton
+    id: menuButton
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 10
+    margin-right: 10
+    size: 20 20
+    image-source: /images/ui/windows/menu/IconSettings
+    @onClick: modules.game_party.toggleMenu()
+
 PartyMember < UIWidget
   size: 192 83
   image-source: /images/profile/playerInfoUI
@@ -219,3 +229,43 @@ UIWindow
     margin-left: 20
     layout:
       type: verticalBox
+
+  Panel
+    id: optionsPanel
+    anchors.left: player.right
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    width: 0
+    visible: false
+    margin-left: 5
+    image-source: /images/ui/panel_rounded
+    
+    CheckBox
+      id: checkMinimap
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 10
+      margin-left: 10
+      text: Show on Minimap
+      width: 130
+      @onCheckChange: modules.game_party.onToggleMinimap(self:isChecked())
+
+    CheckBox
+      id: checkLoot
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      margin-left: 10
+      text: Share Loot
+      width: 130
+      @onCheckChange: modules.game_party.onToggleLoot(self:isChecked())
+
+    CheckBox
+      id: checkExp
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      margin-top: 10
+      margin-left: 10
+      text: Share Exp
+      width: 130
+      @onCheckChange: modules.game_party.onToggleExp(self:isChecked())

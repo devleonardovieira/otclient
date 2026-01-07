@@ -450,3 +450,31 @@ function onPartyMemberUpdate(member)
         end
     end
 end
+
+function toggleMenu()
+    if not window then return end
+    local optionsPanel = window.optionsPanel
+    if not optionsPanel then return end
+    
+    if optionsPanel:isVisible() then
+        optionsPanel:setVisible(false)
+        optionsPanel:setWidth(0)
+        window:setWidth(256)
+    else
+        optionsPanel:setVisible(true)
+        optionsPanel:setWidth(150)
+        window:setWidth(256 + 150)
+    end
+end
+
+function onToggleMinimap(checked)
+    g_logger.info("Minimap party show: " .. tostring(checked))
+end
+
+function onToggleLoot(checked)
+    g_logger.info("Loot share: " .. tostring(checked))
+end
+
+function onToggleExp(checked)
+    g_logger.info("Exp share: " .. tostring(checked))
+end
