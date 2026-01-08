@@ -24,7 +24,7 @@ function init()
   emoteWheel:hide()
 
   wheel = emoteWheel:getChildById('wheel')
-  icons = wheel:getChildById('icons')
+icons = wheel:getChildById('icons')
   indicator = emoteWheel:getChildById('indicator')
 
   createEmoteWidgets()
@@ -49,30 +49,35 @@ function createEmoteWidgets()
   local cy = size.height / 2
   local half = math.min(size.width, size.height) / 2
   local radius = math.floor(half * 0.62)
-  local step = 45
-  local iconSize = 44
+  local step = 360 / 8
+  local iconSize = 88
 
-  for i, emote in ipairs(Emotes) do
-    if i > 8 then break end
-    if not emote.icon then break end
+  for i = 1, 8 do
+    local emote = Emotes[i]
+    if emote and emote.icon then
+      print('Emote: ' .. emote.name .. ' Icon: ' .. emote.icon)
 
-    local w = g_ui.createWidget('UIImage', icons)
-    w:setId('emoteWidget_' .. i)
-    w:setSize({width = iconSize, height = iconSize})
-    w:setImageSource(emote.icon)
-    w:setOpacity(0.7)
-    w:setPhantom(true)
+      local w = g_ui.createWidget('UIImageView', icons)
+      w:setId('emoteWidget_' .. i)
+      w:setSize({width = iconSize, height = iconSize})
+      w:setImageSource(emote.icon)
+      w:setOpacity(0.7)
+ 
 
-    local deg = (i - 1) * step
-    local rad = math.rad(deg - 90)
-    local centerX = cx + math.cos(rad) * radius
-    local centerY = cy + math.sin(rad) * radius
-    local x = math.floor(centerX - (iconSize / 2))
-    local y = math.floor(centerY - (iconSize / 2))
-
-    w:setPosition({x = x, y = y})
-    iconWidgets[i] = w
-    iconBases[i] = { cx = centerX, cy = centerY, size = iconSize }
+      local deg = (i - 1) * step
+      local rad = math.rad(deg - 90)
+      local centerX = cx + math.cos(rad) * radius
+      local centerY = cy + math.sin(rad) * radius
+      local x = math.floor(centerX - (iconSize / 2))
+      local y = math.floor(centerY - (iconSize / 2))
+      print('Created emote widget:', w, 'pos:', x, y)
+      w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+      w:addAnchor(AnchorTop, 'parent', AnchorTop)
+      w:setMarginLeft(x)
+      w:setMarginTop(y)
+      iconWidgets[i] = w
+      iconBases[i] = { cx = centerX, cy = centerY, size = iconSize }
+    end
   end
 end
 
@@ -82,7 +87,10 @@ local function applyIconState(index, size, opacity)
   if not w or not base then return end
   w:setOpacity(opacity)
   w:setSize({ width = size, height = size })
-  w:setPosition({ x = math.floor(base.cx - (size / 2)), y = math.floor(base.cy - (size / 2)) })
+  local x = math.floor(base.cx - (size / 2))
+  local y = math.floor(base.cy - (size / 2))
+  w:setMarginLeft(x)
+  w:setMarginTop(y)
 end
 
 local function clearHover()

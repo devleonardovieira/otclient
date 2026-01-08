@@ -1,9 +1,9 @@
 Emotes = {
     [1] = {
         name = "Laugh",
-        effect = '/images/game/effects/ki', -- Example path, user needs to provide real assets or use existing
+        effect = '/images/game/effects/thunder', -- Example path, user needs to provide real assets or use existing
 
-        icon = '/images/game/effects/ki' -- Icon for the wheel
+        icon = '/images/game/effects/thunder' -- Icon for the wheel
     },
     [2] = {
         name = "Ping",
@@ -14,9 +14,9 @@ Emotes = {
     },
     [3] = {
         name = "Troll",
-        effect = '/images/game/effects/thunder',
+        effect = '/images/game/effects/ki',
         scale = 1.2,
         duration = 10000,
-        icon = '/images/game/effects/thunder'
+        icon = '/images/game/effects/ki'
     }
 }

@@ -3,18 +3,18 @@ EmoteWheel < UIWidget
   size: 512 512
   anchors.centerIn: parent
   visible: false
-  focusable: false
   phantom: true
 
   UIWidget
     id: wheel
     anchors.fill: parent
-    phantom: true
+    phantom: false
 
     UIWidget
       id: wheelBg
       anchors.fill: parent
       image-source: /images/emotes/wheel_bg
+      opacity: 0.5
       phantom: true
 
     UIWidget
@@ -27,5 +27,4 @@ EmoteWheel < UIWidget
     anchors.centerIn: parent
     margin-top: 60
     color: #ffffff
-    font: verdana-11px-rounded
     text-align: center
