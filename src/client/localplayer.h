@@ -54,6 +54,11 @@ public:
     void setKnown(const bool known) { m_known = known; }
     void setPendingGame(const bool pending) { m_pending = pending; }
     void setInventoryItem(Otc::InventorySlot inventory, const ItemPtr& item);
+
+    // Emotes
+    void setUnlockedEmotes(uint64_t unlockedEmotes) { m_unlockedEmotes = unlockedEmotes; }
+    uint64_t getUnlockedEmotes() const { return m_unlockedEmotes; }
+    bool hasEmote(uint16_t emoteId) const { return (m_unlockedEmotes & (1ULL << emoteId)) != 0; }
     void setInventoryCountCache(std::map<std::pair<uint16_t, uint8_t>, uint16_t> counts);
     void setPremium(bool premium);
     void setRegenerationTime(uint16_t regenerationTime);
@@ -113,8 +118,9 @@ public:
         const auto it = m_resourcesBalance.find(type);
         return it != m_resourcesBalance.end() ? it->second : 0;
     }
-
-    uint64_t getTotalMoney()
+    
+    
+    uint64_t getTotalMoney()   
     {
         const uint64_t bankBalance = getResourceBalance(Otc::RESOURCE_BANK_BALANCE);
         const uint64_t equippedBalance = getResourceBalance(Otc::RESOURCE_GOLD_EQUIPPED);
@@ -143,6 +149,7 @@ public:
     auto getPreWalkingSize() { return m_preWalks.size(); }
 
 private:
+    uint64_t m_unlockedEmotes{0}; 
     struct Skill
     {
         uint16_t level{ 0 };

@@ -1479,3 +1479,8 @@ bool Creature::canShoot(int distance)
 {
     return getTile() ? getTile()->canShoot(distance) : false;
 }
+
+void Creature::setEmote(uint16_t emoteId)
+{
+    callLuaField("onEmote", emoteId);
+}

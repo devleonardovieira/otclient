@@ -1,0 +1,43 @@
+EmoteWheel < UIWidget
+  id: emoteWheel
+  size: 512 512
+  anchors.centerIn: parent
+  visible: false
+  focusable: false
+  phantom: true
+
+  UIWidget
+    id: wheel
+    anchors.fill: parent
+    phantom: true
+
+    UIWidget
+      id: wheelBg
+      anchors.fill: parent
+      image-source: /images/emotes/wheel_bg
+      phantom: true
+
+    UIWidget
+      id: slices
+      anchors.fill: parent
+      phantom: true
+
+    UIWidget
+      id: icons
+      anchors.fill: parent
+      phantom: true
+
+  UILabel
+    id: indicator
+    anchors.centerIn: parent
+    margin-top: 60
+    color: #ffffff
+    font: verdana-11px-rounded
+    text-align: center
+
+EmoteSlice < UIWidget
+  size: 380 380
+  anchors.centerIn: parent
+  image-source: /images/emotes/slice
+  opacity: 0
+  phantom: true

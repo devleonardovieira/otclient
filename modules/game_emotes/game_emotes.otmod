@@ -1,0 +1,9 @@
+Module
+  name: game_emotes
+  description: Emote System with Radial Wheel
+  author: User
+  website: https://github.com/edubart/otclient
+  sandboxed: true
+  scripts: [ emotes, game_emotes ]
+  @onLoad: init()
+  @onUnload: terminate()

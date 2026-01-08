@@ -37,6 +37,7 @@ public:
     void sendLogout();
     void sendPing();
     void sendPingBack();
+    void sendEmote(uint16_t emoteId);
     void sendAutoWalk(const std::vector<Otc::Direction>& path);
     void sendWalkNorth();
     void sendWalkEast();
@@ -247,6 +248,8 @@ private:
     void parseAnimatedText(const InputMessagePtr& msg);
     void parseDistanceMissile(const InputMessagePtr& msg);
     void parseAnthem(const InputMessagePtr& msg);
+    void parseEmote(const InputMessagePtr& msg);
+    void parseUnlockedEmotes(const InputMessagePtr& msg);
     void parseItemClasses(const InputMessagePtr& msg);
     void parseCreatureMark(const InputMessagePtr& msg);
     void parseTrappers(const InputMessagePtr& msg);

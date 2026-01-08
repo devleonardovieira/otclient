@@ -171,6 +171,12 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
                 case Proto::GameServerSendClientCheck:
                     parseClientCheck(msg);
                     break;
+                case Proto::GameServerEmote: // Emote
+                    parseEmote(msg);
+                    break;
+                case Proto::GameServerUnlockedEmotes: // Unlocked Emotes
+                    parseUnlockedEmotes(msg);
+                    break;
                 case Proto::GameServerFullMap:
                     parseMapDescription(msg);
                     break;
@@ -3371,6 +3377,19 @@ void ProtocolGame::parseAutomapFlag(const InputMessagePtr& msg)
     } else {
         g_game.processRemoveAutomapFlag(pos, icon, description);
     }
+}
+
+void ProtocolGame::parseEmote(const InputMessagePtr& msg)
+{
+    uint32_t creatureId = msg->getU32();
+    uint16_t emoteId = msg->getU16();
+    g_game.processEmote(creatureId, emoteId);
+}
+
+void ProtocolGame::parseUnlockedEmotes(const InputMessagePtr& msg)
+{
+    uint64_t unlockedEmotes = msg->getU64();
+    g_game.setUnlockedEmotes(unlockedEmotes);
 }
 
 void ProtocolGame::parseQuestLog(const InputMessagePtr& msg)

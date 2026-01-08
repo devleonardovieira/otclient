@@ -40,6 +40,7 @@ Module
     - game_profile
     - game_market
     - game_spells
-    - party
+    - game_party
+    - game_emotes
   @onLoad: init()
   @onUnload: terminate()

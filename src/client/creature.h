@@ -80,6 +80,7 @@ public:
     void setMountShader(std::string_view name);
     void setStaticWalking(uint16_t v);
     void setIconsTexture(const std::string& filename, const Rect& clip, const uint16_t count);
+    void setEmote(uint16_t emoteId);
 
     void onStartAttachEffect(const AttachedEffectPtr& effect) override;
     void onDispatcherAttachEffect(const AttachedEffectPtr& effect) override;

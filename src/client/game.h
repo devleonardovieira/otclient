@@ -98,6 +98,13 @@ protected:
     static void processPartyDetailedInfo(uint32_t partyId, uint32_t leaderId, const std::vector<PartyDetailedMember>& members);
     static void processPartyMemberUpdate(const PartyDetailedMember& member);
 
+    // anthem
+    static void processAnthem(uint16_t anthemId);
+
+    // emote
+    static void processEmote(uint32_t creatureId, uint16_t emoteId);
+    void setUnlockedEmotes(uint64_t unlockedEmotes);
+
     // feature variables hint
     static void processTutorialHint(uint8_t id);
     static void processAddAutomapFlag(const Position& pos, uint8_t icon, std::string_view message);
@@ -185,6 +192,7 @@ public:
     void stop();
 
     // item related
+    void useEmote(uint16_t emoteId);
     void look(const ThingPtr& thing, bool isBattleList = false);
     void move(const ThingPtr& thing, const Position& toPos, int count);
     void moveToParentContainer(const ThingPtr& thing, int count);
@@ -337,6 +345,7 @@ public:
 
     // otclient only
     void changeMapAwareRange(uint8_t xrange, uint8_t yrange);
+
 
     // dynamic support for game features
     void enableFeature(const Otc::GameFeature feature) { m_features.set(feature, true); }

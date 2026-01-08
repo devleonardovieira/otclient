@@ -2159,3 +2159,26 @@ void Game::processCyclopediaCharacterMiscStats(const CyclopediaCharacterMiscStat
 {
     g_lua.callGlobalField("g_game", "onCyclopediaCharacterMiscStats", data);
 }
+
+void Game::processEmote(uint32_t creatureId, uint16_t emoteId)
+{
+    const auto& creature = g_map.getCreatureById(creatureId);
+    if (creature) {
+        creature->setEmote(emoteId);
+    }
+}
+
+void Game::setUnlockedEmotes(uint64_t unlockedEmotes)
+{
+    if (m_localPlayer) {
+        m_localPlayer->setUnlockedEmotes(unlockedEmotes);
+    }
+}
+
+void Game::useEmote(uint16_t emoteId)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendEmote(emoteId);
+}

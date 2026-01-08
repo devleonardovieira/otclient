@@ -159,6 +159,14 @@ void ProtocolGame::sendPingBack()
     send(msg);
 }
 
+void ProtocolGame::sendEmote(uint16_t emoteId)
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientEmote);
+    msg->addU16(emoteId);
+    send(msg);
+}
+
 void ProtocolGame::sendAutoWalk(const std::vector<Otc::Direction>& path)
 {
     const auto& msg = std::make_shared<OutputMessage>();
