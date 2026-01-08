@@ -24,7 +24,15 @@
 
 #include "outfit.h"
 #include "position.h"
-#include "declarations.h"
+#include <framework/core/timer.h>
+
+struct Bounce
+{
+    uint8_t minHeight{ 0 };
+    uint8_t height{ 0 };
+    uint16_t speed{ 0 };
+    Timer timer{};
+};
 
 struct AwareRange
 {
@@ -51,7 +59,6 @@ struct MapPosInfo
     float verticalStretchFactor;
     float scaleFactor;
 
-    // Criatura atualmente sob o mouse (tile destacado). Usado para dicas de interação.
     CreaturePtr hoveredCreature;
 
     bool isInRange(const Position& pos, const bool ignoreZ = false) const
@@ -91,6 +98,7 @@ struct Imbuement
     std::string name;
     std::string description;
     std::string group;
+    uint8_t tier;
     uint16_t imageId;
     uint32_t duration;
     bool premiumOnly;
@@ -173,6 +181,7 @@ struct BossCooldownData
         : bossRaceId(raceId), cooldownTime(cooldown) {}
 };
 
+
 struct PartyMemberData
 {
     uint32_t memberID;
@@ -209,7 +218,7 @@ struct PartyDetailedMember
 
     PartyDetailedMember(uint32_t id, const std::string& name, uint16_t level, uint16_t vocation, uint32_t health, uint32_t maxHealth, uint32_t mana, uint32_t maxMana, bool isLeader)
         : id(id), name(name), level(level), vocation(vocation), health(health), maxHealth(maxHealth), mana(mana), maxMana(maxMana), isLeader(isLeader) {}
-    
+
     PartyDetailedMember() : id(0), level(0), vocation(0), health(0), maxHealth(0), mana(0), maxMana(0), isLeader(false), mask(0) {}
 
     uint8_t mask = 0;
@@ -642,21 +651,31 @@ struct DailyRewardData
 
 struct CyclopediaCharacterOffenceStats
 {
-    double critChance;
-    double critDamage;
-    double critDamageBase;
+    double critChanceTotal;
+    double critChanceFlat;
+    double critChanceEquipament;
+    double critChanceImbuement;
+    double critChanceWheel;
+    double critChanceConcoction;
+
+    double critDamageTotal;
+    double critDamageFlat;
+    double critDamageEquipament;
     double critDamageImbuement;
     double critDamageWheel;
+    double critDamageConcoction;
 
-    double lifeLeech;
-    double lifeLeechBase;
+    double lifeLeechTotal;
+    double lifeLeechEquipament;
     double lifeLeechImbuement;
     double lifeLeechWheel;
+    double lifeLeechEventBonus;
 
-    double manaLeech;
-    double manaLeechBase;
+    double manaLeechTotal;
+    double manaLeechEquipament;
     double manaLeechImbuement;
     double manaLeechWheel;
+    double manaLeechEventBonus;
 
     double onslaught;
     double onslaughtBase;

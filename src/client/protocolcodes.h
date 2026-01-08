@@ -184,9 +184,7 @@ namespace Proto
         GameServerFloorChangeUp = 190,
         GameServerFloorChangeDown = 191,
         GameServerLootContainers = 192,
-        GameServerEmote = 193,
-        GameServerUnlockedEmotes = 194,
-       // GameServerVirtue = 193,
+       GameServerVirtue = 193,
         GameServerCyclopediaHouseAuctionMessage = 195,
         GameServerWeaponProficiencyInfo = 196,
         GameServerCyclopediaHousesInfo = 198,
@@ -240,7 +238,14 @@ namespace Proto
         GameServerStore = 251,
         GameServerStoreOffers = 252,
         GameServerStoreTransactionHistory = 253,
-        GameServerStoreCompletePurchase = 254
+        GameServerStoreCompletePurchase = 254,
+        GameServerShinobi = 255,
+    };
+
+    enum GameServerShinobiData : uint16_t 
+    {
+        GameServerEmote = 1,
+        GameServerUnlockedEmotes = 2
     };
 
     enum ClientOpcodes : uint8_t
@@ -343,7 +348,6 @@ namespace Proto
         ClientCancelAttackAndFollow = 190,
         ClientForgeEnter = 191,
         ClientForgeBrowseHistory = 192,
-        ClientEmote = 193,
         ClientUpdateTile = 201,
         ClientRefreshContainer = 202,
         ClientBrowseField = 203,
@@ -389,7 +393,13 @@ namespace Proto
         ClientRequestStoreOffers = 251,
         ClientBuyStoreOffer = 252,
         ClientOpenTransactionHistory = 253,
-        ClientRequestTransactionHistory = 254
+        ClientRequestTransactionHistory = 254,
+        ClientShinobi = 255
+    };
+
+    enum ClientShinobiData : uint16_t
+    {
+        ClientEmote = 1
     };
 
     enum CreatureType

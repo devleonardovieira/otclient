@@ -135,6 +135,7 @@ find_package(pugixml CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(httplib CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+find_package(unofficial-inih CONFIG REQUIRED)
 find_package(FFMPEG REQUIRED)
 
 find_path(CPPCODEC_INCLUDE_DIRS "cppcodec/base32_crockford.hpp")
@@ -286,6 +287,8 @@ set(SOURCE_FILES
         client/minimap.cpp
         client/missile.cpp
         client/outfit.cpp
+        client/paperdoll.cpp
+        client/paperdollmanager.cpp
         client/player.cpp
         client/position.cpp
         client/protocolcodes.cpp
@@ -555,6 +558,7 @@ if(MSVC)
           winmm.lib
           pugixml::pugixml
           fmt::fmt-header-only
+          unofficial::inih::inireader
           ${FFMPEG_LIBRARIES}
   )
 elseif(ANDROID)

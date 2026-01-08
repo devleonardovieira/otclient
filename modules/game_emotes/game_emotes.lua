@@ -1,12 +1,15 @@
 local emoteWheel = nil
 local wheel = nil
-local slices = nil
 local icons = nil
 local indicator = nil
 local lastEmoteId = nil
 local centerPos = nil
 local mousePos = nil
 local openTime = 0
+local updateEvent = nil
+local iconWidgets = {}
+local iconBases = {}
+local hoveredIndex = nil
 
 function init()
   g_ui.importStyle('game_emotes')
@@ -21,11 +24,9 @@ function init()
   emoteWheel:hide()
 
   wheel = emoteWheel:getChildById('wheel')
-  slices = wheel:getChildById('slices')
   icons = wheel:getChildById('icons')
   indicator = emoteWheel:getChildById('indicator')
 
-  createSlices()
   createEmoteWidgets()
 
   g_keyboard.bindKeyDown('G', show)
@@ -34,20 +35,11 @@ function init()
   Creature.onEmote = onCreatureEmote
 end
 
-function createSlices()
-  if not slices then return end
-  slices:destroyChildren()
-  wheel.slices = {}
-  for i = 1, 8 do
-    local s = g_ui.createWidget('EmoteSlice', slices)
-    s:setRotation((i - 1) * 45)
-    wheel.slices[i] = s
-  end
-end
-
 function createEmoteWidgets()
   if not icons then return end
   icons:destroyChildren()
+  iconWidgets = {}
+  iconBases = {}
 
   local count = #Emotes
   if count == 0 then return end
@@ -55,32 +47,77 @@ function createEmoteWidgets()
   local size = wheel:getSize()
   local cx = size.width / 2
   local cy = size.height / 2
-  local radius = math.floor(math.min(size.width, size.height) * 0.39)
+  local half = math.min(size.width, size.height) / 2
+  local radius = math.floor(half * 0.62)
   local step = 45
+  local iconSize = 44
 
   for i, emote in ipairs(Emotes) do
     if i > 8 then break end
+    if not emote.icon then break end
 
-    local w = g_ui.createWidget('UIWidget', icons)
+    local w = g_ui.createWidget('UIImage', icons)
     w:setId('emoteWidget_' .. i)
-    w:setSize({width = 48, height = 48})
+    w:setSize({width = iconSize, height = iconSize})
     w:setImageSource(emote.icon)
-    w:setOpacity(1.0)
+    w:setOpacity(0.7)
     w:setPhantom(true)
 
-    local deg = (i - 1) * step + (step / 2)
-    local rad = math.rad(deg)
-    local x = cx + math.cos(rad) * radius - 24
-    local y = cy + math.sin(rad) * radius - 24
+    local deg = (i - 1) * step
+    local rad = math.rad(deg - 90)
+    local centerX = cx + math.cos(rad) * radius
+    local centerY = cy + math.sin(rad) * radius
+    local x = math.floor(centerX - (iconSize / 2))
+    local y = math.floor(centerY - (iconSize / 2))
 
     w:setPosition({x = x, y = y})
+    iconWidgets[i] = w
+    iconBases[i] = { cx = centerX, cy = centerY, size = iconSize }
   end
 end
 
+local function applyIconState(index, size, opacity)
+  local w = iconWidgets[index]
+  local base = iconBases[index]
+  if not w or not base then return end
+  w:setOpacity(opacity)
+  w:setSize({ width = size, height = size })
+  w:setPosition({ x = math.floor(base.cx - (size / 2)), y = math.floor(base.cy - (size / 2)) })
+end
+
+local function clearHover()
+  if hoveredIndex then
+    local base = iconBases[hoveredIndex]
+    if base then
+      applyIconState(hoveredIndex, base.size, 0.7)
+    end
+  end
+  hoveredIndex = nil
+  lastEmoteId = nil
+  indicator:setText("")
+end
+
+local function setHover(index)
+  if hoveredIndex == index then return end
+  if hoveredIndex then
+    local base = iconBases[hoveredIndex]
+    if base then
+      applyIconState(hoveredIndex, base.size, 0.7)
+    end
+  end
+  hoveredIndex = index
+  lastEmoteId = index
+  applyIconState(index, 64, 1.0)
+  if iconWidgets[index] then
+    iconWidgets[index]:raise()
+  end
+  indicator:setText(Emotes[index].name)
+end
 
 function terminate()
     g_keyboard.unbindKeyDown('G')
     g_keyboard.unbindKeyUp('G')
+    
     
     if emoteWheel then
         emoteWheel:destroy()
@@ -99,6 +136,7 @@ function show()
   openTime = g_clock.millis()
 
   createEmoteWidgets()
+  clearHover()
 
   if updateEvent then updateEvent:cancel() end
   updateEvent = cycleEvent(updateWheel, 30)
@@ -110,21 +148,12 @@ function hide()
         updateEvent:cancel()
         updateEvent = nil
     end
-    indicator:setText("")
-    if wheel and wheel.slices then
-      for i = 1, 8 do
-        if wheel.slices[i] then
-          wheel.slices[i]:setOpacity(0)
-        end
-      end
-    end
-    lastEmoteId = nil
+    clearHover()
 end
 
 function confirm()
     if not emoteWheel:isVisible() then return end
     
-    -- If key press was short (tap), keep the wheel open (toggle mode)
     if g_clock.millis() - openTime < 250 then
         return
     end
@@ -138,36 +167,37 @@ end
 
 function updateWheel()
   if not emoteWheel:isVisible() then return end
-  if not wheel or not wheel.slices then return end
+  if not wheel then return end
 
   local mouse = g_window.getMousePosition()
-  local pos = wheel:getPosition()
-  local cx = pos.x + wheel:getWidth() / 2
-  local cy = pos.y + wheel:getHeight() / 2
+  local basePos = emoteWheel:getPosition()
+  local wheelPos = wheel:getPosition()
+  local cx = basePos.x + wheelPos.x + wheel:getWidth() / 2
+  local cy = basePos.y + wheelPos.y + wheel:getHeight() / 2
 
   local dx = mouse.x - cx
   local dy = mouse.y - cy
 
+  local dist = math.sqrt(dx * dx + dy * dy)
+  local half = math.min(wheel:getWidth(), wheel:getHeight()) / 2
+  if dist < (half * 0.22) or dist > (half * 0.95) then
+    if hoveredIndex then clearHover() end
+    return
+  end
+
   local angle = math.deg(math.atan2(dy, dx))
   if angle < 0 then angle = angle + 360 end
 
-  local index = math.floor(angle / 45) + 1
-  if index < 1 or index > 8 then return end
-  if not Emotes[index] then return end
+  local visual = angle + 90
+  if visual >= 360 then visual = visual - 360 end
 
-  if lastEmoteId ~= index then
-    for i = 1, 8 do
-      if wheel.slices[i] then
-        wheel.slices[i]:setOpacity(0)
-      end
-    end
-    if wheel.slices[index] then
-      wheel.slices[index]:setOpacity(1.0)
-    end
+  local index = (math.floor((visual + 22.5) / 45) % 8) + 1
+  if not Emotes[index] or not iconWidgets[index] then
+    if hoveredIndex then clearHover() end
+    return
   end
 
-  lastEmoteId = index
-  indicator:setText(Emotes[index].name)
+  setHover(index)
 end
 
 function onCreatureEmote(creature, emoteId)

@@ -18,14 +18,9 @@ EmoteWheel < UIWidget
       phantom: true
 
     UIWidget
-      id: slices
-      anchors.fill: parent
-      phantom: true
-
-    UIWidget
       id: icons
       anchors.fill: parent
-      phantom: true
+      phantom: false
 
   UILabel
     id: indicator
@@ -34,10 +29,3 @@ EmoteWheel < UIWidget
     color: #ffffff
     font: verdana-11px-rounded
     text-align: center
-
-EmoteSlice < UIWidget
-  size: 380 380
-  anchors.centerIn: parent
-  image-source: /images/emotes/slice
-  opacity: 0
-  phantom: true

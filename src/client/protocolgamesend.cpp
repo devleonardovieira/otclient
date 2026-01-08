@@ -163,7 +163,8 @@ void ProtocolGame::sendPingBack()
 void ProtocolGame::sendEmote(uint16_t emoteId)
 {
     const auto& msg = std::make_shared<OutputMessage>();
-    msg->addU8(Proto::ClientEmote);
+    msg->addU8(Proto::ClientShinobi);
+    msg->addU16(Proto::ClientEmote);
     msg->addU16(emoteId);
     send(msg);
 }

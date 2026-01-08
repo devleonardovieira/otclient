@@ -45,6 +45,7 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
 {
     int opcode = -1;
     int prevOpcode = -1;
+    int shinobiOpcode = -1;
 
     try {
         while (!msg->eof()) {
@@ -67,6 +68,21 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
             // restore read pos
 
             switch (opcode) {
+                case Proto::GameServerShinobi: {
+                    const uint16_t shinobiOpcode = msg->getU16();
+                    switch (shinobiOpcode) {
+                        case Proto::GameServerEmote:
+                            parseEmote(msg);
+                            break;
+                        case Proto::GameServerUnlockedEmotes:
+                            parseUnlockedEmotes(msg);
+                            break;
+                        default:
+                            g_logger.error("Unknown shinobi opcode: {}", shinobiOpcode);
+                            break;
+                    }
+                    break;
+                }
                 case Proto::GameServerLoginOrPendingState:
                     if (g_game.getFeature(Otc::GameLoginPending)) {
                         parsePendingGame(msg);
@@ -181,12 +197,6 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
                     break;
                 case Proto::GameServerSendClientCheck:
                     parseClientCheck(msg);
-                    break;
-                case Proto::GameServerEmote: // Emote
-                    parseEmote(msg);
-                    break;
-                case Proto::GameServerUnlockedEmotes: // Unlocked Emotes
-                    parseUnlockedEmotes(msg);
                     break;
                 case Proto::GameServerFullMap:
                     parseMapDescription(msg);
