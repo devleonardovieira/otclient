@@ -26,6 +26,9 @@
 #include "framework/core/resourcemanager.h"
 #include "framework/luaengine/luainterface.h"
 #include "framework/platform/platform.h"
+#ifdef FRAMEWORK_EDITOR
+#include "tools/datdump.h"
+#endif
 
 #ifndef ANDROID
 #if ENABLE_DISCORD_RPC == 1
@@ -42,6 +45,31 @@
 #ifdef ANDROID
 extern "C" {
 #endif
+
+namespace {
+
+bool shouldShowHelp(const std::vector<std::string>& args)
+{
+    for (const auto& arg : args) {
+        if (arg == "--help" || arg == "-h" || arg == "/?")
+            return true;
+    }
+    return false;
+}
+
+void printHelp(const std::string& executableName)
+{
+    std::cout << "Usage: " << executableName << " [options]\n\n"
+                 "General options:\n"
+                 "  --help, -h, /?              Show this help message and exit\n"
+                 "  --encrypt <password>        Encrypt assets (requires ENABLE_ENCRYPTION == 1 && ENABLE_ENCRYPTION_BUILDER == 1 build)\n\n"
+                 "DAT debugging:\n"
+                 "  --dump-dat-to-json=<path|ver> Dump the specified Tibia DAT file or version as JSON (requires FRAMEWORK_EDITOR build)\n"
+                 "    --dump-dat-output=<path>    Write JSON to file instead of stdout\n"
+                 "    --dump-dat-compact          Emit compact (single-line) JSON\n";
+}
+
+} // namespace
 
     int main(const int argc, const char* argv[])
     {
@@ -78,6 +106,17 @@ extern "C" {
         // find script init.lua and run it
         if (!g_resources.discoverWorkDir("init.lua"))
             g_logger.fatal("Unable to find work directory, the application cannot be initialized.");
+
+        if (shouldShowHelp(args)) {
+            printHelp(args[0]);
+            return 0;
+        }
+
+#ifdef FRAMEWORK_EDITOR
+        if (const auto dumpRequest = datdump::parseRequest(args); dumpRequest) {
+            return datdump::run(*dumpRequest) ? 0 : 1;
+        }
+#endif
 
         // initialize application framework and otclient
         const auto drawEvents = ApplicationDrawEventsPtr(&g_client, [](ApplicationDrawEvents*) {});

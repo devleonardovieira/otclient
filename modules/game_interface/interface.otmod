@@ -23,6 +23,7 @@ Module
     - game_cooldown
     - game_modaldialog
     - game_attachedeffects
+    - game_paperdolls
     - game_stash
     - game_api
     - game_creatureinformation

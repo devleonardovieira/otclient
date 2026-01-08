@@ -79,6 +79,8 @@ namespace Proto
         GameServerCreatureShader = 54,
         GameServerMapShader = 55,
         GameServerCreatureTyping = 56,
+        GameServerAttachedPaperdoll = 60,
+        GameServerDetachPaperdoll = 61,
         GameServerFeatures = 67,
         GameServerFloorDescription = 75,
 
@@ -90,6 +92,7 @@ namespace Proto
         GameServerTradeWindowClose = 84,
 
         // original tibia ONLY
+        GameServerWeaponProficiencyExperience = 92,
         GameServerImbuementDurations = 93,
         GameServerPassiveCooldown = 94,
         GameServerBosstiaryData = 97,
@@ -183,7 +186,9 @@ namespace Proto
         GameServerLootContainers = 192,
         GameServerEmote = 193,
         GameServerUnlockedEmotes = 194,
+       // GameServerVirtue = 193,
         GameServerCyclopediaHouseAuctionMessage = 195,
+        GameServerWeaponProficiencyInfo = 196,
         GameServerCyclopediaHousesInfo = 198,
         GameServerCyclopediaHouseList = 199,
         GameServerChooseOutfit = 200,
