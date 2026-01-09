@@ -1,22 +1,25 @@
 Emotes = {
     [1] = {
         name = "Laugh",
-        effect = '/images/game/effects/thunder', -- Example path, user needs to provide real assets or use existing
-
-        icon = '/images/game/effects/thunder' -- Icon for the wheel
+        effect = '/images/emotes/sakuraknife', -- Example path, user needs to provide real assets or use existing
+        duration = 1000,
+        loop = false,
+        offset = { 0, -500 },   
+        icon = '/images/emotes/sakuraknife' -- Icon for the wheelSystemEnabled
     },
     [2] = {
         name = "Ping",
-        effect = '/images/game/effects/pentagram',
+        effect = '/images/emotes/kakashithumbup',
         loop = false,
-        duration = 10000,
-        icon = '/images/game/effects/pentagram'
+        duration = 1000,
+        icon = '/images/emotes/kakashithumbup'
     },
     [3] = {
         name = "Troll",
-        effect = '/images/game/effects/ki',
-        scale = 1.2,
-        duration = 10000,
-        icon = '/images/game/effects/ki'
+        effect = '/images/game/emotes/4813-sasukeitisfine',
+        scale = 9,
+        duration = 1000,
+        loop = false,
+        icon = '/images/game/emotes/4813-sasukeitisfine'
     }
 }

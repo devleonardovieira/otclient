@@ -8,14 +8,16 @@ local EmoteWheel = {
   iconBases = {},
 
   hovered = nil,
-  lastEmote = nil,
-
+  
   openTime = 0,
   updateEvent = nil,
 
   center = { x = 0, y = 0 },
   radius = 0,
-  half = 0
+  half = 0,
+  
+  mapPosition = nil,
+  previewEffect = nil
 }
 
 function EmoteWheel.onKeyDown()
@@ -39,6 +41,25 @@ function init()
   EmoteWheel.indicator = EmoteWheel.widget:getChildById('indicator')
 
   EmoteWheel:createIcons()
+
+  -- Register Emote Effects
+  local startId = 5000
+  for i, emote in pairs(Emotes) do
+    if emote.effect and type(emote.effect) == 'string' then
+       local id = startId + i
+       if not AttachedEffectManager.get(id) then
+         AttachedEffectManager.register(id, emote.name or ('Emote'..i), emote.effect, ThingExternalTexture, {
+            size = { 100, 100 }, -- Default size, can be adjusted
+            duration = emote.duration or 0,
+            loop = emote.loop ~= false and -1 or 1
+         })
+       end
+       emote.effectId = id
+    end
+    
+    -- Normalize effect lookup
+    emote._resolvedEffectId = emote.effectId or (type(emote.effect) == 'number' and emote.effect) or nil
+  end
 
   g_keyboard.bindKeyDown('G', EmoteWheel.onKeyDown)
   g_keyboard.bindKeyUp('G', EmoteWheel.onKeyUp)
@@ -116,9 +137,10 @@ function EmoteWheel:createIcons()
 end
 
 function EmoteWheel:updateCenter()
-  local rect = self.wheel:getRect()
-  self.center.x = rect.x + rect.width / 2
-  self.center.y = rect.y + rect.height / 2
+  local pos = self.widget:getPosition()
+  local size = self.widget:getSize()
+  self.center.x = pos.x + size.width / 2
+  self.center.y = pos.y + size.height / 2
 end
 
 function EmoteWheel:applyState(index, size, opacity)
@@ -138,6 +160,13 @@ function EmoteWheel:applyState(index, size, opacity)
 end
 
 function EmoteWheel:clearHover()
+  if not self.hovered then return end
+
+  if self.previewEffect then
+    self.previewEffect:remove()
+    self.previewEffect = nil
+  end
+
   if self.hovered then
     local base = self.iconBases[self.hovered]
     if base then
@@ -145,28 +174,71 @@ function EmoteWheel:clearHover()
     end
   end
   self.hovered = nil
-  self.lastEmote = nil
   self.indicator:setText("")
 end
 
 function EmoteWheel:setHover(index)
   if self.hovered == index then return end
+  
+  -- Debounce hover to prevent rapid flashing and effect spawning
+  if self._pendingHover ~= index then
+     self._pendingHover = index
+     self._hoverStart = g_clock.millis()
+     return
+  end
+  
+  if g_clock.millis() - self._hoverStart < 80 then
+     return
+  end
+  self._pendingHover = nil
 
   if self.hovered then
     local base = self.iconBases[self.hovered]
-    self:applyState(self.hovered, base.size, 0.5)
+    if base then
+        self:applyState(self.hovered, base.size, 0.5)
+    end
   end
 
   self.hovered = index
-  self.lastEmote = index
 
   self:applyState(index, 110, 1)
   self.iconWidgets[index]:raise()
   self.indicator:setText(Emotes[index].name)
+
+  -- Preview Effect on Map
+  local emote = Emotes[index]
+  if emote and self.mapPosition then
+      -- Remove previous preview effect if exists
+      if self.previewEffect then
+          self.previewEffect:remove()
+          self.previewEffect = nil
+      end
+
+      local tile = g_map.getTile(self.mapPosition)
+      if tile then
+          local effectThing = nil
+          
+          if emote._resolvedEffectId then
+              effectThing = g_attachedEffects.getById(emote._resolvedEffectId)
+          end
+          
+          if effectThing then
+              local effect = tile:attachEffect(effectThing)
+              if effect then
+                  effect:setOffset(0, -80)
+                  self.previewEffect = effect
+              end
+          end
+      end
+  end
 end
 
 function EmoteWheel:update()
   local mouse = g_window.getMousePosition()
+  if self._lastMouse and mouse.x == self._lastMouse.x and mouse.y == self._lastMouse.y then
+    return
+  end
+  self._lastMouse = mouse
 
   local dx = mouse.x - self.center.x
   local dy = mouse.y - self.center.y
@@ -202,6 +274,22 @@ function EmoteWheel:show()
 
   self.widget:breakAnchors()
   local mousePos = g_window.getMousePosition()
+  
+  -- Capture Map Position
+  self.mapPosition = nil
+  local player = g_game.getLocalPlayer()
+  if player then
+      self.mapPosition = player:getPosition() -- Default to player position
+  end
+
+  local gameMap = modules.game_interface.getMapPanel()
+  if gameMap then
+      local mapPos = gameMap:getPosition(mousePos)
+      if mapPos then
+          self.mapPosition = mapPos
+      end
+  end
+  
   local size = self.widget:getSize()
   local parent = self.widget:getParent()
   local parentSize = parent:getSize()
@@ -238,8 +326,8 @@ function EmoteWheel:confirm()
     return
   end
 
-  if self.lastEmote then
-    local emote = self.lastEmote
+  if self.hovered then
+    local emote = self.hovered
     self:clearHover()
     g_game.useEmote(emote)
   end
@@ -251,13 +339,39 @@ function onCreatureEmote(creature, emoteId)
     local config = Emotes[emoteId]
     if not config then return end
     
-    if config.effect then
-        local effect = creature:attachEffect(config.effect)
-        if effect then
-            if config.scale then effect:setScale(config.scale) end
-            if config.duration then
-                scheduleEvent(function() if effect then effect:remove() end end, config.duration)
-            end
+    local effect = nil
+    if config._resolvedEffectId then
+        effect = creature:attachEffect(g_attachedEffects.getById(config._resolvedEffectId))
+    end
+
+    if effect then
+        -- Position based on EmoteWheel map position if available and creature is local player
+        if creature:isLocalPlayer() and EmoteWheel.mapPosition then
+             local tile = g_map.getTile(EmoteWheel.mapPosition)
+             if tile then
+                -- Remove the effect from creature and attach to tile instead
+                effect:remove()
+                
+                local newEffect = nil
+                if config._resolvedEffectId then
+                    newEffect = tile:attachEffect(g_attachedEffects.getById(config._resolvedEffectId))
+                end
+                
+                if newEffect then
+                    effect = newEffect -- Update reference
+                    effect:setOffset(0, -80)
+                end
+             else
+                effect:setOffset(0, -80)
+             end
+        else
+             -- Default position above player's head
+             effect:setOffset(0, -80)
+        end
+
+        if config.scale then effect:setScale(config.scale) end
+        if config.duration then
+            scheduleEvent(function() if effect then effect:remove() end end, config.duration)
         end
     end
     

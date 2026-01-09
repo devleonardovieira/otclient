@@ -96,6 +96,8 @@ function init()
 	addHotkeyButton = hotkeysWindow:getChildById("addHotkeyButton")
 	removeHotkeyButton = hotkeysWindow:getChildById("removeHotkeyButton")
 	hotkeyText = hotkeysWindow:getChildById("hotkeyText")
+	hotkeyText.onTextChange = onHotkeyTextChange
+
 	selectObjectButton = hotkeysWindow:getChildById("selectObjectButton")
 	clearObjectButton = hotkeysWindow:getChildById("clearObjectButton")
 	useOnSelf = hotkeysWindow:getChildById("useOnSelf")
@@ -864,23 +866,22 @@ function updateHotkeyAction()
 	updateHotkeyForm()
 end
 
-function onHotkeyTextChange(value)
+function onHotkeyTextChange(widget, text)
 	if not hotkeysManagerLoaded then
 		return
 	elseif currentHotkeyLabel == nil then
 		return
 	end
 
-	currentHotkeyLabel.value = tostring(value)
+	currentHotkeyLabel.value = tostring(text)
 
-	if value == "" then
+	if text == "" then
 		currentHotkeyLabel.autoSend = false
 	end
 
 	configValueChanged = true
 
 	updateHotkeyLabel(currentHotkeyLabel)
-	updateHotkeyForm()
 end
 
 function onSendAutomaticallyChange(autoSend)

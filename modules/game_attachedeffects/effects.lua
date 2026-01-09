@@ -95,7 +95,7 @@ AttachedEffectManager.register(6, 'Lake Monster', 34, ThingCategoryEffect, {
 
 AttachedEffectManager.register(7, 'Pentagram Aura', '/images/game/effects/pentagram', ThingExternalTexture, {
     size = { 128, 128 },
-    offset = { 50, 45 }
+    offset = { 0, -500 }
 })
 
 AttachedEffectManager.register(8, 'Ki', '/images/game/effects/ki', ThingExternalTexture, {
