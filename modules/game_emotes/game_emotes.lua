@@ -1,211 +1,250 @@
-local emoteWheel = nil
-local wheel = nil
-local icons = nil
-local indicator = nil
-local lastEmoteId = nil
-local centerPos = nil
-local mousePos = nil
-local openTime = 0
-local updateEvent = nil
-local iconWidgets = {}
-local iconBases = {}
-local hoveredIndex = nil
+local EmoteWheel = {
+  widget = nil,
+  wheel = nil,
+  icons = nil,
+  indicator = nil,
+
+  iconWidgets = {},
+  iconBases = {},
+
+  hovered = nil,
+  lastEmote = nil,
+
+  openTime = 0,
+  updateEvent = nil,
+
+  center = { x = 0, y = 0 },
+  radius = 0,
+  half = 0
+}
+
+function EmoteWheel.onKeyDown()
+  EmoteWheel:show()
+end
+
+function EmoteWheel.onKeyUp()
+  EmoteWheel:confirm()
+end
 
 function init()
   g_ui.importStyle('game_emotes')
-
-  emoteWheel = g_ui.createWidget('EmoteWheel', modules.game_interface.getRootPanel())
   
-  if not emoteWheel then
-      g_logger.error('Failed to create EmoteWheel widget.')
-      return
-  end
+  EmoteWheel.widget = g_ui.createWidget('EmoteWheel', modules.game_interface.getRootPanel())
+  if not EmoteWheel.widget then return end
   
-  emoteWheel:hide()
+  EmoteWheel.widget:hide()
+  
+  EmoteWheel.wheel = EmoteWheel.widget:getChildById('wheel')
+  EmoteWheel.icons = EmoteWheel.wheel:getChildById('icons')
+  EmoteWheel.indicator = EmoteWheel.widget:getChildById('indicator')
 
-  wheel = emoteWheel:getChildById('wheel')
-icons = wheel:getChildById('icons')
-  indicator = emoteWheel:getChildById('indicator')
+  EmoteWheel:createIcons()
 
-  createEmoteWidgets()
-
-  g_keyboard.bindKeyDown('G', show)
-  g_keyboard.bindKeyUp('G', confirm)
+  g_keyboard.bindKeyDown('G', EmoteWheel.onKeyDown)
+  g_keyboard.bindKeyUp('G', EmoteWheel.onKeyUp)
 
   Creature.onEmote = onCreatureEmote
 end
 
-function createEmoteWidgets()
-  if not icons then return end
-  icons:destroyChildren()
-  iconWidgets = {}
-  iconBases = {}
+function terminate()
+  g_keyboard.unbindKeyDown('G', EmoteWheel.onKeyDown)
+  g_keyboard.unbindKeyUp('G', EmoteWheel.onKeyUp)
 
-  local count = #Emotes
-  if count == 0 then return end
+  if EmoteWheel.updateEvent then
+    EmoteWheel.updateEvent:cancel()
+    EmoteWheel.updateEvent = nil
+  end
 
-  local size = wheel:getSize()
-  local cx = size.width / 2
-  local cy = size.height / 2
-  local half = math.min(size.width, size.height) / 2
-  local radius = math.floor(half * 0.62)
+  if EmoteWheel.widget then
+    EmoteWheel.widget:destroy()
+    EmoteWheel.widget = nil
+  end
+
+  Creature.onEmote = nil
+end
+
+function EmoteWheel:createIcons()
+  if self._pendingCreate then return end
+
+  local size = self.wheel:getSize()
+  if size.width == 0 or size.height == 0 then
+    self._pendingCreate = true
+    scheduleEvent(function() 
+      self._pendingCreate = nil 
+      self:createIcons() 
+    end, 50)
+    return
+  end
+
+  self.icons:destroyChildren()
+  self.iconWidgets = {}
+  self.iconBases = {}
+
+  local cx, cy = size.width / 2, size.height / 2
+  self.half = math.min(size.width, size.height) / 2
+  self.radius = math.floor(self.half * 0.62)
+
   local step = 360 / 8
   local iconSize = 88
 
   for i = 1, 8 do
     local emote = Emotes[i]
     if emote and emote.icon then
-      print('Emote: ' .. emote.name .. ' Icon: ' .. emote.icon)
-
-      local w = g_ui.createWidget('UIImageView', icons)
-      w:setId('emoteWidget_' .. i)
-      w:setSize({width = iconSize, height = iconSize})
+      local w = g_ui.createWidget('UIImageView', self.icons)
+      w:setId('emote_' .. i)
+      w:setSize({ width = iconSize, height = iconSize })
       w:setImageSource(emote.icon)
-      w:setOpacity(0.7)
- 
+      w:setOpacity(0.5)
 
-      local deg = (i - 1) * step
-      local rad = math.rad(deg - 90)
-      local centerX = cx + math.cos(rad) * radius
-      local centerY = cy + math.sin(rad) * radius
-      local x = math.floor(centerX - (iconSize / 2))
-      local y = math.floor(centerY - (iconSize / 2))
-      print('Created emote widget:', w, 'pos:', x, y)
+      local rad = math.rad((i - 1) * step - 90 + 22.5)
+      local cxIcon = cx + math.cos(rad) * self.radius
+      local cyIcon = cy + math.sin(rad) * self.radius
+
       w:addAnchor(AnchorLeft, 'parent', AnchorLeft)
       w:addAnchor(AnchorTop, 'parent', AnchorTop)
-      w:setMarginLeft(x)
-      w:setMarginTop(y)
-      iconWidgets[i] = w
-      iconBases[i] = { cx = centerX, cy = centerY, size = iconSize }
+      w:setMarginLeft(cxIcon - iconSize / 2)
+      w:setMarginTop(cyIcon - iconSize / 2)
+
+      self.iconWidgets[i] = w
+      self.iconBases[i] = {
+        cx = cxIcon,
+        cy = cyIcon,
+        size = iconSize
+      }
     end
   end
 end
 
-local function applyIconState(index, size, opacity)
-  local w = iconWidgets[index]
-  local base = iconBases[index]
+function EmoteWheel:updateCenter()
+  local rect = self.wheel:getRect()
+  self.center.x = rect.x + rect.width / 2
+  self.center.y = rect.y + rect.height / 2
+end
+
+function EmoteWheel:applyState(index, size, opacity)
+  local w = self.iconWidgets[index]
+  local base = self.iconBases[index]
   if not w or not base then return end
-  w:setOpacity(opacity)
-  w:setSize({ width = size, height = size })
-  local x = math.floor(base.cx - (size / 2))
-  local y = math.floor(base.cy - (size / 2))
-  w:setMarginLeft(x)
-  w:setMarginTop(y)
+
+  if w:getOpacity() ~= opacity then
+    w:setOpacity(opacity)
+  end
+
+  if w:getWidth() ~= size then
+    w:setSize({ width = size, height = size })
+    w:setMarginLeft(base.cx - size / 2)
+    w:setMarginTop(base.cy - size / 2)
+  end
 end
 
-local function clearHover()
-  if hoveredIndex then
-    local base = iconBases[hoveredIndex]
+function EmoteWheel:clearHover()
+  if self.hovered then
+    local base = self.iconBases[self.hovered]
     if base then
-      applyIconState(hoveredIndex, base.size, 0.7)
+        self:applyState(self.hovered, base.size, 0.5)
     end
   end
-  hoveredIndex = nil
-  lastEmoteId = nil
-  indicator:setText("")
+  self.hovered = nil
+  self.lastEmote = nil
+  self.indicator:setText("")
 end
 
-local function setHover(index)
-  if hoveredIndex == index then return end
-  if hoveredIndex then
-    local base = iconBases[hoveredIndex]
-    if base then
-      applyIconState(hoveredIndex, base.size, 0.7)
-    end
+function EmoteWheel:setHover(index)
+  if self.hovered == index then return end
+
+  if self.hovered then
+    local base = self.iconBases[self.hovered]
+    self:applyState(self.hovered, base.size, 0.5)
   end
-  hoveredIndex = index
-  lastEmoteId = index
-  applyIconState(index, 64, 1.0)
-  if iconWidgets[index] then
-    iconWidgets[index]:raise()
-  end
-  indicator:setText(Emotes[index].name)
+
+  self.hovered = index
+  self.lastEmote = index
+
+  self:applyState(index, 110, 1)
+  self.iconWidgets[index]:raise()
+  self.indicator:setText(Emotes[index].name)
 end
 
-function terminate()
-    g_keyboard.unbindKeyDown('G')
-    g_keyboard.unbindKeyUp('G')
-    
-    
-    if emoteWheel then
-        emoteWheel:destroy()
-        emoteWheel = nil
-    end
-    
-    Creature.onEmote = nil
-end
-
-function show()
-  if not g_game.isOnline() then return end
-  if emoteWheel:isVisible() then return end
-
-  emoteWheel:show()
-  emoteWheel:raise()
-  openTime = g_clock.millis()
-
-  createEmoteWidgets()
-  clearHover()
-
-  if updateEvent then updateEvent:cancel() end
-  updateEvent = cycleEvent(updateWheel, 30)
-end
-
-function hide()
-    emoteWheel:hide()
-    if updateEvent then
-        updateEvent:cancel()
-        updateEvent = nil
-    end
-    clearHover()
-end
-
-function confirm()
-    if not emoteWheel:isVisible() then return end
-    
-    if g_clock.millis() - openTime < 250 then
-        return
-    end
-    
-    if lastEmoteId then
-        g_game.useEmote(lastEmoteId)
-    end
-    
-    hide()
-end
-
-function updateWheel()
-  if not emoteWheel:isVisible() then return end
-  if not wheel then return end
-
+function EmoteWheel:update()
   local mouse = g_window.getMousePosition()
-  local basePos = emoteWheel:getPosition()
-  local wheelPos = wheel:getPosition()
-  local cx = basePos.x + wheelPos.x + wheel:getWidth() / 2
-  local cy = basePos.y + wheelPos.y + wheel:getHeight() / 2
 
-  local dx = mouse.x - cx
-  local dy = mouse.y - cy
+  local dx = mouse.x - self.center.x
+  local dy = mouse.y - self.center.y
 
-  local dist = math.sqrt(dx * dx + dy * dy)
-  local half = math.min(wheel:getWidth(), wheel:getHeight()) / 2
-  if dist < (half * 0.22) or dist > (half * 0.95) then
-    if hoveredIndex then clearHover() end
+  local dist2 = dx*dx + dy*dy
+  local min = self.half * 0.22
+  local max = self.half * 0.95
+
+  if dist2 < min*min or dist2 > max*max then
+    if self.hovered then self:clearHover() end
     return
   end
 
   local angle = math.deg(math.atan2(dy, dx))
   if angle < 0 then angle = angle + 360 end
 
-  local visual = angle + 90
-  if visual >= 360 then visual = visual - 360 end
+  local index = ((math.floor((angle + 90) / 45)) % 8) + 1
 
-  local index = (math.floor((visual + 22.5) / 45) % 8) + 1
-  if not Emotes[index] or not iconWidgets[index] then
-    if hoveredIndex then clearHover() end
+  if not self.iconWidgets[index] then
+    if self.hovered then self:clearHover() end
     return
   end
 
-  setHover(index)
+  self:setHover(index)
+end
+
+function EmoteWheel:show()
+  if not g_game.isOnline() then return end
+  if self.widget:isVisible() then return end
+
+  self.widget:show()
+  self.widget:raise()
+
+  self.widget:breakAnchors()
+  local mousePos = g_window.getMousePosition()
+  local size = self.widget:getSize()
+  local parent = self.widget:getParent()
+  local parentSize = parent:getSize()
+
+  local x = math.max(0, math.min(mousePos.x - size.width / 2, parentSize.width - size.width))
+  local y = math.max(0, math.min(mousePos.y - size.height / 2, parentSize.height - size.height))
+
+  self.widget:setPosition({x = x, y = y})
+  self:updateCenter()
+
+  self.openTime = g_clock.millis()
+  self:clearHover()
+
+  if self.updateEvent then self.updateEvent:cancel() end
+  self.updateEvent = cycleEvent(function() self:update() end, 30)
+end
+
+function EmoteWheel:hide()
+  if not self.widget then return end
+  if not self.widget:isVisible() then return end
+
+  self.widget:hide()
+  if self.updateEvent then
+    self.updateEvent:cancel()
+    self.updateEvent = nil
+  end
+  self:clearHover()
+end
+
+function EmoteWheel:confirm()
+  if not self.widget:isVisible() then return end
+
+  if g_clock.millis() - self.openTime < 250 then
+    return
+  end
+
+  if self.lastEmote then
+    local emote = self.lastEmote
+    self:clearHover()
+    g_game.useEmote(emote)
+  end
+
+  self:hide()
 end
 
 function onCreatureEmote(creature, emoteId)
@@ -217,7 +256,7 @@ function onCreatureEmote(creature, emoteId)
         if effect then
             if config.scale then effect:setScale(config.scale) end
             if config.duration then
-                scheduleEvent(function() effect:remove() end, config.duration)
+                scheduleEvent(function() if effect then effect:remove() end end, config.duration)
             end
         end
     end
