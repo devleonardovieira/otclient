@@ -96,11 +96,13 @@ function onEnd()
     -- Usually onEnd means game ended (logout), so we SHOULD hide or destroy.
     window:hide()
     clearParty()
+    updatePartyIcon(false)
 end
 
 function onStart()
     window:show()
     clearParty()
+    updatePartyIcon(false)
     local player = g_game.getLocalPlayer()
     if player then
         updatePlayerWidget(player, player:getHealth(), player:getMaxHealth(), player:getMana(), player:getMaxMana(), player:getLevel())
@@ -127,6 +129,16 @@ function updateUltimateBar(protocol, code, buffer)
     end
 end
 
+function updatePartyIcon(hasParty)
+    if not window or not window.menuButton then return end
+    
+    if hasParty then
+        window.menuButton:setIcon("/images/profile/icon_party")
+    else
+        window.menuButton:setIcon("/images/profile/icon_party_create")
+    end
+end
+
 function onPartyDetailedInfo(partyId, leaderId, members)
     if not window then return end
     
@@ -135,6 +147,10 @@ function onPartyDetailedInfo(partyId, leaderId, members)
 
     -- 1. Full Sync: Clear everything first
     clearParty()
+    
+    -- Update icon based on party state
+    local hasParty = (#members > 0)
+    updatePartyIcon(hasParty)
 
     -- 2. Update Local Player (Initial state)
     updatePlayerWidget(player, player:getHealth(), player:getMaxHealth(), player:getMana(), player:getMaxMana(), player:getLevel())

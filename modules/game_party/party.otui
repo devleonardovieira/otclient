@@ -100,11 +100,12 @@ PlayerInfo < UIWidget
     id: menuButton
     anchors.top: parent.top
     anchors.right: parent.right
-    margin-top: 10
-    margin-right: 10
-    size: 20 20
-    image-source: /images/ui/windows/menu/IconSettings
-    @onClick: modules.game_party.toggleMenu()
+    margin-top: 45
+    margin-right: -20
+    size: 50 50
+    image-source: /images/profile/playerIconHolder
+    icon-source: /images/profile/icon_party_create
+    @onClick: modules.game_party_system.toggle()
 
 PartyMember < UIWidget
   size: 192 83

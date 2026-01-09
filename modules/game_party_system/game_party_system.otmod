@@ -1,0 +1,9 @@
+Module
+  name: game_party_system
+  description: Enhanced Party System
+  author: Trae
+  sandboxed: true
+  scripts: [ party_system ]
+  dependencies: [ game_interface ]
+  @onLoad: init()
+  @onUnload: terminate()

@@ -43,5 +43,6 @@ Module
     - game_spells
     - game_party
     - game_emotes
+    - game_party_system
   @onLoad: init()
   @onUnload: terminate()
