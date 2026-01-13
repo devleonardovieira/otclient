@@ -1,0 +1,266 @@
+
+MainWindow
+  id: partyWindow
+  text: Pokémon Party
+  size: 550 400
+  @onEscape: self:hide()
+
+  Panel
+    id: creationPanel
+    anchors.fill: parent
+    visible: true
+
+    ButtonBlueBase
+      id: createPrivateButton
+      !text: tr('Criar Grupo Privado')
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 15
+      margin-left: 20
+      width: 180
+      height: 40
+      color: white
+      @onClick: modules.game_party.createPrivateParty()
+
+    ButtonBlueBase
+      id: publicGroupsButton
+      !text: tr('Abrir Grupos Públicos')
+      anchors.top: parent.top
+      anchors.right: parent.right
+      margin-top: 15
+      margin-right: 20
+      width: 180
+      height: 40
+      color: white
+
+    Label
+      id: invitesTitle
+      !text: tr('Convites')
+      anchors.top: prev.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 30
+      font: verdana-11px-rounded
+      text-auto-resize: true
+
+    HorizontalSeparator
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 5
+      margin-left: 20
+      margin-right: 20
+
+    Panel
+      id: invitesPanel
+      anchors.top: prev.bottom
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 10
+      
+      Label
+        id: noInvitesLabel
+        !text: tr('Nenhum convite')
+        anchors.centerIn: parent
+        text-align: center
+        color: #888888
+        font: verdana-11px-rounded
+
+  Panel
+    id: managementPanel
+    anchors.fill: parent
+    visible: false
+
+
+    Panel
+      id: sidebar
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: 100
+      
+      Label
+        id: groupButton
+        !text: tr('Grupo')
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 10
+        margin-left: 10
+        font: verdana-11px-rounded
+        text-auto-resize: true
+        color: white
+      
+      UIWidget
+        id: groupIndicator
+        anchors.top: groupButton.top
+        anchors.bottom: groupButton.bottom
+        anchors.left: groupButton.right
+        margin-left: 10
+        width: 3
+        background-color: #3898fd
+
+      Label
+        id: lootButton
+        !text: tr('Saque')
+        anchors.top: groupButton.bottom
+        anchors.left: parent.left
+        margin-top: 15
+        margin-left: 10
+        font: verdana-11px-rounded
+        text-auto-resize: true
+        color: #888888
+
+      Label
+        id: detailsButton
+        !text: tr('Detalhes')
+        anchors.top: lootButton.bottom
+        anchors.left: parent.left
+        margin-top: 15
+        margin-left: 10
+        font: verdana-11px-rounded
+        text-auto-resize: true
+        color: #888888
+
+      Label
+        id: rechargesButton
+        !text: tr('Recargas')
+        anchors.top: detailsButton.bottom
+        anchors.left: parent.left
+        margin-top: 15
+        margin-left: 10
+        font: verdana-11px-rounded
+        text-auto-resize: true
+        color: #888888
+
+      Label
+        id: newGroupButton
+        !text: tr('Novo Grupo')
+        anchors.top: rechargesButton.bottom
+        anchors.left: parent.left
+        margin-top: 15
+        margin-left: 10
+        font: verdana-11px-rounded
+        text-auto-resize: true
+        color: #888888
+  
+    Panel
+      id: contentArea
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: sidebar.right
+      anchors.right: parent.right
+      margin-left: 10
+      
+      Panel
+        id: membersList
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 200
+
+      ButtonRedBase
+        id: leaveButton
+        !text: tr('Sair do Grupo')
+        anchors.top: membersList.bottom
+        anchors.left: parent.left
+        margin-top: 20
+        margin-left: 20
+        width: 120
+        height: 30
+        color: white
+        background-color: #d3452e
+        @onClick: modules.game_party.leaveParty()
+
+      Label
+        id: commonLabel
+        !text: tr('Common')
+        anchors.verticalCenter: leaveButton.verticalCenter
+        anchors.right: parent.right
+        margin-right: 20
+        font: verdana-11px-rounded
+        text-auto-resize: true
+
+      Panel
+        id: footerOptions
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 60
+      
+        UIWidget
+          id: lootIcon
+          image-source: /images/profile/icon_lock
+          anchors.bottom: parent.bottom
+          anchors.left: parent.left
+          margin-bottom: 30
+          margin-left: 20
+          size: 16 16
+          
+        Label
+          id: lootLabel
+          !text: tr('Saque')
+          anchors.left: lootIcon.right
+          anchors.verticalCenter: lootIcon.verticalCenter
+          margin-left: 5
+          font: verdana-11px-rounded
+          
+        Label
+          id: lootValue
+          !text: tr('Compartilhado')
+          anchors.top: lootIcon.bottom
+          anchors.left: lootIcon.left
+          margin-top: 5
+          font: verdana-11px-rounded
+          color: #888888
+
+        UIWidget
+          id: expIcon
+          image-source: /images/profile/icon_lock
+          anchors.bottom: parent.bottom
+          anchors.left: parent.left
+          margin-bottom: 30
+          margin-left: 150
+          size: 16 16
+          
+        Label
+          id: expLabel
+          !text: tr('Experiência')
+          anchors.left: expIcon.right
+          anchors.verticalCenter: expIcon.verticalCenter
+          margin-left: 5
+          font: verdana-11px-rounded
+          
+        Label
+          id: expValue
+          !text: tr('Compartilhado')
+          anchors.top: expIcon.bottom
+          anchors.left: expIcon.left
+          margin-top: 5
+          font: verdana-11px-rounded
+          color: #888888
+
+        UIWidget
+          id: taskIcon
+          image-source: /images/profile/icon_lock
+          anchors.bottom: parent.bottom
+          anchors.left: parent.left
+          margin-bottom: 30
+          margin-left: 300
+          size: 16 16
+          
+        Label
+          id: taskLabel
+          !text: tr('Tarefa')
+          anchors.left: taskIcon.right
+          anchors.verticalCenter: taskIcon.verticalCenter
+          margin-left: 5
+          font: verdana-11px-rounded
+          
+        Label
+          id: taskValue
+          !text: tr('Sequência')
+          anchors.top: taskIcon.bottom
+          anchors.left: taskIcon.left
+          margin-top: 5
+          font: verdana-11px-rounded
+          color: #888888

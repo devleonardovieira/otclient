@@ -62,6 +62,17 @@ function init()
     -- Hide initially, show onGameStart
     window:hide()
 
+    partyWindow = g_ui.displayUI("party_window")
+    if partyWindow then
+        partyWindow:hide()
+    else
+        perror("Failed to load party_window.otui")
+    end
+    
+    if window.player and window.player.menuButton then
+        window.player.menuButton.onClick = togglePartyWindow
+    end
+
     local settings = g_settings.getNode("partyWindow")
     if settings then
         if settings.pos then
@@ -87,7 +98,51 @@ function terminate()
     local settings = { pos = window:getPosition() }
     g_settings.setNode("partyWindow", settings)
     window:destroy()
+    if partyWindow then
+        partyWindow:destroy()
+    end
     -- ProtocolGame.unregisterExtendedOpcode(210, updateUltimateBar)
+end
+
+function togglePartyWindow()
+    if not partyWindow then return end
+    
+    local player = g_game.getLocalPlayer()
+    local hasParty = player and player:isPartyMember()
+    updatePartyWindowView(hasParty)
+
+    if partyWindow:isVisible() then
+        partyWindow:hide()
+    else
+        partyWindow:show()
+        partyWindow:raise()
+        partyWindow:focus()
+    end
+end
+
+function updatePartyWindowView(hasParty)
+    if not partyWindow then return end
+    local creationPanel = partyWindow:recursiveGetChildById('creationPanel')
+    local managementPanel = partyWindow:recursiveGetChildById('managementPanel')
+    
+    if hasParty then
+        if creationPanel then creationPanel:setVisible(false) end
+        if managementPanel then managementPanel:setVisible(true) end
+    else
+        if creationPanel then creationPanel:setVisible(true) end
+        if managementPanel then managementPanel:setVisible(false) end
+    end
+end
+
+function createPrivateParty()
+    g_game.partyCreate()
+end
+
+function leaveParty()
+    g_game.partyLeave()
+    if partyWindow then
+        partyWindow:hide()
+    end
 end
 
 function onEnd()
@@ -151,6 +206,9 @@ function onPartyDetailedInfo(partyId, leaderId, members)
     -- Update icon based on party state
     local hasParty = (#members > 0)
     updatePartyIcon(hasParty)
+    
+    -- Update Window View
+    updatePartyWindowView(hasParty)
 
     -- 2. Update Local Player (Initial state)
     updatePlayerWidget(player, player:getHealth(), player:getMaxHealth(), player:getMana(), player:getMaxMana(), player:getLevel())
@@ -293,6 +351,13 @@ function clearParty()
     if window then
         window:setHeight(BASE_HEIGHT)
         window.contentsPanel:destroyChildren()
+    end
+    
+    if partyWindow then
+        local membersList = partyWindow:recursiveGetChildById('membersList')
+        if membersList then
+            membersList:destroyChildren()
+        end
     end
 end
 

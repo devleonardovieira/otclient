@@ -233,6 +233,7 @@ public:
 
     // party related
     void partyInvite(uint32_t creatureId);
+    void partyCreate();
     void partyJoin(uint32_t creatureId);
     void partyRevokeInvitation(uint32_t creatureId);
     void partyPassLeadership(uint32_t creatureId);

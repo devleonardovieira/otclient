@@ -713,6 +713,13 @@ void ProtocolGame::sendInviteToParty(const uint32_t creatureId)
     send(msg);
 }
 
+void ProtocolGame::sendCreateParty()
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(0xA9);
+    send(msg);
+}
+
 void ProtocolGame::sendJoinParty(const uint32_t creatureId)
 {
     const auto& msg = std::make_shared<OutputMessage>();

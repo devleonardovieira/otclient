@@ -94,6 +94,7 @@ public:
     void sendAttack(uint32_t creatureId, uint32_t seq);
     void sendFollow(uint32_t creatureId, uint32_t seq);
     void sendInviteToParty(uint32_t creatureId);
+    void sendCreateParty();
     void sendJoinParty(uint32_t creatureId);
     void sendRevokeInvitation(uint32_t creatureId);
     void sendPassLeadership(uint32_t creatureId);

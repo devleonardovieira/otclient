@@ -105,7 +105,7 @@ PlayerInfo < UIWidget
     size: 50 50
     image-source: /images/profile/playerIconHolder
     icon-source: /images/profile/icon_party_create
-    @onClick: modules.game_party_system.toggle()
+    @onClick: modules.game_party.togglePartyWindow()
 
 PartyMember < UIWidget
   size: 192 83

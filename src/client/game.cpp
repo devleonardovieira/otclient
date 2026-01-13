@@ -1147,6 +1147,14 @@ void Game::partyInvite(const uint32_t creatureId)
     m_protocolGame->sendInviteToParty(creatureId);
 }
 
+void Game::partyCreate()
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendCreateParty();
+}
+
 void Game::partyJoin(const uint32_t creatureId)
 {
     if (!canPerformGameAction())
