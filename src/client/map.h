@@ -231,6 +231,7 @@ public:
     bool isSightClear(const Position& fromPos, const Position& toPos);
 
     const auto& getCreatures() const { return m_knownCreatures; }
+    CreaturePtr getCreatureByName(const std::string& name);
 
 private:
     struct FloorData

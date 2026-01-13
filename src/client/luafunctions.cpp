@@ -152,6 +152,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_map", "setCentralPosition", &Map::setCentralPosition, &g_map);
     g_lua.bindSingletonFunction("g_map", "getCentralPosition", &Map::getCentralPosition, &g_map);
     g_lua.bindSingletonFunction("g_map", "getCreatureById", &Map::getCreatureById, &g_map);
+    g_lua.bindSingletonFunction("g_map", "getCreatureByName", &Map::getCreatureByName, &g_map);
     g_lua.bindSingletonFunction("g_map", "removeCreatureById", &Map::removeCreatureById, &g_map);
     g_lua.bindSingletonFunction("g_map", "getSpectators", &Map::getSpectators, &g_map);
     g_lua.bindSingletonFunction("g_map", "getSpectatorsInRange", &Map::getSpectatorsInRange, &g_map);

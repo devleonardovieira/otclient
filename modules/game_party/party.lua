@@ -559,3 +559,14 @@ end
 function onToggleExp(checked)
     g_logger.info("Exp share: " .. tostring(checked))
 end
+
+function invitePlayer()
+    displayTextInputBox(tr('Invite to Party'), tr('Player Name:'), function(name)
+        local creature = g_map.getCreatureByName(name)
+        if creature then
+            g_game.partyInvite(creature:getId())
+        else
+            modules.game_textmessage.displayGameMessage(tr('Player %s not found.', name))
+        end
+    end, function() end)
+end

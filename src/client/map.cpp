@@ -1531,6 +1531,15 @@ std::vector<CreaturePtr> Map::getSpectatorsByPattern(const Position& centerPos, 
     return creatures;
 }
 
+CreaturePtr Map::getCreatureByName(const std::string& name)
+{
+    for (const auto& [id, creature] : m_knownCreatures) {
+        if (creature && creature->getName() == name)
+            return creature;
+    }
+    return nullptr;
+}
+
 const TilePtr& TileBlock::create(const Position& pos)
 {
     auto& tile = m_tiles[getTileIndex(pos)];
