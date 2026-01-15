@@ -200,16 +200,61 @@ function onPartyDetailedInfo(partyId, leaderId, members)
     local player = g_game.getLocalPlayer()
     if not player then return end
 
+    local hasParty = player:isPartyMember()
+    updatePartyIcon(hasParty)
+    updatePartyWindowView(hasParty)
+
+    if not hasParty then
+        if not partyWindow then return end
+
+        local invitesPanel = partyWindow:recursiveGetChildById('invitesPanel')
+        if not invitesPanel then return end
+
+        local invitesList = invitesPanel:recursiveGetChildById('invitesList')
+        if not invitesList then return end
+
+        local noInvitesLabel = invitesPanel:recursiveGetChildById('noInvitesLabel')
+        if noInvitesLabel then
+            noInvitesLabel:setVisible(false)
+        end
+
+        local leaderName = ''
+        for _, member in ipairs(members) do
+            if member.id == leaderId or member.isLeader == 1 then
+                leaderName = member.name
+                break
+            end
+        end
+        if leaderName == '' then
+            leaderName = tostring(leaderId)
+        end
+
+        local rowId = tostring(leaderId)
+        local row = invitesList:getChildById(rowId)
+        if not row then
+            row = g_ui.createWidget('PartyInviteRow', invitesList)
+            row:setId(rowId)
+        end
+
+        row.name:setText(tr('%s convidou você para um grupo.', leaderName))
+
+        row.acceptButton.onClick = function()
+            g_game.partyJoin(leaderId)
+        end
+
+        row.rejectButton.onClick = function()
+            row:destroy()
+            if noInvitesLabel then
+                noInvitesLabel:setVisible(invitesList:getChildCount() == 0)
+            end
+        end
+
+        return
+    end
+
     -- 1. Full Sync: Clear everything first
     clearParty()
     
-    -- Update icon based on party state
-    local hasParty = (#members > 0)
-    updatePartyIcon(hasParty)
-    
-    -- Update Window View
-    updatePartyWindowView(hasParty)
-
     -- 2. Update Local Player (Initial state)
     updatePlayerWidget(player, player:getHealth(), player:getMaxHealth(), player:getMana(), player:getMaxMana(), player:getLevel())
 
