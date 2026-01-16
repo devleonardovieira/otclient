@@ -1195,6 +1195,11 @@ void Game::partyShareExperience(const bool active)
     m_protocolGame->sendShareExperience(active);
 }
 
+void Game::onPartyInvite(uint32_t leaderId, const std::string& leaderName, uint16_t minLevel, uint16_t maxLevel)
+{
+    g_lua.callGlobalField("g_game", "onPartyInvite", leaderId, leaderName, minLevel, maxLevel);
+}
+
 void Game::sendPartyAnalyzerReset()
 {
     if (!canPerformGameAction())

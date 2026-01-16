@@ -1,3 +1,45 @@
+PartyListRow < Panel
+  height: 40
+  margin-left: 20
+  margin-right: 20
+  layout: horizontalBox
+  
+  UIWidget
+    id: statusIcon
+    width: 10
+    height: 10
+    margin-top: 15
+    margin-right: 10
+    background-color: #00ff00
+
+  UIWidget
+    id: leaderIcon
+    width: 16
+    height: 16
+    margin-top: 12
+    margin-right: 5
+    image-source: /images/game/party_leader_icon
+    visible: false
+
+  Label
+    id: name
+    width: 280
+    height: 40
+    text-auto-resize: false
+    text-align: left
+    text-offset: 0 12
+    color: white
+    font: verdana-11px-rounded
+
+  ButtonRedBase
+    id: actionButton
+    width: 100
+    height: 28
+    margin-top: 6
+    color: white
+    background-color: #d3452e
+    visible: false
+
 PartyInviteRow < Panel
   height: 40
   margin-left: 20
@@ -213,19 +255,32 @@ MainWindow
       anchors.right: parent.right
       margin-left: 10
       
-      Panel
+      ScrollablePanel
         id: membersList
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 200
+        anchors.bottom: leaveButton.top
+        margin-bottom: 20
+        vertical-scrollbar: membersListScrollBar
+        layout:
+          type: verticalBox
+          spacing: 2
+
+      VerticalScrollBar
+        id: membersListScrollBar
+        anchors.top: membersList.top
+        anchors.bottom: membersList.bottom
+        anchors.right: membersList.right
+        step: 14
+        pixels-scroll: true
 
       ButtonRedBase
         id: leaveButton
         !text: tr('Sair do Grupo')
-        anchors.top: membersList.bottom
+        anchors.bottom: footerOptions.top
         anchors.left: parent.left
-        margin-top: 20
+        margin-bottom: 20
         margin-left: 20
         width: 120
         height: 30
@@ -243,42 +298,6 @@ MainWindow
         height: 30
         color: white
         @onClick: modules.game_party.invitePlayer()
-
-      Panel
-        id: sentInvitesPanel
-        anchors.top: leaveButton.bottom
-        anchors.bottom: footerOptions.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        margin-top: 10
-
-        Label
-          id: sentInvitesTitle
-          !text: tr('Convites enviados')
-          anchors.top: parent.top
-          anchors.horizontalCenter: parent.horizontalCenter
-          margin-top: 5
-          font: verdana-11px-rounded
-          text-auto-resize: true
-
-        Panel
-          id: sentInvitesList
-          anchors.top: sentInvitesTitle.bottom
-          anchors.bottom: parent.bottom
-          anchors.left: parent.left
-          anchors.right: parent.right
-          margin-top: 10
-          layout:
-            type: verticalBox
-          spacing: 5
-
-        Label
-          id: noSentInvitesLabel
-          !text: tr('Nenhum convite')
-          anchors.centerIn: parent
-          text-align: center
-          color: #888888
-          font: verdana-11px-rounded
 
       Label
         id: commonLabel

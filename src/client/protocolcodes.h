@@ -65,6 +65,9 @@ namespace Proto
 
         GameServerPartyDetailedInfo = 57,
 
+        // Custom
+        GameServerPartyInvitation = 201,
+
         // all in game opcodes must be greater than 50
         GameServerFirstGameOpcode = 50,
 

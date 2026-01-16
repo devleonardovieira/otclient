@@ -147,6 +147,9 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
                 case Proto::GameServerPartyDetailedInfo:
                     parsePartyDetailedInfo(msg);
                     break;
+                case Proto::GameServerPartyInvitation:
+                    parsePartyInvitation(msg);
+                    break;
                 case Proto::GameServerExtendedOpcode: // otclient only
                     parseExtendedOpcode(msg);
                     break;
@@ -4635,6 +4638,16 @@ void ProtocolGame::parsePartyDetailedInfo(const InputMessagePtr& msg)
         member.isLeader = 0;
         g_game.processPartyMemberUpdate(member);
     }
+}
+
+void ProtocolGame::parsePartyInvitation(const InputMessagePtr& msg)
+{
+    uint32_t leaderId = msg->getU32();
+    std::string leaderName = msg->getString();
+    uint16_t minLevel = msg->getU16();
+    uint16_t maxLevel = msg->getU16();
+
+    g_game.onPartyInvite(leaderId, leaderName, minLevel, maxLevel);
 }
 
 void ProtocolGame::parseImbuementDurations(const InputMessagePtr& msg)
