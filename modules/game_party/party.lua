@@ -81,20 +81,7 @@ function updatePartyList()
             row.actionButton:setVisible(true)
             row.actionButton:setText(tr('Expulsar'))
             row.actionButton.onClick = function()
-                g_game.partyLeave(member.id) -- Assuming partyLeave(id) kicks? Or use a specific kick opcode if exists. 
-                -- Wait, partyLeave() takes no args usually?
-                -- Checking ProtocolGame::partyLeave() -> it sends Opcode 0xA4.
-                -- Checking Canary: Opcode 0xA4 calls Game::playerLeaveParty.
-                -- If leader calls leave, it disbands? Or kicks?
-                -- Standard Tibia: Leader "leaving" disbands. Leader "kicking" is different?
-                -- Usually "Pass Leadership" or "Revoke Invite".
-                -- Standard Tibia Kick: Right click -> Exclude from Party?
-                -- Let's check g_game functions.
-                -- g_game.partyLeave() -> void.
-                -- There is no g_game.partyKick(id).
-                -- Standard implementation: Leader uses "partyRevokeInvitation" on a member to kick them?
-                -- Let's assume partyRevokeInvitation works for members too (as "kicking").
-                 g_game.partyRevokeInvitation(member.id)
+                g_game.partyRevokeInvitation(member.id)
             end
         end
     end
@@ -139,6 +126,26 @@ function onPartyInvite(leaderId, leaderName, minLevel, maxLevel)
     if minLevel == 0 and maxLevel == 0 then
         pendingInvites[leaderId] = nil
         updatePartyList()
+
+        if partyWindow then
+            local invitesPanel = partyWindow:recursiveGetChildById('invitesPanel')
+            if invitesPanel then
+                local invitesList = invitesPanel:recursiveGetChildById('invitesList')
+                if invitesList then
+                    local row = invitesList:getChildById(tostring(leaderId))
+                    if row then
+                        row:destroy()
+                    end
+
+                    if invitesList:getChildCount() == 0 then
+                        local noInvitesLabel = invitesPanel:recursiveGetChildById('noInvitesLabel')
+                        if noInvitesLabel then
+                            noInvitesLabel:setVisible(true)
+                        end
+                    end
+                end
+            end
+        end
         return
     end
 
