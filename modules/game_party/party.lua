@@ -4,6 +4,9 @@ local rageValue = 0
 
 local BASE_HEIGHT = 110
 
+local pendingInvites = {}
+local partyManagementCallback = nil
+
 local shields = {
     [0] = "0 0 1 1", -- Transparente/Vazio
     "0 0 11 11",
@@ -85,6 +88,107 @@ function init()
     connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate })
     connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
     -- ProtocolGame.registerExtendedOpcode(210, updateUltimateBar) 
+    
+    partyManagementCallback = function(_, message)
+        local invitedPlayerName = message:match("^(.-) has been invited to join the party")
+        if invitedPlayerName then
+            if not partyWindow then return end
+
+            local sentInvitesPanel = partyWindow:recursiveGetChildById('sentInvitesPanel')
+            if not sentInvitesPanel then return end
+
+            local sentInvitesList = sentInvitesPanel:recursiveGetChildById('sentInvitesList')
+            if not sentInvitesList then return end
+
+            local noSentInvitesLabel = sentInvitesPanel:recursiveGetChildById('noSentInvitesLabel')
+            if noSentInvitesLabel then
+                noSentInvitesLabel:setVisible(false)
+            end
+
+            local rowId = invitedPlayerName:gsub('%s+', '_')
+            local row = sentInvitesList:getChildById(rowId)
+            if not row then
+                row = g_ui.createWidget('PartySentInviteRow', sentInvitesList)
+                row:setId(rowId)
+            end
+
+            row.name:setText(tr('Convite enviado para %s.', invitedPlayerName))
+            row.cancelButton.onClick = function()
+                local creature = g_map.getCreatureByName(invitedPlayerName)
+                if creature then
+                    g_game.partyRevokeInvitation(creature:getId())
+                else
+                    modules.game_textmessage.displayGameMessage(tr('Player %s not found.', invitedPlayerName))
+                end
+            end
+
+            return
+        end
+
+        local removedPlayerName = message:match("^Invitation for (.-) has been revoked%.$") or message:match("^(.-) has joined the party%.$")
+        if removedPlayerName then
+            if not partyWindow then return end
+
+            local sentInvitesPanel = partyWindow:recursiveGetChildById('sentInvitesPanel')
+            if not sentInvitesPanel then return end
+
+            local sentInvitesList = sentInvitesPanel:recursiveGetChildById('sentInvitesList')
+            if not sentInvitesList then return end
+
+            local rowId = removedPlayerName:gsub('%s+', '_')
+            local row = sentInvitesList:getChildById(rowId)
+            if row then
+                row:destroy()
+            end
+
+            local noSentInvitesLabel = sentInvitesPanel:recursiveGetChildById('noSentInvitesLabel')
+            if noSentInvitesLabel then
+                noSentInvitesLabel:setVisible(sentInvitesList:getChildCount() == 0)
+            end
+
+            return
+        end
+
+        local leaderName = message:match("^(.-) has revoked .- invitation%.$")
+        if not leaderName then
+            -- Fallback for different message formats or possessive pronouns
+            leaderName = message:match("^(.-) has revoked his invitation%.$") or message:match("^(.-) has revoked her invitation%.$")
+        end
+        if not leaderName then
+            leaderName = message:match("^You have joined (.-)'s party%.") or message:match("^You have joined (.-)' party%.")
+        end
+        if not leaderName then return end
+
+        local removed = {}
+        for leaderId, invite in pairs(pendingInvites) do
+            if invite.leaderName == leaderName then
+                pendingInvites[leaderId] = nil
+                table.insert(removed, tostring(leaderId))
+            end
+        end
+
+        if #removed == 0 then return end
+        if not partyWindow then return end
+
+        local invitesPanel = partyWindow:recursiveGetChildById('invitesPanel')
+        if not invitesPanel then return end
+
+        local invitesList = invitesPanel:recursiveGetChildById('invitesList')
+        if not invitesList then return end
+
+        for _, rowId in ipairs(removed) do
+            local row = invitesList:getChildById(rowId)
+            if row then
+                row:destroy()
+            end
+        end
+
+        local noInvitesLabel = invitesPanel:recursiveGetChildById('noInvitesLabel')
+        if noInvitesLabel then
+            noInvitesLabel:setVisible(invitesList:getChildCount() == 0)
+        end
+    end
+    registerMessageMode(MessageModes.PartyManagement, partyManagementCallback)
 
     if g_game.isOnline() then
         onStart()
@@ -94,6 +198,10 @@ end
 function terminate()
     disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate })
     disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
+    if partyManagementCallback then
+        unregisterMessageMode(MessageModes.PartyManagement, partyManagementCallback)
+        partyManagementCallback = nil
+    end
 
     local settings = { pos = window:getPosition() }
     g_settings.setNode("partyWindow", settings)
@@ -128,9 +236,54 @@ function updatePartyWindowView(hasParty)
     if hasParty then
         if creationPanel then creationPanel:setVisible(false) end
         if managementPanel then managementPanel:setVisible(true) end
+
+        -- Handle Leader-Only elements
+        local player = g_game.getLocalPlayer()
+        local isLeader = player and player:isPartyLeader()
+        local invitePlayerButton = partyWindow:recursiveGetChildById('invitePlayerButton')
+        local sentInvitesPanel = partyWindow:recursiveGetChildById('sentInvitesPanel')
+        
+        if invitePlayerButton then
+            invitePlayerButton:setVisible(isLeader)
+        end
+        if sentInvitesPanel then
+            sentInvitesPanel:setVisible(isLeader)
+        end
     else
         if creationPanel then creationPanel:setVisible(true) end
         if managementPanel then managementPanel:setVisible(false) end
+    end
+
+    if hasParty then return end
+
+    local invitesPanel = partyWindow:recursiveGetChildById('invitesPanel')
+    if not invitesPanel then return end
+
+    local invitesList = invitesPanel:recursiveGetChildById('invitesList')
+    if not invitesList then return end
+
+    local noInvitesLabel = invitesPanel:recursiveGetChildById('noInvitesLabel')
+
+    for _, child in ipairs(invitesList:getChildren()) do
+        child:destroy()
+    end
+
+    for leaderId, invite in pairs(pendingInvites) do
+        local row = g_ui.createWidget('PartyInviteRow', invitesList)
+        row:setId(tostring(leaderId))
+        row.name:setText(tr('%s convidou você para um grupo.', invite.leaderName or tostring(leaderId)))
+
+        row.acceptButton.onClick = function()
+            g_game.partyJoin(leaderId)
+        end
+
+        row.rejectButton.onClick = function()
+            g_game.partyRevokeInvitation(leaderId)
+        end
+    end
+
+    if noInvitesLabel then
+        noInvitesLabel:setVisible(invitesList:getChildCount() == 0)
     end
 end
 
@@ -152,6 +305,22 @@ function onEnd()
     window:hide()
     clearParty()
     updatePartyIcon(false)
+    pendingInvites = {}
+    if partyWindow then
+        local invitesPanel = partyWindow:recursiveGetChildById('invitesPanel')
+        if invitesPanel then
+            local invitesList = invitesPanel:recursiveGetChildById('invitesList')
+            if invitesList then
+                for _, child in ipairs(invitesList:getChildren()) do
+                    child:destroy()
+                end
+            end
+            local noInvitesLabel = invitesPanel:recursiveGetChildById('noInvitesLabel')
+            if noInvitesLabel then
+                noInvitesLabel:setVisible(true)
+            end
+        end
+    end
 end
 
 function onStart()
@@ -243,11 +412,10 @@ function onPartyDetailedInfo(partyId, leaderId, members)
         end
 
         row.rejectButton.onClick = function()
-            row:destroy()
-            if noInvitesLabel then
-                noInvitesLabel:setVisible(invitesList:getChildCount() == 0)
-            end
+            g_game.partyRevokeInvitation(leaderId)
         end
+
+        pendingInvites[leaderId] = { leaderName = leaderName }
 
         return
     end
@@ -403,6 +571,18 @@ function clearParty()
         if membersList then
             membersList:destroyChildren()
         end
+
+        local sentInvitesPanel = partyWindow:recursiveGetChildById('sentInvitesPanel')
+        if sentInvitesPanel then
+            local sentInvitesList = sentInvitesPanel:recursiveGetChildById('sentInvitesList')
+            if sentInvitesList then
+                sentInvitesList:destroyChildren()
+            end
+            local noSentInvitesLabel = sentInvitesPanel:recursiveGetChildById('noSentInvitesLabel')
+            if noSentInvitesLabel then
+                noSentInvitesLabel:setVisible(true)
+            end
+        end
     end
 end
 
@@ -494,6 +674,7 @@ function onShieldChange(player, shield)
     -- ShieldNone (0), ShieldWhiteBlue (1), ShieldWhiteYellow (2) mean not in a party
     if shield <= 2 and window.contentsPanel:getChildCount() > 0 then
         clearParty()
+        updatePartyWindowView(false)
         -- Ensure window stays visible for local player
         window:show()
         local lp = g_game.getLocalPlayer()

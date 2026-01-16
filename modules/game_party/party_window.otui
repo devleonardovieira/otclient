@@ -28,9 +28,32 @@ PartyInviteRow < Panel
     color: white
     background-color: #d3452e
 
+PartySentInviteRow < Panel
+  height: 40
+  margin-left: 20
+  margin-right: 20
+  layout: horizontalBox
+
+  Label
+    id: name
+    width: 390
+    height: 40
+    text-auto-resize: true
+    text-align: left
+    color: white
+    font: verdana-11px-rounded
+
+  ButtonRedBase
+    id: cancelButton
+    !text: tr('Cancelar')
+    width: 120
+    height: 28
+    color: white
+    background-color: #d3452e
+
 MainWindow
   id: partyWindow
-  text: Pokémon Party
+  text: Party
   size: 550 400
   @onEscape: self:hide()
 
@@ -220,6 +243,42 @@ MainWindow
         height: 30
         color: white
         @onClick: modules.game_party.invitePlayer()
+
+      Panel
+        id: sentInvitesPanel
+        anchors.top: leaveButton.bottom
+        anchors.bottom: footerOptions.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 10
+
+        Label
+          id: sentInvitesTitle
+          !text: tr('Convites enviados')
+          anchors.top: parent.top
+          anchors.horizontalCenter: parent.horizontalCenter
+          margin-top: 5
+          font: verdana-11px-rounded
+          text-auto-resize: true
+
+        Panel
+          id: sentInvitesList
+          anchors.top: sentInvitesTitle.bottom
+          anchors.bottom: parent.bottom
+          anchors.left: parent.left
+          anchors.right: parent.right
+          margin-top: 10
+          layout:
+            type: verticalBox
+          spacing: 5
+
+        Label
+          id: noSentInvitesLabel
+          !text: tr('Nenhum convite')
+          anchors.centerIn: parent
+          text-align: center
+          color: #888888
+          font: verdana-11px-rounded
 
       Label
         id: commonLabel
