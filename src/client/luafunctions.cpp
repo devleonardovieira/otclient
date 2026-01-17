@@ -273,6 +273,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "partyCreate", &Game::partyCreate, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyJoin", &Game::partyJoin, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyRevokeInvitation", &Game::partyRevokeInvitation, &g_game);
+    g_lua.bindSingletonFunction("g_game", "partyKick", &Game::partyKick, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyPassLeadership", &Game::partyPassLeadership, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyLeave", &Game::partyLeave, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyShareExperience", &Game::partyShareExperience, &g_game);

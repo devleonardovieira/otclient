@@ -1171,6 +1171,14 @@ void Game::partyRevokeInvitation(const uint32_t creatureId)
     m_protocolGame->sendRevokeInvitation(creatureId);
 }
 
+void Game::partyKick(const uint32_t creatureId)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendRevokeInvitation(creatureId);
+}
+
 void Game::partyPassLeadership(const uint32_t creatureId)
 {
     if (!canPerformGameAction())
