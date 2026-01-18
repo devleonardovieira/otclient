@@ -140,7 +140,6 @@ local function updatePartyMembers()
             row.actionButton:setText(tr('Expulsar'))
             row.actionButton.onClick = function()
                 g_game.partyKick(member.id)
-                updatePartyList()
             end
         else
             row.actionButton:setVisible(false)
@@ -210,7 +209,15 @@ local function updatePartyMembers()
                 row.name:setColor('#FFFFFF')
                 row.statusIcon:setBackgroundColor('#00ff00')
                 row.leaderIcon:setVisible(member.isLeader)
-                row.actionButton:setVisible(false)
+                if isLeader and member.id ~= localId then
+                    row.actionButton:setVisible(true)
+                    row.actionButton:setText(tr('Expulsar'))
+                    row.actionButton.onClick = function()
+                        g_game.partyKick(member.id)
+                    end
+                else
+                    row.actionButton:setVisible(false)
+                end
             end
             for i, invite in ipairs(sortedInvites) do
                 local rowId = 'invite_' .. invite.id
