@@ -235,6 +235,7 @@ public:
 
     // party related
     void partyInvite(uint32_t creatureId);
+    void partyInviteByName(std::string_view name);
     void partyCreate();
     void partyJoin(uint32_t creatureId);
     void partyRevokeInvitation(uint32_t creatureId);

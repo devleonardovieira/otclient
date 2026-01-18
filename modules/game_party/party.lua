@@ -1,7 +1,5 @@
 local window = nil
 local partyWindow = nil -- 1. Fix Global Variable Pollution
-local rageCost = 0
-local rageValue = 0
 
 local BASE_HEIGHT = 110
 local PARTY_MEMBER_HEIGHT = 83 -- 9. Magic number
@@ -73,6 +71,7 @@ local vocations = {
 local currentMembers = {}
 local currentMembersById = {} -- Map for quick access and state tracking
 local vocTooltipCache = {}
+local baseWidth = nil
 
 local function getVocTooltip(vocId, level)
     local key = vocId .. "_" .. (level or 0)
@@ -84,11 +83,12 @@ local function getVocTooltip(vocId, level)
 end
 
 local function updateBar(bar, valueLabel, value, max, width, height)
+    if not bar then return end
     if max <= 0 then max = 1 end
-    if value > max then max = value end
+    value = math.min(value, max)
 
     local percent = math.floor(value / max * 100)
-    valueLabel:setText(value .. "/" .. max)
+    if valueLabel then valueLabel:setText(value .. "/" .. max) end
 
     local clip = math.ceil(percent / 100 * width)
     bar:setWidth(clip)
@@ -99,59 +99,73 @@ end
 
 local function updatePartyMembers()
     if not ui.membersList then return end
-    
+
     local player = g_game.getLocalPlayer()
     local isLeader = player and player:isPartyLeader()
-    ui.membersList:destroyChildren()
-    local membersCount = #currentMembers
+    local localId = player and player:getId()
 
     -- Prepare Invites List
     local sortedInvites = {}
     for _, invite in pairs(outgoingInvites) do
         table.insert(sortedInvites, invite)
     end
-    local invitesCount = #sortedInvites
+    table.sort(sortedInvites, function(a, b)
+        local an = a.name or tostring(a.id or "")
+        local bn = b.name or tostring(b.id or "")
+        return an < bn
+    end)
+    local desired = {}
+    local ordered = {}
 
     -- 1. Render Members
     for i, member in ipairs(currentMembers) do
-        local row = g_ui.createWidget('PartyListRow', ui.membersList)
-
-        row:setId('member_' .. member.id)
+        local rowId = 'member_' .. member.id
+        desired[rowId] = true
+        local row = ui.membersList:getChildById(rowId)
+        if not row then
+            row = g_ui.createWidget('PartyListRow', ui.membersList)
+            row:setId(rowId)
+        end
         row.name:setText(member.name)
         row.name:setColor('#FFFFFF') -- Standard color
-        
+
         -- Status Icon (Green for members)
         row.statusIcon:setBackgroundColor('#00ff00')
-        
+
         -- Leader Icon
         row.leaderIcon:setVisible(member.isLeader)
-        
-        -- Action Button (Kick) - Only for Leader, and not for self
-        if isLeader and member.id ~= player:getId() then
+
+        if isLeader and member.id ~= localId then
             row.actionButton:setVisible(true)
             row.actionButton:setText(tr('Expulsar'))
             row.actionButton.onClick = function()
-                g_game.partyRevokeInvitation(member.id)
+                g_game.partyKick(member.id)
+                updatePartyList()
             end
         else
             row.actionButton:setVisible(false)
         end
+        ordered[#ordered + 1] = row
     end
 
     -- 2. Render Outgoing Invites (Gray)
     for i, invite in ipairs(sortedInvites) do
-        local row = g_ui.createWidget('PartyListRow', ui.membersList)
-        
-        row:setId('invite_' .. invite.id)
+        local rowId = 'invite_' .. invite.id
+        desired[rowId] = true
+        local row = ui.membersList:getChildById(rowId)
+        if not row then
+            row = g_ui.createWidget('PartyListRow', ui.membersList)
+            row:setId(rowId)
+        end
         row.name:setText(invite.name)
         row.name:setColor('#AAAAAA') -- Gray for invited
-        
+
         -- Status Icon (Gray for invited)
         row.statusIcon:setBackgroundColor('#AAAAAA')
-        
+
         -- Leader Icon (Hidden)
         row.leaderIcon:setVisible(false)
-        
+
         -- Action Button (Revoke) - Always visible for sender
         row.actionButton:setVisible(true)
         row.actionButton:setText(tr('Cancelar'))
@@ -159,6 +173,70 @@ local function updatePartyMembers()
             g_game.partyRevokeInvitation(invite.id)
             outgoingInvites[invite.id] = nil
             updatePartyList()
+        end
+        ordered[#ordered + 1] = row
+    end
+
+    local total = ui.membersList:getChildCount()
+    if ui.membersList.reorderChildren and total == #ordered then
+        ui.membersList:reorderChildren(ordered)
+    else
+        if ui.membersList.moveChildToIndex then
+            local baseIndex = 1
+            local children = ui.membersList:getChildren()
+            for i, c in ipairs(children) do
+                local cid = c:getId()
+                if cid and (string.sub(cid, 1, 7) == 'member_' or string.sub(cid, 1, 7) == 'invite_') then
+                    baseIndex = i
+                    break
+                end
+            end
+            for i, child in ipairs(ordered) do
+                ui.membersList:moveChildToIndex(child, baseIndex + i - 1)
+            end
+        else
+            local children = ui.membersList:getChildren()
+            for _, c in ipairs(children) do
+                local cid = c:getId()
+                if cid and (string.sub(cid, 1, 7) == 'member_' or string.sub(cid, 1, 7) == 'invite_') then
+                    c:destroy()
+                end
+            end
+            for i, member in ipairs(currentMembers) do
+                local rowId = 'member_' .. member.id
+                local row = g_ui.createWidget('PartyListRow', ui.membersList)
+                row:setId(rowId)
+                row.name:setText(member.name)
+                row.name:setColor('#FFFFFF')
+                row.statusIcon:setBackgroundColor('#00ff00')
+                row.leaderIcon:setVisible(member.isLeader)
+                row.actionButton:setVisible(false)
+            end
+            for i, invite in ipairs(sortedInvites) do
+                local rowId = 'invite_' .. invite.id
+                local row = g_ui.createWidget('PartyListRow', ui.membersList)
+                row:setId(rowId)
+                row.name:setText(invite.name)
+                row.name:setColor('#AAAAAA')
+                row.statusIcon:setBackgroundColor('#AAAAAA')
+                row.leaderIcon:setVisible(false)
+                row.actionButton:setVisible(true)
+                row.actionButton:setText(tr('Cancelar'))
+                row.actionButton.onClick = function()
+                    g_game.partyRevokeInvitation(invite.id)
+                    outgoingInvites[invite.id] = nil
+                    updatePartyList()
+                end
+            end
+        end
+    end
+
+    -- Only destroy party rows (member_/invite_) that are no longer desired.
+    for _, child in ipairs(ui.membersList:getChildren()) do
+        local id = child:getId()
+        local isPartyRow = id and (string.sub(id, 1, 7) == 'member_' or string.sub(id, 1, 7) == 'invite_')
+        if isPartyRow and not desired[id] then
+            child:destroy()
         end
     end
 end
@@ -168,7 +246,7 @@ end
 function updatePartyList()
     if not partyWindow then return end
     if not ui.membersList then return end
-    
+
     updatePartyMembers()
     -- updatePartyInvites() removed
 end
@@ -176,7 +254,7 @@ end
 function onPartyInvite(leaderId, leaderName, minLevel, maxLevel)
     if minLevel == 0 and maxLevel == 0 then
         incomingInvites[leaderId] = nil
-        
+
         if partyWindow and ui.invitesList then
             local row = ui.invitesList:getChildById(tostring(leaderId))
             if row then
@@ -205,7 +283,12 @@ function onPartyInvite(leaderId, leaderName, minLevel, maxLevel)
         row:setId(rowId)
     end
 
-    row.name:setText(tr(INVITE_MSG_LEVEL, leaderName, minLevel, maxLevel))
+    local hasLevels = (minLevel and maxLevel) and ((minLevel ~= 0) or (maxLevel ~= 0))
+    if hasLevels then
+        row.name:setText(tr(INVITE_MSG_LEVEL, leaderName or tostring(leaderId), minLevel, maxLevel))
+    else
+        row.name:setText(tr(INVITE_MSG_SIMPLE, leaderName or tostring(leaderId)))
+    end
 
     row.acceptButton.onClick = function()
         g_game.partyJoin(leaderId)
@@ -224,7 +307,7 @@ function init()
     partyWindow = g_ui.displayUI("party_window")
     if partyWindow then
         partyWindow:hide()
-        
+
         -- 4. UI Cache
         ui.membersList = partyWindow:recursiveGetChildById('membersList')
         ui.invitesPanel = partyWindow:recursiveGetChildById('invitesPanel')
@@ -236,7 +319,7 @@ function init()
     else
         perror("Failed to load party_window.otui")
     end
-    
+
     if window.player and window.player.menuButton then
         window.player.menuButton.onClick = togglePartyWindow
     end
@@ -252,7 +335,7 @@ function init()
 
     connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite })
     connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
-    -- ProtocolGame.registerExtendedOpcode(210, updateUltimateBar) 
+    -- removed dead code: updateUltimateBar registration
 
     if g_game.isOnline() then
         onStart()
@@ -261,7 +344,7 @@ end
 
 function terminate()
     disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite })
-    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange })
+    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
 
     local settings = { pos = window:getPosition() }
     g_settings.setNode("partyWindow", settings)
@@ -270,12 +353,12 @@ function terminate()
         partyWindow:destroy()
     end
     ui = {} -- Clear cache
-    -- ProtocolGame.unregisterExtendedOpcode(210, updateUltimateBar)
+    -- removed dead code: updateUltimateBar unregistration
 end
 
 function togglePartyWindow()
     if not partyWindow then return end
-    
+
     local player = g_game.getLocalPlayer()
     local hasParty = player and player:isPartyMember()
     updatePartyWindowView(hasParty)
@@ -291,10 +374,10 @@ end
 
 function updatePartyWindowView(hasParty)
     if not partyWindow then return end
-    
+
     local creationPanel = ui.creationPanel
     local managementPanel = ui.managementPanel
-    
+
     if hasParty then
         if creationPanel then creationPanel:setVisible(false) end
         if managementPanel then managementPanel:setVisible(true) end
@@ -303,7 +386,7 @@ function updatePartyWindowView(hasParty)
         local player = g_game.getLocalPlayer()
         local isLeader = player and player:isPartyLeader()
         local invitePlayerButton = ui.invitePlayerButton
-        
+
         if invitePlayerButton then
             invitePlayerButton:setVisible(isLeader)
         end
@@ -322,15 +405,29 @@ function updatePartyWindowView(hasParty)
         child:destroy()
     end
 
+    local sortedInvites = {}
     for leaderId, invite in pairs(incomingInvites) do
+        sortedInvites[#sortedInvites + 1] = { id = leaderId, invite = invite }
+    end
+    table.sort(sortedInvites, function(a, b)
+        local an = a.invite.leaderName and a.invite.leaderName or tostring(a.id)
+        local bn = b.invite.leaderName and b.invite.leaderName or tostring(b.id)
+        return an < bn
+    end)
+    for i, entry in ipairs(sortedInvites) do
+        local leaderId = entry.id
+        local invite = entry.invite
         local row = g_ui.createWidget('PartyInviteRow', ui.invitesList)
         row:setId(tostring(leaderId))
-        row.name:setText(tr(INVITE_MSG_SIMPLE, invite.leaderName or tostring(leaderId)))
-
+        local hasLevels = (invite.minLevel and invite.maxLevel) and (invite.minLevel ~= 0 or invite.maxLevel ~= 0)
+        if hasLevels then
+            row.name:setText(tr(INVITE_MSG_LEVEL, invite.leaderName or tostring(leaderId), invite.minLevel, invite.maxLevel))
+        else
+            row.name:setText(tr(INVITE_MSG_SIMPLE, invite.leaderName or tostring(leaderId)))
+        end
         row.acceptButton.onClick = function()
             g_game.partyJoin(leaderId)
         end
-
         row.rejectButton.onClick = function()
             g_game.partyRevokeInvitation(leaderId)
         end
@@ -346,12 +443,18 @@ function createPrivateParty()
 end
 
 function resetPartyState()
-    incomingInvites = {}
-    outgoingInvites = {}
-    currentMembers = {}
-    currentMembersById = {}
+    if table and table.clear then
+        table.clear(incomingInvites)
+        table.clear(outgoingInvites)
+        table.clear(currentMembers)
+        table.clear(currentMembersById)
+    else
+        incomingInvites = {}
+        outgoingInvites = {}
+        currentMembers = {}
+        currentMembersById = {}
+    end
 end
-
 
 function leaveParty()
     g_game.partyLeave()
@@ -368,14 +471,14 @@ function onEnd()
     clearParty()
     resetPartyState()
     updatePartyIcon(false)
-    
+
     if partyWindow and ui.invitesList then
         ui.invitesList:destroyChildren()
         if ui.noInvitesLabel then
             ui.noInvitesLabel:setVisible(true)
         end
     end
-    
+
     vocTooltipCache = {} -- 7. Clear tooltip cache
 end
 
@@ -389,44 +492,45 @@ function onStart()
     end
 end
 
-function updateUltimateBar(protocol, code, buffer)
-    local status, data = pcall(function() return json.decode(buffer) end)
-    if not status then return end
-
-    if data.info then
-        rageCost = data.info.required
-        rageValue = data.info.rage
-        window.player.valueUlti:setText(data.info.rage .. " / 10")
-        
-        local clip = (data.info.rage * 10 - 5) / 100 * 138
-        clip = math.ceil(clip)
-        
-        window.player.ultiBar:show()
-        window.player.ultiBar:setWidth(clip)
-        
-        local clipRect = { height = 17, x = 0, y = 0, width = clip }
-        window.player.ultiBar:setImageClip(clipRect)
-    end
-end
-
 function updatePartyIcon(hasParty)
-    if not window or not window.menuButton then return end
-    
+    if not window or not window.player or not window.player.menuButton then return end
+
     if hasParty then
-        window.menuButton:setIcon("/images/profile/icon_party")
+        window.player.menuButton:setIcon("/images/profile/icon_party")
     else
-        window.menuButton:setIcon("/images/profile/icon_party_create")
+        window.player.menuButton:setIcon("/images/profile/icon_party_create")
     end
 end
 
 local function syncPartyState(partyId, leaderId, members)
-    currentMembers = members
-    currentMembersById = {}
+    if table and table.clear then
+        table.clear(currentMembers)
+        table.clear(currentMembersById)
+    else
+        for k in pairs(currentMembers) do
+            currentMembers[k] = nil
+        end
+        for k in pairs(currentMembersById) do
+            currentMembersById[k] = nil
+        end
+    end
     for _, member in ipairs(members) do
-        currentMembersById[member.id] = member
+        local copy = {
+            id = member.id,
+            name = member.name,
+            level = member.level,
+            vocation = member.vocation,
+            health = member.health,
+            maxHealth = member.maxHealth,
+            mana = member.mana,
+            maxMana = member.maxMana,
+            isLeader = member.isLeader
+        }
+        currentMembers[#currentMembers + 1] = copy
+        currentMembersById[copy.id] = copy
         -- Remove from outgoing invites if accepted
-        if outgoingInvites[member.id] then
-            outgoingInvites[member.id] = nil
+        if outgoingInvites[copy.id] then
+            outgoingInvites[copy.id] = nil
         end
     end
 end
@@ -443,12 +547,12 @@ end
 
 local function rebuildPartyUI(player, members)
     updatePartyList()
-    
+
     local playerID = player:getId()
     local activeMemberIds = {}
-    
+
     -- Update/Create widgets for current members (excluding self)
-    for i, member in ipairs(members) do
+    for i, member in ipairs(currentMembers) do
         if member.id ~= playerID then
             updatePartyMemberWidget(member)
             activeMemberIds[member.id] = true
@@ -459,30 +563,45 @@ local function rebuildPartyUI(player, members)
     if window.contentsPanel then
         local children = window.contentsPanel:getChildren()
         for i, child in ipairs(children) do
-             local id = tonumber(child:getId())
-             -- If child has no ID or ID is not in active list, destroy it
-             if not id or not activeMemberIds[id] then
-                 child:destroy()
-             end
+            local id = tonumber(child:getId())
+            -- If child has no ID or ID is not in active list, destroy it
+            if not id or not activeMemberIds[id] then
+                child:destroy()
+            end
         end
-        
-        -- Update Height
-        window:setHeight(BASE_HEIGHT + window.contentsPanel:getChildCount() * PARTY_MEMBER_HEIGHT)
+
+        local totalHeight = 0
+        local currentChildren = window.contentsPanel:getChildren()
+        for i, child in ipairs(currentChildren) do
+            if child:isVisible() then
+                totalHeight = totalHeight + child:getHeight()
+            end
+        end
+        window:setHeight(BASE_HEIGHT + totalHeight)
     end
 end
 
 function onPartyDetailedInfo(partyId, leaderId, members)
     if not window then return end
-    
+
     local player = g_game.getLocalPlayer()
     if not player then return end
 
-    local hasParty = player:isPartyMember() or (#members > 0)
+    local hasParty = player:isPartyMember()
     updatePartyIcon(hasParty)
     updatePartyWindowView(hasParty)
 
-    if hasParty and incomingInvites[leaderId] then
+    if hasParty then
         incomingInvites[leaderId] = nil
+        if ui.invitesList then
+            local row = ui.invitesList:getChildById(tostring(leaderId))
+            if row then
+                row:destroy()
+            end
+            if ui.invitesList:getChildCount() == 0 and ui.noInvitesLabel then
+                ui.noInvitesLabel:setVisible(true)
+            end
+        end
         updatePartyList()
     end
 
@@ -491,19 +610,16 @@ function onPartyDetailedInfo(partyId, leaderId, members)
         updatePartyWindowView(false)
         clearParty()
         if partyWindow then partyWindow:hide() end
-        outgoingInvites = {}
+        if table and table.clear then
+            table.clear(outgoingInvites)
+        else
+            outgoingInvites = {}
+        end
         return
     end
 
     -- Update Local Player (Initial state)
     updatePlayerWidget(player, player:getHealth(), player:getMaxHealth(), player:getMana(), player:getMaxMana(), player:getLevel())
-
-    if #members == 0 then
-        clearParty() -- Clear UI if no members
-        window:hide()
-        outgoingInvites = {} -- Clear invites
-        return
-    end
 
     window:show()
 
@@ -530,15 +646,16 @@ function updatePlayerWidget(player, health, maxHealth, mana, maxMana, level, voc
     -- Mana
     onManaChange(player, mana, maxMana)
     -- Special Resource
-    if window.player.specialResourceBar:isVisible() then
+    local srb = window.player.specialResourceBar
+    if srb and srb:isVisible() then
         onSpecialResourceChange(player, player:getSpecialResource(), player:getMaxSpecialResource())
     end
 end
 
 function updatePartyMemberWidget(member)
+    if not window or not window.contentsPanel then return end
     local id = tostring(member.id)
     local widget = window.contentsPanel:getChildById(id)
-    
     if not widget then
         widget = g_ui.createWidget("PartyMember", window.contentsPanel)
         widget:setId(id)
@@ -547,19 +664,11 @@ function updatePartyMemberWidget(member)
         widget.onTouchRelease = onMouseRelease
         window:setHeight(BASE_HEIGHT + window.contentsPanel:getChildCount() * PARTY_MEMBER_HEIGHT)
     end
-
-    -- Store values for partial updates
-    widget.health = member.health
-    widget.maxHealth = member.maxHealth
-    widget.mana = member.mana
-    widget.maxMana = member.maxMana
-    widget.level = member.level
-    widget.vocation = member.vocation
-    widget.nameStr = member.name -- Avoid name collision with widget.name
+    local cached = currentMembersById[member.id] or member
 
     -- Name
-    widget.isLeader = member.isLeader
-    local displayName = member.name .. (member.isLeader and " (Leader)" or "")
+    widget.isLeader = cached.isLeader
+    local displayName = cached.name .. (cached.isLeader and " (Leader)" or "")
     widget.name:setText(displayName)
     if widget.isLeader then
         widget.name:setColor('#FFD700')
@@ -568,32 +677,42 @@ function updatePartyMemberWidget(member)
     end
 
     -- Vocation Icon + Level no tooltip
-    local vocInfo = vocations[member.vocation] or vocations[0]
+    local vocInfo = vocations[cached.vocation] or vocations[0]
     widget.icon:setIconClip(vocInfo[1])
-    widget.icon:setTooltip(getVocTooltip(member.vocation, member.level))
+    widget.icon:setTooltip(getVocTooltip(cached.vocation, cached.level))
 
     -- Shield / Leader Status
-    local shieldIndex = member.isLeader and 1 or 0
+    local shieldIndex = cached.isLeader and 1 or 0
     local shieldInfo = shields[shieldIndex] or shields[0]
     widget.shield:setIconClip(shieldInfo)
 
     -- Health
     widget.hpBar:show()
-    updateBar(widget.hpBar, widget.valueHp, member.health, member.maxHealth, PARTY_MEMBER_HP_WIDTH, 22)
+    updateBar(widget.hpBar, widget.valueHp, cached.health, cached.maxHealth, PARTY_MEMBER_HP_WIDTH, 22)
 
     -- Mana
     widget.manaBar:show()
-    updateBar(widget.manaBar, widget.valueMana, member.mana, member.maxMana, PARTY_MEMBER_MANA_WIDTH, 20)
+    updateBar(widget.manaBar, widget.valueMana, cached.mana, cached.maxMana, PARTY_MEMBER_MANA_WIDTH, 20)
 
     -- Outfit
     local creature = g_map.getCreatureById(member.id)
+    local outfitWidget = widget.outfit
+    local noOutfitWidget = widget.nooutfit
     if creature then
-        widget.outfit:setOutfit(creature:getOutfit())
-        widget.outfit:show()
-        widget.nooutfit:hide()
+        if outfitWidget then
+            outfitWidget:setOutfit(creature:getOutfit())
+            outfitWidget:show()
+        end
+        if noOutfitWidget then
+            noOutfitWidget:hide()
+        end
     else
-        widget.outfit:hide()
-        widget.nooutfit:show()
+        if outfitWidget then
+            outfitWidget:hide()
+        end
+        if noOutfitWidget then
+            noOutfitWidget:show()
+        end
     end
 end
 
@@ -604,7 +723,13 @@ function onHoverMember(widget, hovered)
         if widget.circle then
             widget.circle:setImageColor("#cb5e00")
         end
-        g_tooltip.display(widget.tooltip)
+        local tip = widget:getTooltip()
+        if not tip and widget.icon then
+            tip = widget.icon:getTooltip()
+        end
+        if tip then
+            g_tooltip.display(tip)
+        end
     else
         window:setBackgroundColor("alpha")
         window:setBorderColor("alpha")
@@ -644,11 +769,12 @@ function onMouseRelease(widget, mousePos, mouseButton)
 
         local player = g_game.getLocalPlayer()
         if not player then return end
-        
+
         local memberId = tonumber(widget:getId())
-        
-        if g_game.isPartyLeader() then 
-             menu:addOption(tr("Pass leader to %s", widget.nameStr), function()
+
+        if player:isPartyLeader() and currentMembersById[memberId] then
+            local displayName = currentMembersById[memberId] and currentMembersById[memberId].name or widget.name:getText()
+            menu:addOption(tr("Pass leader to %s", displayName), function()
                 g_game.partyPassLeadership(memberId)
             end)
         end
@@ -672,13 +798,17 @@ end
 
 function onSpecialResourceChange(localPlayer, specialResource, maxSpecialResource)
     if not window or not window.player then return end
-    window.player.specialResourceBar:show()
-    updateBar(window.player.specialResourceBar, window.player.valueSpecialResource, specialResource, maxSpecialResource, PLAYER_SPECIAL_WIDTH, 17)
+    local bar = window.player.specialResourceBar
+    if not bar then return end
+    bar:show()
+    local w = bar.getWidth and bar:getWidth() or PLAYER_SPECIAL_WIDTH
+    local h = bar.getHeight and bar:getHeight() or 17
+    updateBar(bar, window.player.valueSpecialResource, specialResource, maxSpecialResource, w, h)
 end
 
 function onLevelChange(localPlayer, level, percent)
     if not window or not window.player then return end
-    
+
     local vocId = localPlayer:getVocation()
     window.player.icon:setTooltip(getVocTooltip(vocId, level))
 end
@@ -691,7 +821,7 @@ function onPartyManageInvite(action, playerId, playerName)
     if action == 2 then -- REVOKE (Received by Target)
         -- playerId is Leader ID
         incomingInvites[playerId] = nil
-        
+
         if partyWindow and ui.invitesList then
             local row = ui.invitesList:getChildById(tostring(playerId))
             if row then
@@ -735,14 +865,14 @@ end
 
 function onPartyMemberUpdate(member)
     if not window then return end
-    
+
     local player = g_game.getLocalPlayer()
     if player and player:getId() == member.id then
-         -- Local player update
-         local mask = member.mask or 0
+        -- Local player update
+        local mask = member.mask or 0
 
-         -- For local player, mostly rely on LocalPlayer events.
-         -- But handle Vocation if needed
+        -- For local player, mostly rely on LocalPlayer events.
+        -- But handle Vocation if needed
         if band(mask, UPDATE_VOCATION) ~= 0 or band(mask, UPDATE_LEVEL) ~= 0 then
             local lv = band(mask, UPDATE_LEVEL) ~= 0 and member.level or player:getLevel()
             local vocId = band(mask, UPDATE_VOCATION) ~= 0 and member.vocation or player:getVocation()
@@ -750,7 +880,7 @@ function onPartyMemberUpdate(member)
             window.player.icon:setIconClip(vocInfo[1])
             window.player.icon:setTooltip(getVocTooltip(vocId, lv))
         end
-        else
+    else
         -- 1. Update Logical State (Source of Truth)
         local mask = member.mask or 0
         local cachedMember = currentMembersById[member.id]
@@ -774,16 +904,9 @@ function onPartyMemberUpdate(member)
 
         -- 2. Update UI if exists (Read from Logical State)
         local id = tostring(member.id)
+        if not window or not window.contentsPanel then return end
         local widget = window.contentsPanel:getChildById(id)
         if widget and cachedMember then
-            -- Sync widget properties to Logical State (optional, for consistency)
-            widget.health = cachedMember.health
-            widget.maxHealth = cachedMember.maxHealth
-            widget.mana = cachedMember.mana
-            widget.maxMana = cachedMember.maxMana
-            widget.level = cachedMember.level
-            widget.vocation = cachedMember.vocation
-
             -- Update Visuals
             if band(mask, UPDATE_VOCATION) ~= 0 or band(mask, UPDATE_LEVEL) ~= 0 then
                 local vocInfo = vocations[cachedMember.vocation] or vocations[0]
@@ -806,15 +929,23 @@ function toggleMenu()
     if not window then return end
     local optionsPanel = window.optionsPanel
     if not optionsPanel then return end
-    
+
+    local panelW = optionsPanel:getWidth()
+    if not baseWidth then
+        if optionsPanel:isVisible() then
+            baseWidth = window:getWidth() - panelW
+        else
+            baseWidth = window:getWidth()
+        end
+    end
+
     if optionsPanel:isVisible() then
         optionsPanel:setVisible(false)
-        optionsPanel:setWidth(0)
-        window:setWidth(256)
+        window:setWidth(baseWidth)
     else
         optionsPanel:setVisible(true)
-        optionsPanel:setWidth(150)
-        window:setWidth(256 + 150)
+        panelW = optionsPanel:getWidth()
+        window:setWidth(baseWidth + panelW)
     end
 end
 
@@ -832,16 +963,16 @@ end
 
 function invitePlayer()
     displayTextInputBox(tr('Invite to Party'), tr('Player Name:'), function(name)
-        local creature = g_map.getCreatureByName(name)
+        local trimmed = (name and name:match("^%s*(.-)%s*$")) or ""
+        if trimmed == "" then return end
+        g_game.partyInviteByName(trimmed)
+        local creature = g_map.getCreatureByName(trimmed)
         if creature then
             local id = creature:getId()
-            g_game.partyInvite(id)
-            
-            -- Track outgoing invite
-            outgoingInvites[id] = { name = creature:getName(), id = id }
-            updatePartyList()
-        else
-            modules.game_textmessage.displayGameMessage(tr('Player %s not found.', name))
+            if id then
+                outgoingInvites[id] = { name = trimmed, id = id }
+                updatePartyList()
+            end
         end
     end, function() end)
 end

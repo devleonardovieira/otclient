@@ -270,6 +270,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "inviteToOwnChannel", &Game::inviteToOwnChannel, &g_game);
     g_lua.bindSingletonFunction("g_game", "excludeFromOwnChannel", &Game::excludeFromOwnChannel, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyInvite", &Game::partyInvite, &g_game);
+    g_lua.bindSingletonFunction("g_game", "partyInviteByName", &Game::partyInviteByName, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyCreate", &Game::partyCreate, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyJoin", &Game::partyJoin, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyRevokeInvitation", &Game::partyRevokeInvitation, &g_game);

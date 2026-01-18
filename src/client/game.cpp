@@ -1147,6 +1147,14 @@ void Game::partyInvite(const uint32_t creatureId)
     m_protocolGame->sendInviteToParty(creatureId);
 }
 
+void Game::partyInviteByName(const std::string_view name)
+{
+    if (!canPerformGameAction() || name.empty())
+        return;
+
+    m_protocolGame->sendInviteToPartyByName(std::string(name));
+}
+
 void Game::partyCreate()
 {
     if (!canPerformGameAction())
@@ -1176,7 +1184,7 @@ void Game::partyKick(const uint32_t creatureId)
     if (!canPerformGameAction())
         return;
 
-    m_protocolGame->sendRevokeInvitation(creatureId);
+    m_protocolGame->sendKickFromParty(creatureId);
 }
 
 void Game::partyPassLeadership(const uint32_t creatureId)
