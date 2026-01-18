@@ -1208,6 +1208,11 @@ void Game::onPartyInvite(uint32_t leaderId, const std::string& leaderName, uint1
     g_lua.callGlobalField("g_game", "onPartyInvite", leaderId, leaderName, minLevel, maxLevel);
 }
 
+void Game::onPartyManageInvite(uint8_t action, uint32_t playerId, const std::string& playerName)
+{
+    g_lua.callGlobalField("g_game", "onPartyManageInvite", action, playerId, playerName);
+}
+
 void Game::sendPartyAnalyzerReset()
 {
     if (!canPerformGameAction())

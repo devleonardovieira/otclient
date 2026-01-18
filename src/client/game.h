@@ -97,6 +97,7 @@ protected:
     static void processPartyDetailedInfo(uint32_t partyId, uint32_t leaderId, const std::vector<PartyDetailedMember>& members);
     static void processPartyMemberUpdate(const PartyDetailedMember& member);
     void onPartyInvite(uint32_t leaderId, const std::string& leaderName, uint16_t minLevel, uint16_t maxLevel);
+    void onPartyManageInvite(uint8_t action, uint32_t playerId, const std::string& playerName);
 
     // anthem
     static void processAnthem(uint16_t anthemId);

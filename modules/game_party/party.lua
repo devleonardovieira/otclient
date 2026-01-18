@@ -102,8 +102,7 @@ local function updatePartyMembers()
     
     local player = g_game.getLocalPlayer()
     local isLeader = player and player:isPartyLeader()
-    local children = ui.membersList:getChildren()
-    local childrenCount = #children
+    ui.membersList:destroyChildren()
     local membersCount = #currentMembers
 
     -- Prepare Invites List
@@ -115,12 +114,7 @@ local function updatePartyMembers()
 
     -- 1. Render Members
     for i, member in ipairs(currentMembers) do
-        local row = nil
-        if i <= childrenCount then
-            row = children[i]
-        else
-            row = g_ui.createWidget('PartyListRow', ui.membersList)
-        end
+        local row = g_ui.createWidget('PartyListRow', ui.membersList)
 
         row:setId('member_' .. member.id)
         row.name:setText(member.name)
@@ -137,7 +131,6 @@ local function updatePartyMembers()
             row.actionButton:setVisible(true)
             row.actionButton:setText(tr('Expulsar'))
             row.actionButton.onClick = function()
-                -- Fix: partyKick is nil in Lua, use partyRevokeInvitation (same opcode 165 in C++)
                 g_game.partyRevokeInvitation(member.id)
             end
         else
@@ -147,13 +140,7 @@ local function updatePartyMembers()
 
     -- 2. Render Outgoing Invites (Gray)
     for i, invite in ipairs(sortedInvites) do
-        local index = membersCount + i
-        local row = nil
-        if index <= childrenCount then
-            row = children[index]
-        else
-            row = g_ui.createWidget('PartyListRow', ui.membersList)
-        end
+        local row = g_ui.createWidget('PartyListRow', ui.membersList)
         
         row:setId('invite_' .. invite.id)
         row.name:setText(invite.name)
@@ -173,12 +160,6 @@ local function updatePartyMembers()
             outgoingInvites[invite.id] = nil
             updatePartyList()
         end
-    end
-
-    -- Destroy excess widgets
-    local totalCount = membersCount + invitesCount
-    for i = totalCount + 1, childrenCount do
-        children[i]:destroy()
     end
 end
 
@@ -269,7 +250,7 @@ function init()
         window:setPosition({x = 217, y = 72})
     end
 
-    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onTextMessage = onTextMessage })
+    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite })
     connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
     -- ProtocolGame.registerExtendedOpcode(210, updateUltimateBar) 
 
@@ -279,8 +260,8 @@ function init()
 end
 
 function terminate()
-    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onTextMessage = onTextMessage })
-    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
+    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite })
+    disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange })
 
     local settings = { pos = window:getPosition() }
     g_settings.setNode("partyWindow", settings)
@@ -506,6 +487,11 @@ function onPartyDetailedInfo(partyId, leaderId, members)
     end
 
     if not hasParty then
+        updatePartyIcon(false)
+        updatePartyWindowView(false)
+        clearParty()
+        if partyWindow then partyWindow:hide() end
+        outgoingInvites = {}
         return
     end
 
@@ -698,26 +684,34 @@ function onLevelChange(localPlayer, level, percent)
 end
 
 -- ---------------------------------------------------------
--- Heuristic Fallbacks
+-- Heuristic Fallbacks (REMOVED)
 -- ---------------------------------------------------------
 
--- Detects party leave based on shield status when explicit packet is missing
-local function tryHeuristicPartyLeave(shield) -- FALLBACK ONLY
-    -- ShieldNone (0), ShieldWhiteBlue (1), ShieldWhiteYellow (2) usually mean not in a party
-    -- This is a fallback/visual heuristic. Explicit party events (Opcode 0xA9/0xA3) are primary.
-    local likelyLeftParty = (shield <= 2)
-    local hasPartyUI = (window.contentsPanel:getChildCount() > 0)
-
-    if likelyLeftParty and hasPartyUI then
-        clearParty()
-        updatePartyWindowView(false)
+function onPartyManageInvite(action, playerId, playerName)
+    if action == 2 then -- REVOKE (Received by Target)
+        -- playerId is Leader ID
+        incomingInvites[playerId] = nil
         
-        -- Ensure window stays visible for local player statistics
-        window:show()
-        local lp = g_game.getLocalPlayer()
-        if lp then
-            updatePlayerWidget(lp, lp:getHealth(), lp:getMaxHealth(), lp:getMana(), lp:getMaxMana(), lp:getLevel())
+        if partyWindow and ui.invitesList then
+            local row = ui.invitesList:getChildById(tostring(playerId))
+            if row then
+                row:destroy()
+            end
+
+            if ui.invitesList:getChildCount() == 0 and ui.noInvitesLabel then
+                ui.noInvitesLabel:setVisible(true)
+            end
         end
+
+    elseif action == 3 then -- TARGET_REMOVED (Received by Leader)
+        -- playerId is Target ID
+        outgoingInvites[playerId] = nil
+        updatePartyList()
+
+    elseif action == 4 then -- TARGET_ADDED (Received by Leader)
+        -- playerId is Target ID
+        outgoingInvites[playerId] = { name = playerName, id = playerId }
+        updatePartyList()
     end
 end
 
@@ -725,32 +719,16 @@ function onShieldChange(player, shield)
     local localPlayer = g_game.getLocalPlayer()
     if not localPlayer or not player then return end
 
-    if player:getId() == localPlayer:getId() then
-        tryHeuristicPartyLeave(shield)
-    else
-        -- Heuristic: If an invited player loses their shield (0), they likely refused/revoked.
-        -- We only remove if they are in our outgoing invites list.
-        if outgoingInvites[player:getId()] and shield == 0 then
-            outgoingInvites[player:getId()] = nil
-            updatePartyList()
-        end
-    end
-end
+    if player:getId() ~= localPlayer:getId() then return end
 
-function onTextMessage(mode, text)
-    -- MessageModes.PartyManagement is usually 32
-    if mode == (MessageModes and MessageModes.PartyManagement or 32) then
-        -- Pattern: Invitation for (.*) has been revoked.
-        local name = text:match("^Invitation for (.*) has been revoked%.$")
-        if name then
-            -- Find ID by name in outgoingInvites
-            for id, invite in pairs(outgoingInvites) do
-                if invite.name == name then
-                    outgoingInvites[id] = nil
-                    updatePartyList()
-                    break
-                end
-            end
+    local hasParty = localPlayer:isPartyMember()
+    updatePartyIcon(hasParty)
+    updatePartyWindowView(hasParty)
+    if not hasParty then
+        clearParty()
+        resetPartyState()
+        if partyWindow then
+            partyWindow:hide()
         end
     end
 end

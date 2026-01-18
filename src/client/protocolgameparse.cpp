@@ -4642,12 +4642,20 @@ void ProtocolGame::parsePartyDetailedInfo(const InputMessagePtr& msg)
 
 void ProtocolGame::parsePartyInvitation(const InputMessagePtr& msg)
 {
-    uint32_t leaderId = msg->getU32();
-    std::string leaderName = msg->getString();
-    uint16_t minLevel = msg->getU16();
-    uint16_t maxLevel = msg->getU16();
+    uint8_t action = msg->getU8();
+    if (action == 1) {
+        uint32_t leaderId = msg->getU32();
+        std::string leaderName = msg->getString();
+        uint16_t minLevel = msg->getU16();
+        uint16_t maxLevel = msg->getU16();
 
-    g_game.onPartyInvite(leaderId, leaderName, minLevel, maxLevel);
+        g_game.onPartyInvite(leaderId, leaderName, minLevel, maxLevel);
+    } else {
+        uint32_t playerId = msg->getU32();
+        std::string playerName = msg->getString();
+
+        g_game.onPartyManageInvite(action, playerId, playerName);
+    }
 }
 
 void ProtocolGame::parseImbuementDurations(const InputMessagePtr& msg)
