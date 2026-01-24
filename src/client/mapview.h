@@ -194,6 +194,7 @@ private:
 
     void drawFloor();
     void drawLights();
+    void addConeOverlay(const Position& origin, float angleDeg, float rangeTiles, float fovDeg, const Color& color, uint16_t ttlMs, uint8_t segments = 16);
 
     bool canFloorFade() const { return m_floorViewMode == Otc::FADE && m_floorFading; }
 
@@ -295,4 +296,16 @@ private:
     TexturePtr m_crosshairTexture;
 
     DrawPool* m_pool;
+    struct ConeOverlay
+    {
+        Position origin;
+        float angleDeg{ 0.f };
+        float rangeTiles{ 0.f };
+        float fovDeg{ 0.f };
+        Color color{ Color::white };
+        uint16_t ttlMs{ 0 };
+        uint8_t segments{ 16 };
+        Timer timer;
+    };
+    std::vector<ConeOverlay> m_coneOverlays;
 };

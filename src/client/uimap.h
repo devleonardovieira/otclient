@@ -92,6 +92,8 @@ public:
     int getMaxZoomOut() { return m_maxZoomOut; }
     int getZoom() { return m_zoom; }
 
+    void addConeOverlay(const Position& origin, float angleDeg, float rangeTiles, float fovDeg, int r, int g, int b, int a, int ttlMs, int segments = 16);
+
     void updateMapRect();
 
 protected:

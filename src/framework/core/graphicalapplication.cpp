@@ -314,6 +314,7 @@ void GraphicalApplication::resize(const Size& size)
 
     g_mainDispatcher.addEvent([size, scale] {
         g_drawPool.get(DrawPoolType::FOREGROUND)->setFramebuffer(size / scale);
+        g_drawPool.get(DrawPoolType::FOREGROUND_MAP)->setFramebuffer(size / scale);
     });
 }
 

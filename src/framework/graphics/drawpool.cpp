@@ -28,15 +28,16 @@
 DrawPool* DrawPool::create(const DrawPoolType type)
 {
     auto pool = new DrawPool;
-    if (type == DrawPoolType::MAP || type == DrawPoolType::FOREGROUND) {
+    if (type == DrawPoolType::MAP || type == DrawPoolType::FOREGROUND || type == DrawPoolType::FOREGROUND_MAP) {
         pool->setFramebuffer({});
         if (type == DrawPoolType::MAP) {
             pool->m_framebuffer->m_useAlphaWriting = false;
             pool->m_framebuffer->disableBlend();
         } else if (type == DrawPoolType::FOREGROUND) {
             pool->setFPS(10);
-
-            // creates a temporary framebuffer with smoothing.
+            pool->m_temporaryFramebuffers.emplace_back(std::make_shared<FrameBuffer>());
+        } else {
+            pool->setFPS(30);
             pool->m_temporaryFramebuffers.emplace_back(std::make_shared<FrameBuffer>());
         }
     } else if (type == DrawPoolType::LIGHT) {

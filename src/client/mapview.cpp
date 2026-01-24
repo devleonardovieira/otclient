@@ -38,8 +38,10 @@
 #include "framework/graphics/painter.h"
 #include "framework/graphics/shadermanager.h"
 #include "framework/graphics/texturemanager.h"
+#include "framework/graphics/coordsbuffer.h"
 #include <framework/core/clock.h>
 #include <framework/platform/platformwindow.h>
+#include <cmath>
 // Needed for turning and talking
 #include "game.h"
 
@@ -368,6 +370,44 @@ void MapView::drawForeground(const Rect& rect)
         p.y += 5;
 
         tile->drawTexts(p);
+    }
+
+    if (!m_coneOverlays.empty()) {
+        std::vector<ConeOverlay> alive;
+        alive.reserve(m_coneOverlays.size());
+        for (const auto& ov : m_coneOverlays) {
+            if (ov.ttlMs == 0 || ov.timer.ticksElapsed() < ov.ttlMs) {
+                alive.emplace_back(ov);
+            }
+        }
+        m_coneOverlays.swap(alive);
+        constexpr float DEG2RAD = 0.01745329251994329577f;
+        for (const auto& ov : m_coneOverlays) {
+            if (ov.origin.z != m_posInfo.camera.z) continue;
+            const float radiusPx = ov.rangeTiles * m_tileSize;
+            const uint8_t seg = std::max<uint8_t>(ov.segments, 3);
+            const float startDeg = ov.angleDeg - ov.fovDeg * 0.5f;
+            const float stepDeg = ov.fovDeg / seg;
+            const float hsf = m_posInfo.horizontalStretchFactor;
+            const float vsf = m_posInfo.verticalStretchFactor;
+            auto base = transformPositionTo2D(ov.origin) - m_posInfo.drawOffset;
+            base += rect.topLeft();
+            std::vector<Point> arc;
+            arc.reserve(seg + 1);
+            for (uint8_t i = 0; i <= seg; ++i) {
+                const float rad = (startDeg + stepDeg * i) * DEG2RAD;
+                const float dxF = std::cos(rad) * radiusPx;
+                const float dyF = -std::sin(rad) * radiusPx;
+                const int sx = static_cast<int>(std::lround(base.x + dxF * hsf));
+                const int sy = static_cast<int>(std::lround(base.y + dyF * vsf));
+                arc.emplace_back(Point{ sx, sy });
+            }
+            auto coords = std::make_shared<CoordsBuffer>(seg * 3 + 3);
+            for (uint8_t i = 0; i < seg; ++i) {
+                coords->addTriangle(base, arc[i], arc[i + 1]);
+            }
+            g_drawPool.addTexturedCoordsBuffer(nullptr, coords, ov.color);
+        }
     }
 }
 
@@ -1037,6 +1077,33 @@ void MapView::setDrawLights(const bool enable)
     }
 
     updateLight();
+}
+
+void MapView::addConeOverlay(const Position& origin, float angleDeg, float rangeTiles, float fovDeg, const Color& color, uint16_t ttlMs, uint8_t segments)
+{
+    for (auto& existing : m_coneOverlays) {
+        if (existing.origin.z == origin.z && existing.origin.x == origin.x && existing.origin.y == origin.y) {
+            existing.angleDeg = angleDeg;
+            existing.rangeTiles = rangeTiles;
+            existing.fovDeg = fovDeg;
+            existing.color = color;
+            existing.ttlMs = ttlMs;
+            existing.segments = segments;
+            existing.timer.restart();
+            return;
+        }
+    }
+
+    ConeOverlay ov;
+    ov.origin = origin;
+    ov.angleDeg = angleDeg;
+    ov.rangeTiles = rangeTiles;
+    ov.fovDeg = fovDeg;
+    ov.color = color;
+    ov.ttlMs = ttlMs;
+    ov.segments = segments;
+    ov.timer.restart();
+    m_coneOverlays.emplace_back(std::move(ov));
 }
 
 void MapView::updateViewportDirectionCache()

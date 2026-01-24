@@ -306,6 +306,12 @@ bool UIMap::onMouseWheel(const Point& mousePos, Fw::MouseWheelDirection directio
     return UIWidget::onMouseWheel(mousePos, direction);
 }
 
+void UIMap::addConeOverlay(const Position& origin, float angleDeg, float rangeTiles, float fovDeg, int r, int g, int b, int a, int ttlMs, int segments)
+{
+    if (!m_mapView) return;
+    m_mapView->addConeOverlay(origin, angleDeg, rangeTiles, fovDeg, Color(r, g, b, a), static_cast<uint16_t>(ttlMs), static_cast<uint8_t>(segments));
+}
+
 void UIMap::updateVisibleDimension()
 {
     int dimensionHeight = m_zoom;
