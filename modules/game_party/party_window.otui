@@ -1,7 +1,6 @@
 PartyListRow < Panel
   height: 40
-  margin-left: 20
-  margin-right: 20
+  margin-left: -10
   layout: horizontalBox
   
   UIWidget
@@ -27,7 +26,7 @@ PartyListRow < Panel
     height: 40
     text-auto-resize: false
     text-align: left
-    text-offset: 0 12
+    text-offset: 0 0
     color: white
     font: verdana-11px-rounded
 
@@ -101,6 +100,7 @@ MainWindow
 
   Panel
     id: creationPanel
+    margin-top: 55
     anchors.fill: parent
     visible: true
 
@@ -173,6 +173,7 @@ MainWindow
   Panel
     id: managementPanel
     anchors.fill: parent
+    margin-top: 55
     visible: false
 
 
