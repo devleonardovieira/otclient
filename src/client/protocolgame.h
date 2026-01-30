@@ -103,6 +103,13 @@ public:
     void sendLeaveParty();
     void sendShareExperience(bool active);
     void sendPartyAnalyzerAction(uint8_t action, const std::vector<std::tuple<uint16_t, uint64_t>>& items = {});
+    void sendLeaderFinderRequest();
+    void sendLeaderFinderReset();
+    void sendLeaderFinderUpdateMember(uint32_t memberId, uint8_t status);
+    void sendLeaderFinderCreate(uint16_t minLevel, uint16_t maxLevel, uint8_t vocationIds, uint16_t teamSlots, uint16_t freeSlots, bool partyBool, uint32_t timestamp, uint8_t teamType, uint16_t bossId, uint16_t huntType, uint16_t huntArea, uint16_t questId);
+    void sendMemberFinderListRequest();
+    void sendMemberFinderJoin(uint32_t leaderId);
+    void sendMemberFinderCancel(uint32_t leaderId);
     void sendOpenOwnChannel();
     void sendInviteToOwnChannel(std::string_view name);
     void sendExcludeFromOwnChannel(std::string_view name);
@@ -341,6 +348,8 @@ private:
     void parseImbuementDurations(const InputMessagePtr& msg);
     void parsePartyDetailedInfo(const InputMessagePtr& msg);
     void parsePartyInvitation(const InputMessagePtr& msg);
+    void parseLeaderFinderWindow(const InputMessagePtr& msg);
+    void parseMemberFinderWindow(const InputMessagePtr& msg);
     void parsePassiveCooldown(const InputMessagePtr& msg);
     void parseClientCheck(const InputMessagePtr& msg);
     void parseGameNews(const InputMessagePtr& msg);

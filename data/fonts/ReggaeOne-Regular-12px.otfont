@@ -1,0 +1,8 @@
+Font
+  name: ReggaeOne-Regular-12px
+  texture: ReggaeOne-Regular-12px
+  height: 18
+  glyph-size: 18 18
+  space-width: 3
+  y-offset: -3
+  spacing: -1 -2

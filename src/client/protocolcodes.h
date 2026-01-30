@@ -62,6 +62,8 @@ namespace Proto
         GameServerSupplyStash = 41,
         GameServerSpecialContainer = 42,
         GameServerPartyAnalyzer = 43,
+        GameServerLeaderFinder = 44,
+        GameServerMemberFinder = 45,
 
         GameServerPartyDetailedInfo = 57,
 
@@ -262,6 +264,8 @@ namespace Proto
         ClientUseStash = 40,
         ClientBestiaryTrackerStatus = 42,
         ClientPartyAnalyzerAction = 43,
+        ClientLeaderFinderWindow = 44,
+        ClientMemberFinderWindow = 45,
 
         // all in game opcodes must be equal or greater than 50
         ClientFirstGameOpcode = 50,

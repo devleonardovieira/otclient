@@ -98,6 +98,9 @@ protected:
     static void processPartyMemberUpdate(const PartyDetailedMember& member);
     void onPartyInvite(uint32_t leaderId, const std::string& leaderName, uint16_t minLevel, uint16_t maxLevel);
     void onPartyManageInvite(uint8_t action, uint32_t playerId, const std::string& playerName);
+    static void processPublicGroupsList(bool exceeded, const std::vector<PublicGroupEntry>& groups);
+    static void processPublicGroupLeaderInfo(const PublicGroupLeaderInfo& info, const std::vector<PublicGroupMember>& members);
+    static void processPublicGroupLeaderReset();
 
     // anthem
     static void processAnthem(uint16_t anthemId);
@@ -247,6 +250,11 @@ public:
     void sendPartyAnalyzerPriceType();
     void sendPartyAnalyzerPriceValue(); // For action 3, will get items from cyclopedia
     void sendPartyAnalyzerAction(uint8_t action, const std::vector<std::tuple<uint16_t, uint64_t>>& items = {});
+    void publicGroupsRequestList();
+    void publicGroupsRequestJoin(uint32_t leaderId);
+    void publicGroupsCancelRequest(uint32_t leaderId);
+    void publicGroupPublish(uint16_t minLevel, uint16_t maxLevel, uint8_t vocationIds, uint16_t teamSlots, uint16_t freeSlots, bool partyBool, uint32_t timestamp, uint8_t teamType, uint16_t bossId, uint16_t huntType, uint16_t huntArea, uint16_t questId);
+    void publicGroupUnpublish();
 
     // outfit related
     void requestOutfit();

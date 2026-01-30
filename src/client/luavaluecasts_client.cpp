@@ -1673,3 +1673,96 @@ int push_luavalue(const std::vector<PartyDetailedMember>& data) {
     }
     return 1;
 }
+
+int push_luavalue(const PublicGroupEntry& entry) {
+    g_lua.createTable(0, 14);
+    g_lua.pushInteger(entry.leaderId);
+    g_lua.setField("leaderId");
+    g_lua.pushString(entry.leaderName);
+    g_lua.setField("leaderName");
+    g_lua.pushInteger(entry.minLevel);
+    g_lua.setField("minLevel");
+    g_lua.pushInteger(entry.maxLevel);
+    g_lua.setField("maxLevel");
+    g_lua.pushInteger(entry.vocationIds);
+    g_lua.setField("vocationIds");
+    g_lua.pushInteger(entry.teamSlots);
+    g_lua.setField("teamSlots");
+    g_lua.pushInteger(entry.membersCount);
+    g_lua.setField("membersCount");
+    g_lua.pushInteger(entry.timestamp);
+    g_lua.setField("timestamp");
+    g_lua.pushInteger(entry.teamType);
+    g_lua.setField("teamType");
+    g_lua.pushInteger(entry.bossId);
+    g_lua.setField("bossId");
+    g_lua.pushInteger(entry.huntType);
+    g_lua.setField("huntType");
+    g_lua.pushInteger(entry.huntArea);
+    g_lua.setField("huntArea");
+    g_lua.pushInteger(entry.questId);
+    g_lua.setField("questId");
+    g_lua.pushInteger(entry.status);
+    g_lua.setField("status");
+    return 1;
+}
+
+int push_luavalue(const std::vector<PublicGroupEntry>& data) {
+    g_lua.createTable(data.size(), 0);
+    for (size_t i = 0; i < data.size(); ++i) {
+        push_luavalue(data[i]);
+        g_lua.rawSeti(i + 1);
+    }
+    return 1;
+}
+
+int push_luavalue(const PublicGroupMember& member) {
+    g_lua.createTable(0, 5);
+    g_lua.pushInteger(member.id);
+    g_lua.setField("id");
+    g_lua.pushString(member.name);
+    g_lua.setField("name");
+    g_lua.pushInteger(member.level);
+    g_lua.setField("level");
+    g_lua.pushInteger(member.vocation);
+    g_lua.setField("vocation");
+    g_lua.pushInteger(member.status);
+    g_lua.setField("status");
+    return 1;
+}
+
+int push_luavalue(const std::vector<PublicGroupMember>& data) {
+    g_lua.createTable(data.size(), 0);
+    for (size_t i = 0; i < data.size(); ++i) {
+        push_luavalue(data[i]);
+        g_lua.rawSeti(i + 1);
+    }
+    return 1;
+}
+
+int push_luavalue(const PublicGroupLeaderInfo& info) {
+    g_lua.createTable(0, 10);
+    g_lua.pushInteger(info.minLevel);
+    g_lua.setField("minLevel");
+    g_lua.pushInteger(info.maxLevel);
+    g_lua.setField("maxLevel");
+    g_lua.pushInteger(info.vocationIds);
+    g_lua.setField("vocationIds");
+    g_lua.pushInteger(info.teamSlots);
+    g_lua.setField("teamSlots");
+    g_lua.pushInteger(info.freeSlots);
+    g_lua.setField("freeSlots");
+    g_lua.pushInteger(info.timestamp);
+    g_lua.setField("timestamp");
+    g_lua.pushInteger(info.teamType);
+    g_lua.setField("teamType");
+    g_lua.pushInteger(info.bossId);
+    g_lua.setField("bossId");
+    g_lua.pushInteger(info.huntType);
+    g_lua.setField("huntType");
+    g_lua.pushInteger(info.huntArea);
+    g_lua.setField("huntArea");
+    g_lua.pushInteger(info.questId);
+    g_lua.setField("questId");
+    return 1;
+}

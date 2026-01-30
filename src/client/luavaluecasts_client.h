@@ -112,3 +112,8 @@ int push_luavalue(const PartyMemberData& data);
 int push_luavalue(const PartyMemberName& data);
 int push_luavalue(const PartyDetailedMember& member);
 int push_luavalue(const std::vector<PartyDetailedMember>& data);
+int push_luavalue(const PublicGroupEntry& entry);
+int push_luavalue(const std::vector<PublicGroupEntry>& data);
+int push_luavalue(const PublicGroupMember& member);
+int push_luavalue(const std::vector<PublicGroupMember>& data);
+int push_luavalue(const PublicGroupLeaderInfo& info);

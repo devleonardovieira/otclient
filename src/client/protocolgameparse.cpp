@@ -144,6 +144,12 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
                 case Proto::GameServerPartyAnalyzer:
                     parsePartyAnalyzer(msg);
                     break;
+                case Proto::GameServerLeaderFinder:
+                    parseLeaderFinderWindow(msg);
+                    break;
+                case Proto::GameServerMemberFinder:
+                    parseMemberFinderWindow(msg);
+                    break;
                 case Proto::GameServerPartyDetailedInfo:
                     parsePartyDetailedInfo(msg);
                     break;
@@ -4656,6 +4662,97 @@ void ProtocolGame::parsePartyInvitation(const InputMessagePtr& msg)
 
         g_game.onPartyManageInvite(action, playerId, playerName);
     }
+}
+
+void ProtocolGame::parseLeaderFinderWindow(const InputMessagePtr& msg)
+{
+    const bool reset = msg->getU8() == 1;
+    if (reset) {
+        g_game.processPublicGroupLeaderReset();
+        return;
+    }
+
+    PublicGroupLeaderInfo info;
+    info.minLevel = msg->getU16();
+    info.maxLevel = msg->getU16();
+    info.vocationIds = msg->getU8();
+    info.teamSlots = msg->getU16();
+    info.freeSlots = msg->getU16();
+    info.timestamp = msg->getU32();
+    info.teamType = msg->getU8();
+
+    switch (info.teamType) {
+        case 1:
+            info.bossId = msg->getU16();
+            break;
+        case 2:
+            info.huntType = msg->getU16();
+            info.huntArea = msg->getU16();
+            break;
+        case 3:
+            info.questId = msg->getU16();
+            break;
+        default:
+            break;
+    }
+
+    const uint16_t membersSize = msg->getU16();
+    std::vector<PublicGroupMember> members;
+    members.reserve(membersSize);
+
+    for (uint16_t i = 0; i < membersSize; ++i) {
+        PublicGroupMember member;
+        member.id = msg->getU32();
+        member.name = msg->getString();
+        member.level = msg->getU16();
+        member.vocation = msg->getU8();
+        member.status = msg->getU8();
+        members.push_back(std::move(member));
+    }
+
+    g_game.processPublicGroupLeaderInfo(info, members);
+}
+
+void ProtocolGame::parseMemberFinderWindow(const InputMessagePtr& msg)
+{
+    const bool exceeded = msg->getU8() == 1;
+    const uint16_t count = msg->getU16();
+
+    std::vector<PublicGroupEntry> groups;
+    groups.reserve(count);
+
+    for (uint16_t i = 0; i < count; ++i) {
+        PublicGroupEntry entry;
+        entry.leaderId = msg->getU32();
+        entry.leaderName = msg->getString();
+        entry.minLevel = msg->getU16();
+        entry.maxLevel = msg->getU16();
+        entry.vocationIds = msg->getU8();
+        entry.teamSlots = msg->getU16();
+        entry.membersCount = msg->getU16();
+        entry.timestamp = msg->getU32();
+        entry.teamType = msg->getU8();
+
+        switch (entry.teamType) {
+            case 1:
+                entry.bossId = msg->getU16();
+                break;
+            case 2:
+                entry.huntType = msg->getU16();
+                entry.huntArea = msg->getU16();
+                break;
+            case 3:
+                entry.questId = msg->getU16();
+                break;
+            default:
+                break;
+        }
+
+        entry.status = msg->getU8();
+        groups.push_back(std::move(entry));
+    }
+
+    g_game.processPublicGroupsList(exceeded, groups);
 }
 
 void ProtocolGame::parseImbuementDurations(const InputMessagePtr& msg)

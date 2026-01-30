@@ -224,6 +224,48 @@ struct PartyDetailedMember
     uint8_t mask = 0;
 };
 
+struct PublicGroupEntry
+{
+    uint32_t leaderId = 0;
+    std::string leaderName;
+    uint16_t minLevel = 0;
+    uint16_t maxLevel = 0;
+    uint8_t vocationIds = 0;
+    uint16_t teamSlots = 0;
+    uint16_t membersCount = 0;
+    uint32_t timestamp = 0;
+    uint8_t teamType = 0;
+    uint16_t bossId = 0;
+    uint16_t huntType = 0;
+    uint16_t huntArea = 0;
+    uint16_t questId = 0;
+    uint8_t status = 0;
+};
+
+struct PublicGroupMember
+{
+    uint32_t id = 0;
+    std::string name;
+    uint16_t level = 0;
+    uint8_t vocation = 0;
+    uint8_t status = 0;
+};
+
+struct PublicGroupLeaderInfo
+{
+    uint16_t minLevel = 0;
+    uint16_t maxLevel = 0;
+    uint8_t vocationIds = 0;
+    uint16_t teamSlots = 0;
+    uint16_t freeSlots = 0;
+    uint32_t timestamp = 0;
+    uint8_t teamType = 0;
+    uint16_t bossId = 0;
+    uint16_t huntType = 0;
+    uint16_t huntArea = 0;
+    uint16_t questId = 0;
+};
+
 struct UnjustifiedPoints
 {
     bool operator==(const UnjustifiedPoints& other) const

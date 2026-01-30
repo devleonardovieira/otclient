@@ -795,6 +795,90 @@ void ProtocolGame::sendPartyAnalyzerAction(const uint8_t action, const std::vect
     send(msg);
 }
 
+void ProtocolGame::sendLeaderFinderRequest()
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientLeaderFinderWindow);
+    msg->addU8(0);
+    send(msg);
+}
+
+void ProtocolGame::sendLeaderFinderReset()
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientLeaderFinderWindow);
+    msg->addU8(1);
+    send(msg);
+}
+
+void ProtocolGame::sendLeaderFinderUpdateMember(const uint32_t memberId, const uint8_t status)
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientLeaderFinderWindow);
+    msg->addU8(2);
+    msg->addU32(memberId);
+    msg->addU8(status);
+    send(msg);
+}
+
+void ProtocolGame::sendLeaderFinderCreate(const uint16_t minLevel, const uint16_t maxLevel, const uint8_t vocationIds, const uint16_t teamSlots, const uint16_t freeSlots, const bool partyBool, const uint32_t timestamp, const uint8_t teamType, const uint16_t bossId, const uint16_t huntType, const uint16_t huntArea, const uint16_t questId)
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientLeaderFinderWindow);
+    msg->addU8(3);
+    msg->addU16(minLevel);
+    msg->addU16(maxLevel);
+    msg->addU8(vocationIds);
+    msg->addU16(teamSlots);
+    msg->addU16(freeSlots);
+    msg->addU8(partyBool ? 1 : 0);
+    msg->addU32(timestamp);
+    msg->addU8(teamType);
+
+    switch (teamType) {
+        case 1:
+            msg->addU16(bossId);
+            break;
+        case 2:
+            msg->addU16(huntType);
+            msg->addU16(huntArea);
+            break;
+        case 3:
+            msg->addU16(questId);
+            break;
+        default:
+            break;
+    }
+
+    send(msg);
+}
+
+void ProtocolGame::sendMemberFinderListRequest()
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientMemberFinderWindow);
+    msg->addU8(0);
+    send(msg);
+}
+
+void ProtocolGame::sendMemberFinderJoin(const uint32_t leaderId)
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientMemberFinderWindow);
+    msg->addU8(1);
+    msg->addU32(leaderId);
+    send(msg);
+}
+
+void ProtocolGame::sendMemberFinderCancel(const uint32_t leaderId)
+{
+    const auto& msg = std::make_shared<OutputMessage>();
+    msg->addU8(Proto::ClientMemberFinderWindow);
+    msg->addU8(2);
+    msg->addU32(leaderId);
+    send(msg);
+}
+
 void ProtocolGame::sendOpenOwnChannel()
 {
     const auto& msg = std::make_shared<OutputMessage>();

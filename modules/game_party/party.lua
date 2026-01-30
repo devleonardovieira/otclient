@@ -23,6 +23,11 @@ local INVITE_MSG_LEVEL  = '%s convidou você para um grupo (Nível %d-%d).'
 
 local incomingInvites = {} -- leaderId -> invite (Invites RECEIVED)
 local outgoingInvites = {} -- creatureId -> {name, id} (Invites SENT)
+local publicGroups = {}
+local publicGroupsOpen = false
+local publicGroupPublished = false
+
+local updatePublicGroupButton
 
 local ui = {} -- 4. UI Cache
 
@@ -323,8 +328,25 @@ function init()
         ui.creationPanel = partyWindow:recursiveGetChildById('creationPanel')
         ui.managementPanel = partyWindow:recursiveGetChildById('managementPanel')
         ui.invitePlayerButton = partyWindow:recursiveGetChildById('invitePlayerButton')
+        ui.publicGroupsButton = partyWindow:recursiveGetChildById('publicGroupsButton')
+        ui.publicGroupsPanel = partyWindow:recursiveGetChildById('publicGroupsPanel')
+        ui.publicGroupsList = ui.publicGroupsPanel and ui.publicGroupsPanel:recursiveGetChildById('publicGroupsList')
+        ui.noPublicGroupsLabel = ui.publicGroupsPanel and ui.publicGroupsPanel:recursiveGetChildById('noPublicGroupsLabel')
+        ui.refreshPublicGroupsButton = ui.publicGroupsPanel and ui.publicGroupsPanel:recursiveGetChildById('refreshPublicGroupsButton')
+        ui.closePublicGroupsButton = ui.publicGroupsPanel and ui.publicGroupsPanel:recursiveGetChildById('closePublicGroupsButton')
+        ui.publicGroupButton = partyWindow:recursiveGetChildById('publicGroupButton')
     else
         perror("Failed to load party_window.otui")
+    end
+
+    if ui.publicGroupsButton then
+        ui.publicGroupsButton.onClick = openPublicGroups
+    end
+    if ui.refreshPublicGroupsButton then
+        ui.refreshPublicGroupsButton.onClick = requestPublicGroups
+    end
+    if ui.closePublicGroupsButton then
+        ui.closePublicGroupsButton.onClick = closePublicGroups
     end
 
     if window.player and window.player.menuButton then
@@ -340,7 +362,7 @@ function init()
         window:setPosition({x = 217, y = 72})
     end
 
-    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite })
+    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite, onPublicGroupsList = onPublicGroupsList, onPublicGroupLeaderInfo = onPublicGroupLeaderInfo, onPublicGroupLeaderReset = onPublicGroupLeaderReset })
     connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
     -- removed dead code: updateUltimateBar registration
 
@@ -350,7 +372,7 @@ function init()
 end
 
 function terminate()
-    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite })
+    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite, onPublicGroupsList = onPublicGroupsList, onPublicGroupLeaderInfo = onPublicGroupLeaderInfo, onPublicGroupLeaderReset = onPublicGroupLeaderReset })
     disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
 
     local settings = { pos = window:getPosition() }
@@ -397,12 +419,22 @@ function updatePartyWindowView(hasParty)
         if invitePlayerButton then
             invitePlayerButton:setVisible(isLeader)
         end
+        if ui.publicGroupButton then
+            ui.publicGroupButton:setVisible(isLeader)
+        end
+        updatePublicGroupButton()
     else
         if creationPanel then creationPanel:setVisible(true) end
         if managementPanel then managementPanel:setVisible(false) end
     end
 
     if hasParty then return end
+
+    if publicGroupsOpen then
+        if ui.invitesPanel then ui.invitesPanel:setVisible(false) end
+        if ui.publicGroupsPanel then ui.publicGroupsPanel:setVisible(true) end
+        return
+    end
 
     if not ui.invitesList then return end
 
@@ -445,6 +477,124 @@ function updatePartyWindowView(hasParty)
     end
 end
 
+function openPublicGroups()
+    if not partyWindow then return end
+    publicGroupsOpen = true
+    if ui.invitesPanel then ui.invitesPanel:setVisible(false) end
+    if ui.publicGroupsPanel then ui.publicGroupsPanel:setVisible(true) end
+    requestPublicGroups()
+end
+
+function closePublicGroups()
+    publicGroupsOpen = false
+    if ui.publicGroupsPanel then ui.publicGroupsPanel:setVisible(false) end
+    if ui.invitesPanel then ui.invitesPanel:setVisible(true) end
+end
+
+function requestPublicGroups()
+    if not g_game.isOnline() then return end
+    g_game.publicGroupsRequestList()
+end
+
+local function updatePublicGroupsUI()
+    if not ui.publicGroupsList then return end
+
+    ui.publicGroupsList:destroyChildren()
+
+    if not publicGroups or #publicGroups == 0 then
+        if ui.noPublicGroupsLabel then ui.noPublicGroupsLabel:setVisible(true) end
+        return
+    end
+
+    if ui.noPublicGroupsLabel then ui.noPublicGroupsLabel:setVisible(false) end
+
+    for _, group in ipairs(publicGroups) do
+        local row = g_ui.createWidget('PublicGroupRow', ui.publicGroupsList)
+        row:setId(tostring(group.leaderId or 0))
+
+        local name = group.leaderName or tostring(group.leaderId or "")
+        local slots = ""
+        if group.teamSlots and group.teamSlots > 0 then
+            slots = " (" .. tostring(group.membersCount or 0) .. "/" .. tostring(group.teamSlots) .. ")"
+        else
+            slots = " (" .. tostring(group.membersCount or 0) .. ")"
+        end
+
+        local rangeText = ""
+        if (group.minLevel and group.maxLevel) and (group.minLevel ~= 0 or group.maxLevel ~= 0) then
+            rangeText = " Lv " .. tostring(group.minLevel) .. "-" .. tostring(group.maxLevel)
+        end
+
+        row.name:setText(name .. slots .. rangeText)
+
+        local status = group.status or 0
+        if status == 0 then
+            row.actionButton:setText(tr("Solicitar"))
+            row.actionButton.onClick = function()
+                g_game.publicGroupsRequestJoin(group.leaderId)
+            end
+        else
+            row.actionButton:setText(tr("Cancelar"))
+            row.actionButton.onClick = function()
+                g_game.publicGroupsCancelRequest(group.leaderId)
+            end
+        end
+    end
+end
+
+function onPublicGroupsList(exceeded, groups)
+    publicGroups = groups or {}
+    updatePublicGroupsUI()
+    if exceeded then
+        g_logger.warn("Public groups list exceeded rate limit.")
+    end
+end
+
+updatePublicGroupButton = function()
+    if ui.publicGroupButton then
+        if publicGroupPublished then
+            ui.publicGroupButton:setText(tr("Remover Publico"))
+        else
+            ui.publicGroupButton:setText(tr("Publicar Grupo"))
+        end
+    end
+end
+
+function togglePublicGroup()
+    local player = g_game.getLocalPlayer()
+    if not player or not player:isPartyLeader() then return end
+
+    if publicGroupPublished then
+        g_game.publicGroupUnpublish()
+        publicGroupPublished = false
+        updatePublicGroupButton()
+        return
+    end
+
+    local partySize = #currentMembers
+    if partySize < 1 then
+        partySize = 1
+    end
+
+    local teamSlots = math.max(partySize, 5)
+    local freeSlots = math.max(0, teamSlots - partySize)
+    local timestamp = os.time()
+
+    g_game.publicGroupPublish(0, 0, 0, teamSlots, freeSlots, true, timestamp, 0, 0, 0, 0, 0)
+    publicGroupPublished = true
+    updatePublicGroupButton()
+end
+
+function onPublicGroupLeaderInfo(info, members)
+    publicGroupPublished = true
+    updatePublicGroupButton()
+end
+
+function onPublicGroupLeaderReset()
+    publicGroupPublished = false
+    updatePublicGroupButton()
+end
+
 function createPrivateParty()
     g_game.partyCreate()
 end
@@ -455,11 +605,13 @@ function resetPartyState()
         table.clear(outgoingInvites)
         table.clear(currentMembers)
         table.clear(currentMembersById)
+        table.clear(publicGroups)
     else
         incomingInvites = {}
         outgoingInvites = {}
         currentMembers = {}
         currentMembersById = {}
+        publicGroups = {}
     end
 end
 
@@ -485,6 +637,20 @@ function onEnd()
             ui.noInvitesLabel:setVisible(true)
         end
     end
+
+    publicGroupsOpen = false
+    publicGroups = {}
+    publicGroupPublished = false
+    if ui.publicGroupsPanel then
+        ui.publicGroupsPanel:setVisible(false)
+    end
+    if ui.publicGroupsList then
+        ui.publicGroupsList:destroyChildren()
+    end
+    if ui.noPublicGroupsLabel then
+        ui.noPublicGroupsLabel:setVisible(true)
+    end
+    updatePublicGroupButton()
 
     vocTooltipCache = {} -- 7. Clear tooltip cache
 end
@@ -610,6 +776,12 @@ function onPartyDetailedInfo(partyId, leaderId, members)
             end
         end
         updatePartyList()
+    end
+
+    if hasParty and publicGroupsOpen then
+        publicGroupsOpen = false
+        if ui.publicGroupsPanel then ui.publicGroupsPanel:setVisible(false) end
+        if ui.invitesPanel then ui.invitesPanel:setVisible(true) end
     end
 
     if not hasParty then

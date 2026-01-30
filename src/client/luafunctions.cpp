@@ -278,6 +278,11 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "partyPassLeadership", &Game::partyPassLeadership, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyLeave", &Game::partyLeave, &g_game);
     g_lua.bindSingletonFunction("g_game", "partyShareExperience", &Game::partyShareExperience, &g_game);
+    g_lua.bindSingletonFunction("g_game", "publicGroupsRequestList", &Game::publicGroupsRequestList, &g_game);
+    g_lua.bindSingletonFunction("g_game", "publicGroupsRequestJoin", &Game::publicGroupsRequestJoin, &g_game);
+    g_lua.bindSingletonFunction("g_game", "publicGroupsCancelRequest", &Game::publicGroupsCancelRequest, &g_game);
+    g_lua.bindSingletonFunction("g_game", "publicGroupPublish", &Game::publicGroupPublish, &g_game);
+    g_lua.bindSingletonFunction("g_game", "publicGroupUnpublish", &Game::publicGroupUnpublish, &g_game);
     g_lua.bindSingletonFunction("g_game", "sendPartyAnalyzerReset", &Game::sendPartyAnalyzerReset, &g_game);
     g_lua.bindSingletonFunction("g_game", "sendPartyAnalyzerPriceType", &Game::sendPartyAnalyzerPriceType, &g_game);
     g_lua.bindSingletonFunction("g_game", "sendPartyAnalyzerPriceValue", &Game::sendPartyAnalyzerPriceValue, &g_game);

@@ -417,6 +417,21 @@ void Game::processPartyMemberUpdate(const PartyDetailedMember& member)
     g_lua.callGlobalField("g_game", "onPartyMemberUpdate", member);
 }
 
+void Game::processPublicGroupsList(const bool exceeded, const std::vector<PublicGroupEntry>& groups)
+{
+    g_lua.callGlobalField("g_game", "onPublicGroupsList", exceeded, groups);
+}
+
+void Game::processPublicGroupLeaderInfo(const PublicGroupLeaderInfo& info, const std::vector<PublicGroupMember>& members)
+{
+    g_lua.callGlobalField("g_game", "onPublicGroupLeaderInfo", info, members);
+}
+
+void Game::processPublicGroupLeaderReset()
+{
+    g_lua.callGlobalField("g_game", "onPublicGroupLeaderReset");
+}
+
 void Game::processTutorialHint(const uint8_t id)
 {
     g_lua.callGlobalField("g_game", "onTutorialHint", id);
@@ -1209,6 +1224,46 @@ void Game::partyShareExperience(const bool active)
         return;
 
     m_protocolGame->sendShareExperience(active);
+}
+
+void Game::publicGroupsRequestList()
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendMemberFinderListRequest();
+}
+
+void Game::publicGroupsRequestJoin(const uint32_t leaderId)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendMemberFinderJoin(leaderId);
+}
+
+void Game::publicGroupsCancelRequest(const uint32_t leaderId)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendMemberFinderCancel(leaderId);
+}
+
+void Game::publicGroupPublish(const uint16_t minLevel, const uint16_t maxLevel, const uint8_t vocationIds, const uint16_t teamSlots, const uint16_t freeSlots, const bool partyBool, const uint32_t timestamp, const uint8_t teamType, const uint16_t bossId, const uint16_t huntType, const uint16_t huntArea, const uint16_t questId)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendLeaderFinderCreate(minLevel, maxLevel, vocationIds, teamSlots, freeSlots, partyBool, timestamp, teamType, bossId, huntType, huntArea, questId);
+}
+
+void Game::publicGroupUnpublish()
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendLeaderFinderReset();
 }
 
 void Game::onPartyInvite(uint32_t leaderId, const std::string& leaderName, uint16_t minLevel, uint16_t maxLevel)
