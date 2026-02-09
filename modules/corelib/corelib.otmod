@@ -12,7 +12,6 @@ Module
     dofile 'base64'
     dofile 'bitwise'
     dofile 'struct'
-    dofile 'base64'
 
     dofile 'const'
     dofile 'util'

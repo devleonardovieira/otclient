@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,6 @@
 
 #include "connection.h"
 
-#include "framework/util/stats.h"
 #include "framework/core/graphicalapplication.h"
 
 asio::io_service g_ioService;
@@ -48,8 +47,7 @@ Connection::~Connection()
 
 void Connection::poll()
 {
-	// reset must always be called prior to poll
-	AutoStat s(STATS_MAIN, "PollConnection");
+    // reset must always be called prior to poll
     g_ioService.reset();
     g_ioService.poll();
 }

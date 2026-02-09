@@ -435,7 +435,3 @@ DisplayRunIn                 = 18
 DisplayContents              = 19
 DisplayInitial               = 20
 DisplayInherit               = 21
-
-EVENT_TEXT_NONE = 0
-EVENT_TEXT_CLICK = 1
-EVENT_TEXT_HOVER = 2

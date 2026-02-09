@@ -25,7 +25,6 @@
 #include "x11window.h"
 #include <framework/core/resourcemanager.h>
 #include <framework/core/eventdispatcher.h>
-#include <framework/util/stats.h>
 #include <framework/graphics/image.h>
 #include <unistd.h>
 
@@ -600,7 +599,6 @@ void X11Window::maximize()
 
 void X11Window::poll()
 {
-    AutoStat s(STATS_RENDER, "PollWindow");
     bool needsResizeUpdate = false;
 
     XEvent event, peekEvent;

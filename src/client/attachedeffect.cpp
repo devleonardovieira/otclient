@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -80,8 +80,7 @@ void AttachedEffect::draw(const Point& dest, const bool isOnTop, LightView* ligh
     if (m_transform)
         return;
 
-    auto* thingType = getThingType();
-    if (m_texture != nullptr || thingType != nullptr) {
+    if (m_texture != nullptr || getThingType() != nullptr) {
         const auto& dirControl = m_offsetDirections[m_direction];
         if (dirControl.onTop != isOnTop)
             return;
@@ -96,28 +95,17 @@ void AttachedEffect::draw(const Point& dest, const bool isOnTop, LightView* ligh
                 return;
         }
 
-        // Check if the thing type can actually be drawn before setting opacity/shader
-        // This prevents stale state from affecting subsequent draws when this effect
-        // returns early due to missing texture or invalid state
-        if (!m_texture && thingType && (thingType->isNull() || thingType->getAnimationPhases() == 0))
-            return;
-
+        if (m_shader) g_drawPool.setShaderProgram(m_shader, true);
+        if (m_opacity < 100) g_drawPool.setOpacity(getOpacity(), true);
 
         const auto scaleFactor = g_drawPool.getScaleFactor();
 
-        // Only set shader, opacity, pulse and fade when actually drawing things
-        // to prevent stale state from affecting subsequent draws
-        if (drawThing) {
-            if (m_shader) g_drawPool.setShaderProgram(m_shader, true);
-            if (m_opacity < 100) g_drawPool.setOpacity(getOpacity(), true);
+        if (m_pulse.height > 0 && m_pulse.speed > 0) {
+            g_drawPool.setScaleFactor(scaleFactor + getBounce(m_pulse) / 100.f);
+        }
 
-            if (m_pulse.height > 0 && m_pulse.speed > 0) {
-                g_drawPool.setScaleFactor(scaleFactor + getBounce(m_pulse) / 100.f);
-            }
-
-            if (m_fade.height > 0 && m_fade.speed > 0) {
-                g_drawPool.setOpacity(std::clamp<float>(getBounce(m_fade) / 100.f, 0, 1.f));
-            }
+        if (m_fade.height > 0 && m_fade.speed > 0) {
+            g_drawPool.setOpacity(std::clamp<float>(getBounce(m_fade) / 100.f, 0, 1.f));
         }
 
         auto point = dest - (dirControl.offset * g_drawPool.getScaleFactor());
@@ -146,19 +134,17 @@ void AttachedEffect::draw(const Point& dest, const bool isOnTop, LightView* ligh
                 g_drawPool.addTexturedRect(Rect(point, size), texture, rect, Color::white);
             }
         } else {
-            thingType->draw(point, 0, m_direction, 0, 0, animation, Color::white, drawThing, lightView);
+            getThingType()->draw(point, 0, m_direction, 0, 0, animation, Color::white, drawThing, lightView);
         }
 
         g_drawPool.setDrawOrder(lastDrawOrder);
 
-        if (drawThing) {
-            if (m_pulse.height > 0 && m_pulse.speed > 0) {
-                g_drawPool.setScaleFactor(scaleFactor);
-            }
+        if (m_pulse.height > 0 && m_pulse.speed > 0) {
+            g_drawPool.setScaleFactor(scaleFactor);
+        }
 
-            if (m_fade.height > 0 && m_fade.speed > 0) {
-                g_drawPool.resetOpacity();
-            }
+        if (m_fade.height > 0 && m_fade.speed > 0) {
+            g_drawPool.resetOpacity();
         }
     }
 

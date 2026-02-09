@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,7 +57,6 @@ void DrawPool::add(const Color& color, const TexturePtr& texture, DrawMethod&& m
 
     if (texture) {
         if (!method.src.isValid() && (!coordsBuffer || coordsBuffer->size() == 0)) {
-            resetOnlyOnceParameters();
             return; // invalid draw: texture has no source rect and no vertex coordinates
         }
 
@@ -73,10 +72,8 @@ void DrawPool::add(const Color& color, const TexturePtr& texture, DrawMethod&& m
         }
     }
 
-    if (!updateHash(method, textureAtlas ? textureAtlas : texture.get(), color, coordsBuffer != nullptr)) {
-        resetOnlyOnceParameters();
+    if (!updateHash(method, textureAtlas ? textureAtlas : texture.get(), color, coordsBuffer != nullptr))
         return;
-    }
 
     auto& list = m_objects[m_currentDrawOrder];
     auto& state = getCurrentState();
@@ -197,52 +194,35 @@ DrawPool::PoolState DrawPool::getState(const TexturePtr& texture, Texture* textu
 
     return copy;
 }
+
 void DrawPool::setCompositionMode(const CompositionMode mode, const bool onlyOnce)
 {
-    if (onlyOnce && !(m_onlyOnceStateFlag & STATE_COMPOSITE_MODE)) {
-        m_previousCompositionMode = getCurrentState().compositionMode;
-        m_onlyOnceStateFlag |= STATE_COMPOSITE_MODE;
-    }
     getCurrentState().compositionMode = mode;
+    if (onlyOnce) m_onlyOnceStateFlag |= STATE_COMPOSITE_MODE;
 }
 
 void DrawPool::setBlendEquation(const BlendEquation equation, const bool onlyOnce)
 {
-    if (onlyOnce && !(m_onlyOnceStateFlag & STATE_BLEND_EQUATION)) {
-        m_previousBlendEquation = getCurrentState().blendEquation;
-        m_onlyOnceStateFlag |= STATE_BLEND_EQUATION;
-    }
     getCurrentState().blendEquation = equation;
+    if (onlyOnce) m_onlyOnceStateFlag |= STATE_BLEND_EQUATION;
 }
 
 void DrawPool::setClipRect(const Rect& clipRect, const bool onlyOnce)
 {
-    if (onlyOnce && !(m_onlyOnceStateFlag & STATE_CLIP_RECT)) {
-        m_previousClipRect = getCurrentState().clipRect;
-        m_onlyOnceStateFlag |= STATE_CLIP_RECT;
-    }
     getCurrentState().clipRect = clipRect;
+    if (onlyOnce) m_onlyOnceStateFlag |= STATE_CLIP_RECT;
 }
 
 void DrawPool::setOpacity(const float opacity, const bool onlyOnce)
 {
-    if (onlyOnce && !(m_onlyOnceStateFlag & STATE_OPACITY)) {
-        m_previousOpacity = getCurrentState().opacity;
-        m_onlyOnceStateFlag |= STATE_OPACITY;
-    }
     getCurrentState().opacity = opacity;
+    if (onlyOnce) m_onlyOnceStateFlag |= STATE_OPACITY;
 }
 
 void DrawPool::setShaderProgram(const PainterShaderProgramPtr& shaderProgram, const bool onlyOnce, const std::function<void()>& action)
 {
     if (g_painter->isReplaceColorShader(getCurrentState().shaderProgram))
         return;
-
-    if (onlyOnce && !(m_onlyOnceStateFlag & STATE_SHADER_PROGRAM)) {
-        m_previousShaderProgram = getCurrentState().shaderProgram;
-        m_previousShaderAction = getCurrentState().action;
-        m_onlyOnceStateFlag |= STATE_SHADER_PROGRAM;
-    }
 
     if (shaderProgram) {
         if (!g_painter->isReplaceColorShader(shaderProgram.get()))
@@ -254,6 +234,8 @@ void DrawPool::setShaderProgram(const PainterShaderProgramPtr& shaderProgram, co
         getCurrentState().shaderProgram = nullptr;
         getCurrentState().action = nullptr;
     }
+
+    if (onlyOnce) m_onlyOnceStateFlag |= STATE_SHADER_PROGRAM;
 }
 
 void DrawPool::resetState()
@@ -286,8 +268,6 @@ void DrawPool::release() {
     }
 
     m_refreshTimer.restart();
-
-    SpinLock::Guard guard(m_threadLock);
 
     m_objectsDraw[0].clear();
 
@@ -329,7 +309,7 @@ void DrawPool::release() {
         }
     }
 
-    m_shouldRepaint.store(true, std::memory_order_relaxed);
+    m_shouldRepaint.store(true, std::memory_order_release);
 }
 
 void DrawPool::flush()
@@ -479,18 +459,13 @@ void DrawPool::bindFrameBuffer(const Size& size, const Color& color)
 }
 void DrawPool::releaseFrameBuffer(const Rect& dest)
 {
-    releaseFrameBuffer(dest, 0);
-}
-
-void DrawPool::releaseFrameBuffer(const Rect& dest, uint8_t flipDirection)
-{
     backState();
 
-    addAction([this, dest, flipDirection, frameIndex = m_bindedFramebuffers, drawState = getCurrentState()] {
+    addAction([this, dest, frameIndex = m_bindedFramebuffers, drawState = getCurrentState()] {
         const auto& frame = getTemporaryFrameBuffer(frameIndex);
         frame->release();
         drawState.execute(this);
-        frame->draw(dest, flipDirection);
+        frame->draw(dest);
     });
 
     if (hasFrameBuffer() && !dest.isNull()) m_hashCtrl.put(dest.hash());

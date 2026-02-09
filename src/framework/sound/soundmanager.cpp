@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,6 @@
 #include "framework/core/clock.h"
 #include "framework/core/garbagecollection.h"
 #include "framework/core/resourcemanager.h"
-#include "framework/util/stats.h"
 
 using namespace otclient::protobuf;
 
@@ -99,7 +98,6 @@ void SoundManager::terminate()
 
 void SoundManager::poll()
 {
-    AutoStat s(STATS_MAIN, "PollSounds");
     static ticks_t lastUpdate = 0;
     static uint_fast8_t soundsErased = 0;
 
