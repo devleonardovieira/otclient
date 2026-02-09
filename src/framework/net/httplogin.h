@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,18 +49,21 @@ public:
                    uint16_t port, const std::string& email,
                    const std::string& password, const std::string& apiKey,
                    int request_id, bool httpLogin);
+                    const std::string& password, int request_id, bool httpLogin, const std::string& token);
 
     httplib::Result loginHttpsJson(const std::string& host,
                                    const std::string& path, uint16_t port,
                                    const std::string& email,
                                    const std::string& password,
-                                   const std::string& apiKey);
+                                   const std::string& apiKey;
+                                   const std::string& token);
 
     httplib::Result loginHttpJson(const std::string& host,
                                   const std::string& path, uint16_t port,
                                   const std::string& email,
                                   const std::string& password,
-                                  const std::string& apiKey);
+                                  const std::string& apiKey;
+                                  const std::string& token);
 
     void cancel();
 

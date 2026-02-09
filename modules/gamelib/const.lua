@@ -229,6 +229,8 @@ GameMapCache = 125
 GameForgeSkillStats = 126
 GameCharacterSkillStats = 127
 GameCreaturePaperdoll = 128
+GameMultiSpr = 129
+GameVocationMonk = 130
 
 TextColors = {
     red = '#f55e5e',    -- '#c83200'
@@ -444,6 +446,8 @@ ResourceTypes = {
     LESSER_GEMS = 81,
     REGULAR_GEMS = 82,
     GREATER_GEMS = 83,
+    LESSER_FRAGMENTS = 84,
+    GREATER_FRAGMENTS = 85,
     WHEEL_OF_DESTINY = 86,
     COIN_NORMAL = 90,
     COIN_TRANSFERRABLE = 91,
@@ -497,3 +501,9 @@ PARTYANALYZERACTION_PRICETYPE = 1
 PARTYANALYZERACTION_PRICEVALUE = 2
 
 -- @}
+
+FlipDirection = {
+    None = 0,
+    Horizontal = 1,
+    Vertical = 2,
+}
