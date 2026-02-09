@@ -1196,6 +1196,16 @@ function g_game.requestHighscore(action, category, vocation, world, worldType, b
 ---@param isOpen? boolean false
 function g_game.imbuementDurations(isOpen) end
 
+---@param isOpen? boolean false
+function g_game.imbuementDurations(isOpen) end
+
+---@param playerId integer
+function g_game.openWheelOfDestiny(playerId) end
+
+---@param wheelPoints table<integer, integer>
+---@param activeGems table<integer, integer>
+function g_game.applyWheelOfDestiny(wheelPoints, activeGems) end
+
 ---@param variant integer
 ---@param item ItemPtr
 function g_game.sendQuickLoot(variant, item) end
@@ -3555,6 +3565,7 @@ function g_logger.getLevel() end
 ---@class LoginHttp
 LoginHttp = {}
 
+---@return LoginHttp
 function LoginHttp.create() end
 
 ---@param host string
@@ -3562,9 +3573,10 @@ function LoginHttp.create() end
 ---@param port integer
 ---@param email string
 ---@param password string
+---@param token string
 ---@param requestId integer
 ---@param httpLogin boolean
-function LoginHttp:httpLogin(host, path, port, email, password, apiKey, requestId, httpLogin) end
+function LoginHttp:httpLogin(host, path, port, email, password, token, requestId, httpLogin) end
 
 --------------------------------
 ------------ g_http ------------
