@@ -92,6 +92,57 @@ PartySentInviteRow < Panel
     color: white
     background-color: #d3452e
 
+PartyLootRow < Panel
+  height: 28
+  margin-left: 0
+  margin-right: 0
+  layout: horizontalBox
+
+  Label
+    id: name
+    width: 135
+    height: 28
+    text-auto-resize: false
+    text-align: left
+    color: white
+    font: verdana-11px-rounded
+
+  Label
+    id: loot
+    width: 70
+    height: 28
+    text-auto-resize: false
+    text-align: right
+    color: #e0c060
+    font: verdana-11px-rounded
+
+  Label
+    id: supply
+    width: 70
+    height: 28
+    text-auto-resize: false
+    text-align: right
+    color: #a0c0ff
+    font: verdana-11px-rounded
+
+  Label
+    id: damage
+    width: 70
+    height: 28
+    text-auto-resize: false
+    text-align: right
+    color: #ff9b8a
+    font: verdana-11px-rounded
+
+  Label
+    id: healing
+    width: 70
+    height: 28
+    text-auto-resize: false
+    text-align: right
+    color: #9bffb0
+    font: verdana-11px-rounded
+
 PublicGroupRow < Panel
   height: 40
   margin-left: 20
@@ -117,7 +168,7 @@ PublicGroupRow < Panel
 MainWindow
   id: partyWindow
   text: Party
-  size: 550 400
+  size: 700 400
   @onEscape: self:hide()
 
   Panel
@@ -354,6 +405,92 @@ MainWindow
         step: 14
         pixels-scroll: true
 
+      Panel
+        id: lootPanel
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: leaveButton.top
+        margin-bottom: 20
+        visible: false
+
+        Panel
+          id: lootHeader
+          anchors.top: parent.top
+          anchors.left: parent.left
+          anchors.right: lootListScrollBar.left
+          margin-left: 10
+          margin-right: 4
+          height: 20
+          layout:
+            type: horizontalBox
+
+          Label
+            id: lootHeaderName
+            !text: tr('Nome')
+            width: 135
+            height: 20
+            text-align: left
+            color: #888888
+            font: verdana-11px-rounded
+
+          Label
+            id: lootHeaderLoot
+            !text: tr('Loot')
+            width: 70
+            height: 20
+            text-align: right
+            color: #888888
+            font: verdana-11px-rounded
+
+          Label
+            id: lootHeaderSupply
+            !text: tr('Suprimento')
+            width: 70
+            height: 20
+            text-align: right
+            color: #888888
+            font: verdana-11px-rounded
+
+          Label
+            id: lootHeaderDamage
+            !text: tr('Dano')
+            width: 70
+            height: 20
+            text-align: right
+            color: #888888
+            font: verdana-11px-rounded
+
+          Label
+            id: lootHeaderHealing
+            !text: tr('Cura')
+            width: 70
+            height: 20
+            text-align: right
+            color: #888888
+            font: verdana-11px-rounded
+
+        ScrollablePanel
+          id: lootList
+          anchors.top: lootHeader.bottom
+          anchors.left: parent.left
+          anchors.right: lootListScrollBar.left
+          anchors.bottom: parent.bottom
+          margin-left: 10
+          margin-right: 4
+          vertical-scrollbar: lootListScrollBar
+          layout:
+            type: verticalBox
+            spacing: 2
+
+        VerticalScrollBar
+          id: lootListScrollBar
+          anchors.top: parent.top
+          anchors.bottom: parent.bottom
+          anchors.right: parent.right
+          step: 14
+          pixels-scroll: true
+
       ButtonRedBase
         id: leaveButton
         !text: tr('Sair do Grupo')
@@ -373,7 +510,7 @@ MainWindow
         anchors.top: leaveButton.top
         anchors.left: leaveButton.right
         margin-left: 10
-        width: 140
+        width: 130
         height: 30
         color: white
         @onClick: modules.game_party.invitePlayer()
@@ -384,19 +521,10 @@ MainWindow
         anchors.top: leaveButton.top
         anchors.left: invitePlayerButton.right
         margin-left: 10
-        width: 140
+        width: 130
         height: 30
         color: white
         @onClick: modules.game_party.togglePublicGroup()
-
-      Label
-        id: commonLabel
-        !text: tr('Common')
-        anchors.verticalCenter: leaveButton.verticalCenter
-        anchors.right: parent.right
-        margin-right: 20
-        font: verdana-11px-rounded
-        text-auto-resize: true
 
       Panel
         id: footerOptions

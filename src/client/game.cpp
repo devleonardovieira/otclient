@@ -1266,6 +1266,22 @@ void Game::publicGroupUnpublish()
     m_protocolGame->sendLeaderFinderReset();
 }
 
+void Game::publicGroupAcceptRequest(const uint32_t memberId)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendLeaderFinderUpdateMember(memberId, 3);
+}
+
+void Game::publicGroupDenyRequest(const uint32_t memberId)
+{
+    if (!canPerformGameAction())
+        return;
+
+    m_protocolGame->sendLeaderFinderUpdateMember(memberId, 4);
+}
+
 void Game::onPartyInvite(uint32_t leaderId, const std::string& leaderName, uint16_t minLevel, uint16_t maxLevel)
 {
     g_lua.callGlobalField("g_game", "onPartyInvite", leaderId, leaderName, minLevel, maxLevel);

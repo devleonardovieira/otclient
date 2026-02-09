@@ -255,6 +255,8 @@ public:
     void publicGroupsCancelRequest(uint32_t leaderId);
     void publicGroupPublish(uint16_t minLevel, uint16_t maxLevel, uint8_t vocationIds, uint16_t teamSlots, uint16_t freeSlots, bool partyBool, uint32_t timestamp, uint8_t teamType, uint16_t bossId, uint16_t huntType, uint16_t huntArea, uint16_t questId);
     void publicGroupUnpublish();
+    void publicGroupAcceptRequest(uint32_t memberId);
+    void publicGroupDenyRequest(uint32_t memberId);
 
     // outfit related
     void requestOutfit();

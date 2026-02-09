@@ -26,8 +26,15 @@ local outgoingInvites = {} -- creatureId -> {name, id} (Invites SENT)
 local publicGroups = {}
 local publicGroupsOpen = false
 local publicGroupPublished = false
+local publicGroupRequests = {}
 
 local updatePublicGroupButton
+local setManagementTab
+local updateLootTypeLabel
+local activeManagementTab = "group"
+
+local partyAnalyzerData = {}
+local partyAnalyzerLootType = 0
 
 local ui = {} -- 4. UI Cache
 
@@ -181,6 +188,28 @@ local function updatePartyMembers()
         ordered[#ordered + 1] = row
     end
 
+    -- 3. Render Public Group Requests (Leader)
+    if isLeader and publicGroupRequests and #publicGroupRequests > 0 then
+        for _, req in ipairs(publicGroupRequests) do
+            local rowId = 'request_' .. req.id
+            desired[rowId] = true
+            local row = ui.membersList:getChildById(rowId)
+            if not row then
+                row = g_ui.createWidget('PartyInviteRow', ui.membersList)
+                row:setId(rowId)
+            end
+
+            row.name:setText(tr('%s (pedido publico)', req.name))
+            row.acceptButton.onClick = function()
+                g_game.publicGroupAcceptRequest(req.id)
+            end
+            row.rejectButton.onClick = function()
+                g_game.publicGroupDenyRequest(req.id)
+            end
+            ordered[#ordered + 1] = row
+        end
+    end
+
     local total = ui.membersList:getChildCount()
     if ui.membersList.reorderChildren and total == #ordered then
         ui.membersList:reorderChildren(ordered)
@@ -243,10 +272,10 @@ local function updatePartyMembers()
         end
     end
 
-    -- Only destroy party rows (member_/invite_) that are no longer desired.
+    -- Only destroy party rows (member_/invite_/request_) that are no longer desired.
     for _, child in ipairs(ui.membersList:getChildren()) do
         local id = child:getId()
-        local isPartyRow = id and (string.sub(id, 1, 7) == 'member_' or string.sub(id, 1, 7) == 'invite_')
+        local isPartyRow = id and (string.sub(id, 1, 7) == 'member_' or string.sub(id, 1, 7) == 'invite_' or string.sub(id, 1, 8) == 'request_')
         if isPartyRow and not desired[id] then
             child:destroy()
         end
@@ -322,12 +351,21 @@ function init()
 
         -- 4. UI Cache
         ui.membersList = partyWindow:recursiveGetChildById('membersList')
+        ui.membersListScrollBar = partyWindow:recursiveGetChildById('membersListScrollBar')
         ui.invitesPanel = partyWindow:recursiveGetChildById('invitesPanel')
         ui.invitesList = ui.invitesPanel and ui.invitesPanel:recursiveGetChildById('invitesList')
         ui.noInvitesLabel = ui.invitesPanel and ui.invitesPanel:recursiveGetChildById('noInvitesLabel')
         ui.creationPanel = partyWindow:recursiveGetChildById('creationPanel')
         ui.managementPanel = partyWindow:recursiveGetChildById('managementPanel')
         ui.invitePlayerButton = partyWindow:recursiveGetChildById('invitePlayerButton')
+        ui.groupButton = partyWindow:recursiveGetChildById('groupButton')
+        ui.lootButton = partyWindow:recursiveGetChildById('lootButton')
+        ui.groupIndicator = partyWindow:recursiveGetChildById('groupIndicator')
+        ui.lootPanel = partyWindow:recursiveGetChildById('lootPanel')
+        ui.lootHeader = ui.lootPanel and ui.lootPanel:recursiveGetChildById('lootHeader')
+        ui.lootList = ui.lootPanel and ui.lootPanel:recursiveGetChildById('lootList')
+        ui.lootListScrollBar = ui.lootPanel and ui.lootPanel:recursiveGetChildById('lootListScrollBar')
+        ui.lootValue = partyWindow:recursiveGetChildById('lootValue')
         ui.publicGroupsButton = partyWindow:recursiveGetChildById('publicGroupsButton')
         ui.publicGroupsPanel = partyWindow:recursiveGetChildById('publicGroupsPanel')
         ui.publicGroupsList = ui.publicGroupsPanel and ui.publicGroupsPanel:recursiveGetChildById('publicGroupsList')
@@ -348,6 +386,16 @@ function init()
     if ui.closePublicGroupsButton then
         ui.closePublicGroupsButton.onClick = closePublicGroups
     end
+    if ui.groupButton then
+        ui.groupButton.onMouseRelease = function()
+            setManagementTab("group")
+        end
+    end
+    if ui.lootButton then
+        ui.lootButton.onMouseRelease = function()
+            setManagementTab("loot")
+        end
+    end
 
     if window.player and window.player.menuButton then
         window.player.menuButton.onClick = togglePartyWindow
@@ -362,7 +410,7 @@ function init()
         window:setPosition({x = 217, y = 72})
     end
 
-    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite, onPublicGroupsList = onPublicGroupsList, onPublicGroupLeaderInfo = onPublicGroupLeaderInfo, onPublicGroupLeaderReset = onPublicGroupLeaderReset })
+    connect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite, onPublicGroupsList = onPublicGroupsList, onPublicGroupLeaderInfo = onPublicGroupLeaderInfo, onPublicGroupLeaderReset = onPublicGroupLeaderReset, onPartyAnalyzer = onPartyAnalyzer })
     connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
     -- removed dead code: updateUltimateBar registration
 
@@ -372,7 +420,7 @@ function init()
 end
 
 function terminate()
-    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite, onPublicGroupsList = onPublicGroupsList, onPublicGroupLeaderInfo = onPublicGroupLeaderInfo, onPublicGroupLeaderReset = onPublicGroupLeaderReset })
+    disconnect(g_game, { onGameStart = onStart, onGameEnd = onEnd, onPartyDetailedInfo = onPartyDetailedInfo, onPartyMemberUpdate = onPartyMemberUpdate, onPartyInvite = onPartyInvite, onPartyManageInvite = onPartyManageInvite, onPublicGroupsList = onPublicGroupsList, onPublicGroupLeaderInfo = onPublicGroupLeaderInfo, onPublicGroupLeaderReset = onPublicGroupLeaderReset, onPartyAnalyzer = onPartyAnalyzer })
     disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange, onSpecialResourceChange = onSpecialResourceChange, onShieldChange = onShieldChange })
 
     local settings = { pos = window:getPosition() }
@@ -423,6 +471,7 @@ function updatePartyWindowView(hasParty)
             ui.publicGroupButton:setVisible(isLeader)
         end
         updatePublicGroupButton()
+        setManagementTab(activeManagementTab)
     else
         if creationPanel then creationPanel:setVisible(true) end
         if managementPanel then managementPanel:setVisible(false) end
@@ -474,6 +523,100 @@ function updatePartyWindowView(hasParty)
 
     if noInvitesLabel then
         noInvitesLabel:setVisible(ui.invitesList:getChildCount() == 0)
+    end
+end
+
+local function formatNumber(value)
+    value = tonumber(value) or 0
+    local s = tostring(math.floor(value))
+    local k
+    while true do
+        s, k = s:gsub("^(-?%d+)(%d%d%d)", "%1.%2")
+        if k == 0 then break end
+    end
+    return s
+end
+
+setManagementTab = function(tab)
+    activeManagementTab = tab or "group"
+    local showGroup = activeManagementTab == "group"
+    local showLoot = activeManagementTab == "loot"
+
+    if ui.membersList then ui.membersList:setVisible(showGroup) end
+    if ui.membersListScrollBar then ui.membersListScrollBar:setVisible(showGroup) end
+    if ui.lootPanel then ui.lootPanel:setVisible(showLoot) end
+    if ui.lootHeader then ui.lootHeader:setVisible(showLoot) end
+    if ui.lootList then ui.lootList:setVisible(showLoot) end
+    if ui.lootListScrollBar then ui.lootListScrollBar:setVisible(showLoot) end
+
+    if ui.groupButton then ui.groupButton:setColor(showGroup and "#FFFFFF" or "#888888") end
+    if ui.lootButton then ui.lootButton:setColor(showLoot and "#FFFFFF" or "#888888") end
+    if ui.groupIndicator then ui.groupIndicator:setVisible(showGroup) end
+
+    if showLoot then
+        updateLootPanel()
+    end
+end
+
+updateLootTypeLabel = function()
+    if not ui.lootValue then return end
+    if partyAnalyzerLootType == 1 then
+        ui.lootValue:setText(tr("Lider"))
+    else
+        ui.lootValue:setText(tr("Mercado"))
+    end
+end
+
+function updateLootPanel()
+    if not ui.lootList then return end
+    ui.lootList:destroyChildren()
+
+    updateLootTypeLabel()
+
+    for _, entry in ipairs(partyAnalyzerData) do
+        local row = g_ui.createWidget('PartyLootRow', ui.lootList)
+        row.name:setText(entry.name)
+        row.loot:setText(formatNumber(entry.loot))
+        row.supply:setText(formatNumber(entry.supply))
+        row.damage:setText(formatNumber(entry.damage))
+        row.healing:setText(formatNumber(entry.healing))
+    end
+end
+
+function onPartyAnalyzer(startTime, leaderId, lootType, membersData, membersName)
+    partyAnalyzerLootType = lootType or 0
+    local nameMap = {}
+    if membersName then
+        for _, n in ipairs(membersName) do
+            nameMap[n.memberID] = n.memberName
+        end
+    end
+
+    partyAnalyzerData = {}
+    if membersData then
+        for _, m in ipairs(membersData) do
+            local name = nameMap[m.memberID]
+            if not name and currentMembersById[m.memberID] then
+                name = currentMembersById[m.memberID].name
+            end
+            if not name then
+                name = tostring(m.memberID)
+            end
+            partyAnalyzerData[#partyAnalyzerData + 1] = {
+                id = m.memberID,
+                name = name,
+                loot = m.loot or 0,
+                supply = m.supply or 0,
+                damage = m.damage or 0,
+                healing = m.healing or 0
+            }
+        end
+    end
+
+    if ui.lootPanel and ui.lootPanel:isVisible() then
+        updateLootPanel()
+    else
+        updateLootTypeLabel()
     end
 end
 
@@ -587,11 +730,27 @@ end
 
 function onPublicGroupLeaderInfo(info, members)
     publicGroupPublished = true
+
+    publicGroupRequests = {}
+    if members then
+        for _, member in ipairs(members) do
+            if member.status == 1 or member.status == 2 then
+                publicGroupRequests[#publicGroupRequests + 1] = {
+                    id = member.id,
+                    name = member.name or tostring(member.id)
+                }
+            end
+        end
+    end
+
+    updatePartyList()
     updatePublicGroupButton()
 end
 
 function onPublicGroupLeaderReset()
     publicGroupPublished = false
+    publicGroupRequests = {}
+    updatePartyList()
     updatePublicGroupButton()
 end
 
@@ -606,13 +765,18 @@ function resetPartyState()
         table.clear(currentMembers)
         table.clear(currentMembersById)
         table.clear(publicGroups)
+        table.clear(partyAnalyzerData)
+        table.clear(publicGroupRequests)
     else
         incomingInvites = {}
         outgoingInvites = {}
         currentMembers = {}
         currentMembersById = {}
         publicGroups = {}
+        partyAnalyzerData = {}
+        publicGroupRequests = {}
     end
+    activeManagementTab = "group"
 end
 
 function leaveParty()
@@ -641,6 +805,7 @@ function onEnd()
     publicGroupsOpen = false
     publicGroups = {}
     publicGroupPublished = false
+    publicGroupRequests = {}
     if ui.publicGroupsPanel then
         ui.publicGroupsPanel:setVisible(false)
     end
@@ -652,6 +817,14 @@ function onEnd()
     end
     updatePublicGroupButton()
 
+    partyAnalyzerData = {}
+    partyAnalyzerLootType = 0
+    if ui.lootList then
+        ui.lootList:destroyChildren()
+    end
+    updateLootTypeLabel()
+    activeManagementTab = "group"
+
     vocTooltipCache = {} -- 7. Clear tooltip cache
 end
 
@@ -659,6 +832,7 @@ function onStart()
     window:show()
     clearParty()
     updatePartyIcon(false)
+    setManagementTab("group")
     local player = g_game.getLocalPlayer()
     if player then
         updatePlayerWidget(player, player:getHealth(), player:getMaxHealth(), player:getMana(), player:getMaxMana(), player:getLevel())

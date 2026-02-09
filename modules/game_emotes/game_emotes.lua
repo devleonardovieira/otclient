@@ -61,8 +61,8 @@ function init()
     emote._resolvedEffectId = emote.effectId or (type(emote.effect) == 'number' and emote.effect) or nil
   end
 
-  g_keyboard.bindKeyDown('G', EmoteWheel.onKeyDown)
-  g_keyboard.bindKeyUp('G', EmoteWheel.onKeyUp)
+  g_keyboard.bindKeyDown('Ctrl+G', EmoteWheel.onKeyDown)
+  g_keyboard.bindKeyUp('Ctrl+G', EmoteWheel.onKeyUp)
 
   Creature.onEmote = onCreatureEmote
 end
