@@ -43,6 +43,7 @@ Module
     - game_paperdolls
     - game_stash
     - game_healthcircle
+    - game_shop
     - game_screenshot
     - game_highscore
     - game_blessing
@@ -51,9 +52,6 @@ Module
     - game_cyclopedia
     - game_creatureinformation
     - game_rewardwall
-    - game_jutsusbar
-    - game_npcdialog
-    - game_notifications
-    - game_profile
+    - game_forge
   @onLoad: init()
   @onUnload: terminate()

@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+﻿/*
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,6 @@
 #include "protocolcodes.h"
 #include "statictext.h"
 #include "thingtype.h"
-#include "framework/graphics/fontmanager.h"
 #include "thingtypemanager.h"
 #include "tile.h"
 #include "paperdoll.h"
@@ -46,6 +45,7 @@
 #include "framework/graphics/shadermanager.h"
 #include "framework/ui/uiwidget.h"
 #include <framework/core/graphicalapplication.h>
+#include <framework/util/stats.h>
 
 double Creature::speedA = 0;
 double Creature::speedB = 0;
@@ -53,6 +53,7 @@ double Creature::speedC = 0;
 
 Creature::Creature() :m_type(Proto::CreatureTypeUnknown)
 {
+    g_stats.addCreature();
     m_name.setFont(g_gameConfig.getCreatureNameFont());
     m_name.setAlign(Fw::AlignTopCenter);
     m_typingIconTexture = g_textures.getTexture(g_gameConfig.getTypingIcon());
@@ -60,6 +61,7 @@ Creature::Creature() :m_type(Proto::CreatureTypeUnknown)
 
 Creature::~Creature() {
     setWidgetInformation(nullptr);
+    g_stats.removeCreature();
 }
 
 void Creature::onCreate() {
@@ -199,8 +201,14 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         p.scale(g_app.getCreatureInformationScale());
     }
 
-    auto backgroundRect = Rect(p.x - (13.5), p.y - cropSizeBackGround, 27, 4);
+    auto backgroundRect = Rect(p.x - (15.5), p.y - cropSizeBackGround, 31, 4);
     auto textRect = Rect(p.x - nameSize.width() / 2.0, p.y - cropSizeText, nameSize);
+
+    constexpr int minNameBarSpacing = 2;
+    const int currentSpacing = backgroundRect.top() - textRect.bottom();
+    if (currentSpacing < minNameBarSpacing) {
+        backgroundRect.moveTop(textRect.bottom() + minNameBarSpacing);
+    }
 
     if (!isScaled) {
         backgroundRect.bind(parentRect);
@@ -220,7 +228,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
     // health rect is based on background rect, so no worries
     Rect healthRect = backgroundRect.expanded(-1);
-    healthRect.setWidth((m_healthPercent / 100.0) * 25);
+    healthRect.setWidth((m_healthPercent / 100.0) * 29);
 
     Rect barsRect = backgroundRect;
 
@@ -236,7 +244,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
                     Rect manaShieldRect = barsRect.expanded(-1);
                     const double maxManaShield = player->getMaxManaShield();
-                    manaShieldRect.setWidth((maxManaShield ? player->getManaShield() / maxManaShield : 1) * 25);
+                    manaShieldRect.setWidth((maxManaShield ? player->getManaShield() / maxManaShield : 1) * 29);
 
                     g_drawPool.addFilledRect(manaShieldRect, Color::darkPink);
                 }
@@ -246,7 +254,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
                 Rect manaRect = barsRect.expanded(-1);
                 const double maxMana = player->getMaxMana();
-                manaRect.setWidth((maxMana ? player->getMana() / maxMana : 1) * 25);
+                manaRect.setWidth((maxMana ? player->getMana() / maxMana : 1) * 29);
 
                 g_drawPool.addFilledRect(manaRect, Color::blue);
             }
@@ -255,60 +263,73 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         backgroundRect = barsRect;
     }
 
-    g_drawPool.setDrawOrder(DrawOrder::SECOND);
-
-    if (drawFlags & Otc::DrawNames) {
-        m_name.draw(textRect, fillColor);
-        // Removido o desenho direto de m_text aqui para evitar duplicidade
-        // e jitter. O StaticText é desenhado e ancorado no MapView::drawForeground.
-    }
-
-    // Ícone "F": aparece somente quando o mouse está sobre um NPC
-    // Com efeito de fade-in/out ao aparecer/desaparecer
-    {
-        const bool hoveredNpc = isNpc() && mapRect.hoveredCreature && mapRect.hoveredCreature.get() == this;
-        // atualizar opacidade com easing temporal
-        const float FADE_MS = 180.f;
-        const float dt = std::min<float>(m_fKeyFadeTimer.ticksElapsed(), 1000.f);
-        m_fKeyFadeTimer.restart();
-        const float step = std::min(dt / FADE_MS, 1.f);
-        if (hoveredNpc)
-            m_fKeyOpacity = std::min(1.f, m_fKeyOpacity + step);
-        else
-            m_fKeyOpacity = std::max(0.f, m_fKeyOpacity - step);
-
-        if (m_fKeyOpacity > 0.f) {
-            static TexturePtr s_keyTexture;
-            if (!s_keyTexture)
-                s_keyTexture = g_textures.getTexture("images/ui/keyboard_key_f");
-
-            if (s_keyTexture) {
-                const int size = 24;
-                Rect iconRect(
-                    textRect.x() + (textRect.width() - size) / 2,
-                    textRect.y() - size - 4,
-                    Size(size, size)
-                );
-                g_drawPool.setOpacity(m_fKeyOpacity, true);
-                g_drawPool.addTexturedRect(iconRect, s_keyTexture);
+    if (drawFlags & Otc::DrawHarmony && isLocalPlayer() && g_game.getFeature(Otc::GameVocationMonk)) {
+        if (const auto& player = g_game.getLocalPlayer()) {
+            if (player->isMonk()) {
+                // Harmony
+                backgroundRect.moveTop(backgroundRect.bottom());
+                g_drawPool.addFilledRect(backgroundRect, Color::black);
+                for (int i = 0; i < 5; i++) {
+                    Rect subBarRect = backgroundRect.expanded(-1);
+                    subBarRect.setX(backgroundRect.x() + 1 + i * (5 + 1));
+                    subBarRect.setWidth(5);
+                    Color subBarColor;
+                    if (i < player->getHarmony()) {
+                        subBarColor = Color(0xFF, 0x98, 0x54);
+                    } else {
+                        subBarColor = Color(64, 64, 64);
+                    }
+                    g_drawPool.addFilledRect(subBarRect, subBarColor);
+                }
+                // Serene
+                backgroundRect.moveTop(backgroundRect.bottom());
+                Rect sereneBackgroundRect(backgroundRect.center().x - (11 / 2) - 1, backgroundRect.y(), 11 + 2, backgroundRect.height() - 2 + 2);
+                g_drawPool.addFilledRect(sereneBackgroundRect, Color::black);
+                Color sereneColor = player->isSerene() ? Color(0xD4, 0x37, 0xFF) : Color(64, 64, 64);
+                Rect sereneSubBarRect = sereneBackgroundRect.expanded(-1);
+                sereneSubBarRect.setWidth(11);
+                sereneSubBarRect.setHeight(backgroundRect.height() - 2);
+                g_drawPool.addFilledRect(sereneSubBarRect, sereneColor);
             }
         }
     }
 
+    g_drawPool.setDrawOrder(DrawOrder::SECOND);
+
+    if (drawFlags & Otc::DrawNames) {
+        PainterShaderProgramPtr nameProgram;
+        if (!m_nameShader.empty())
+            nameProgram = g_shaders.getShader(m_nameShader);
+
+        if (nameProgram)
+            g_drawPool.setShaderProgram(nameProgram);
+
+        m_name.draw(textRect, fillColor);
+
+        if (nameProgram)
+            g_drawPool.resetShaderProgram();
+
+        if (m_text) {
+            auto extraTextSize = m_text->getTextSize();
+            Rect extraTextRect = Rect(p.x - extraTextSize.width() / 2.0, p.y + 15, extraTextSize);
+            m_text->drawText(extraTextRect.center(), extraTextRect);
+        }
+    }
+
     if (m_skull != Otc::SkullNone && m_skullTexture)
-        g_drawPool.addTexturedPos(m_skullTexture, backgroundRect.x() + 13.5 + 12, backgroundRect.y() + 5);
+        g_drawPool.addTexturedPos(m_skullTexture, backgroundRect.x() + 15.5 + 12, backgroundRect.y() + 5);
 
     if (m_shield != Otc::ShieldNone && m_shieldTexture && m_showShieldTexture)
-        g_drawPool.addTexturedPos(m_shieldTexture, backgroundRect.x() + 13.5, backgroundRect.y() + 5);
+        g_drawPool.addTexturedPos(m_shieldTexture, backgroundRect.x() + 15.5, backgroundRect.y() + 5);
 
     if (m_emblem != Otc::EmblemNone && m_emblemTexture)
-        g_drawPool.addTexturedPos(m_emblemTexture, backgroundRect.x() + 13.5 + 12, backgroundRect.y() + 16);
+        g_drawPool.addTexturedPos(m_emblemTexture, backgroundRect.x() + 15.5 + 12, backgroundRect.y() + 16);
 
     if (m_type != Proto::CreatureTypeUnknown && m_typeTexture)
-        g_drawPool.addTexturedPos(m_typeTexture, backgroundRect.x() + 13.5 + 12 + 12, backgroundRect.y() + 16);
+        g_drawPool.addTexturedPos(m_typeTexture, backgroundRect.x() + 15.5 + 12 + 12, backgroundRect.y() + 16);
 
     if (m_icon != Otc::NpcIconNone && m_iconTexture)
-        g_drawPool.addTexturedPos(m_iconTexture, backgroundRect.x() + 13.5 + 12, backgroundRect.y() + 5);
+        g_drawPool.addTexturedPos(m_iconTexture, backgroundRect.x() + 15.5 + 12, backgroundRect.y() + 5);
 
     if (g_gameConfig.drawTyping() && getTyping() && m_typingIconTexture)
         g_drawPool.addTexturedPos(m_typingIconTexture, p.x + (nameSize.width() / 2.0) + 2, textRect.y() - 4);
@@ -317,12 +338,15 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         int iconOffset = 0;
         for (const auto& iconTex : m_icons->atlasGroups) {
             if (!iconTex.texture) continue;
-            const Rect dest(backgroundRect.x() + 13.5 + 12, backgroundRect.y() + 5 + iconOffset * 14, iconTex.clip.size());
+            const Rect dest(backgroundRect.x() + 15.5 + 12, backgroundRect.y() + 5 + iconOffset * 14, iconTex.clip.size());
             g_drawPool.addTexturedRect(dest, iconTex.texture, iconTex.clip);
-            m_icons->numberText.setText(std::to_string(iconTex.count));
-            const auto textSize = m_icons->numberText.getTextSize();
-            const Rect numberRect(dest.right() + 2, dest.y() + (dest.height() - textSize.height()) / 2, textSize);
-            m_icons->numberText.draw(numberRect, Color::white);
+            // draw count only when greater than 0
+            if (iconTex.count > 0) {
+                m_icons->numberText.setText(std::to_string(iconTex.count));
+                const auto textSize = m_icons->numberText.getTextSize();
+                const Rect numberRect(dest.right() + 2, dest.y() + (dest.height() - textSize.height()) / 2, textSize);
+                m_icons->numberText.draw(numberRect, Color::white);
+            }
             ++iconOffset;
         }
     }

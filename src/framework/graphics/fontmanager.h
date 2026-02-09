@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2025 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,17 +28,13 @@
 class FontManager
 {
 public:
+    void init(); 
     void terminate();
     void clearFonts();
 
     bool importFont(const std::string& file);
-    // Importa uma fonte TrueType (.ttf), rasteriza para atlas PNG e registra como BitmapFont
-    bool importTTFFont(const std::string& fontName,
-                       const std::string& ttfFile,
-                       int pixelHeight,
-                       int spacingX = 1,
-                       int spacingY = 0,
-                       int yOffset = 0);
+    bool importFont(const std::string& file, int fontSize);
+    std::string importTTF(const std::string& file, int fontSize = 12, int strokeWidth = 0, const Color& strokeColor = Color::black);
 
     bool fontExists(std::string_view fontName);
     BitmapFontPtr getFont(std::string_view fontName);
