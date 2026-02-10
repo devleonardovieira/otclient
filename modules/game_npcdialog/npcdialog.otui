@@ -14,7 +14,7 @@ MainWindow
     anchors.left: parent.left
     anchors.right: parent.right
     text-align: center
-    font: cipsoftFont
+    ttf-font: ReggaeOne-Regular|10
     color: #ffffff
     !text: tr('Diálogo com NPC')
     text-offset: 0 2
@@ -44,7 +44,7 @@ MainWindow
       margin-top: 8
       text-wrap: true
       text-auto-resize: true
-      font: verdana-11px-rounded
+      ttf-font: ReggaeOne-Regular|11
       color: #dfdfdf
 
   UIWidget

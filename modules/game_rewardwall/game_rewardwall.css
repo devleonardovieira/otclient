@@ -210,7 +210,7 @@
 }
 
 .action-button {
-  font: cipsoftFont;
+  ttf-font: ReggaeOne-Regular|10;
   --text-auto-resize: true;
 }
 .close-button {

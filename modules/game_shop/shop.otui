@@ -3,7 +3,7 @@ ShopCategory < Panel
   focusable: true
   text-align: topleft
   text-offset: 10 10
-  font: DMSans-20px-bold
+  ttf-font: ReggaeOne-Regular|20
   opacity: 0.8
 
   $!first:
@@ -19,7 +19,7 @@ ShopCategory < UIWidget
   size: 267 112
   text-align: topleft
   text-offset: 10 10
-  font: DMSans-20px-bold
+  ttf-font: ReggaeOne-Regular|20
   image-color: #454545
   change-cursor-image: true
   cursor: pointer
@@ -211,7 +211,7 @@ MainWindow
       text-auto-resize: true
       text-wrap: true
       text-align: center
-      font: sans-bold-16px
+      ttf-font: ReggaeOne-Regular|16
 
   PanelRoundedSolid
     image-color: #525252
@@ -220,7 +220,7 @@ MainWindow
     anchors.right: infoPanel.right
     anchors.bottom: parent.bottom
     margin-top: 12
-    font: DMSans-26px-bold
+    ttf-font: ReggaeOne-Regular|26
     text-align: top
     text-offset: 0 10
     !text: tr('Categories')

@@ -29,15 +29,15 @@ ButtonBlueBase < ButtonBase
 
 ButtonBlueSmall < ButtonBlueBase
   size: 115 40
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
 
 ButtonBlueMedium < ButtonBlueBase
   size: 206 50
-  font: DMSans-16px-bold
+  ttf-font: ReggaeOne-Regular|16
 
 ButtonBlueLarge < ButtonBlueBase
   size: 265 50
-  font: DMSans-16px-bold
+  ttf-font: ReggaeOne-Regular|16
 
 ButtonRedBase < ButtonBase
   image-color: #F83930
@@ -50,15 +50,15 @@ ButtonRedBase < ButtonBase
 
 ButtonRedSmall < ButtonRedBase
   size: 115 40
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
 
 ButtonRedMedium < ButtonRedBase
   size: 206 50
-  font: DMSans-16px-bold
+  ttf-font: ReggaeOne-Regular|16
 
 ButtonRedLarge < ButtonRedBase
   size: 265 50
-  font: DMSans-16px-bold
+  ttf-font: ReggaeOne-Regular|16
 
 ButtonBlueCommunityBase < ButtonCommunityBase
   image-color: #1fbf6e
@@ -83,15 +83,15 @@ ButtonWarningBase < ButtonBase
 
 ButtonWarningSmall < ButtonWarningBase
   size: 115 40
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
 
 ButtonWarningMedium < ButtonWarningBase
   size: 206 50
-  font: DMSans-16px-bold
+  ttf-font: ReggaeOne-Regular|16
 
 ButtonWarningLarge < ButtonWarningBase
   size: 265 50
-  font: DMSans-16px-bold
+  ttf-font: ReggaeOne-Regular|16
 
 ButtonBlueCommunitySmall < ButtonBlueCommunityBase
   size: 115 40
@@ -175,7 +175,7 @@ RadioButton < UICheckBox
   text-align: left
   text-offset: 28 0
   text-auto-resize: true
-  font: DMSans-16px-regular
+  ttf-font: ReggaeOne-Regular|16
   image-color: #CCCCCC
   color: #CCCCCC
   change-cursor-image: true

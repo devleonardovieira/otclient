@@ -7,7 +7,7 @@ PokemonDialog < UICreature
 
 ItemDialog < UIItem
   size: 34 34
-  font: righteous-12px-rounded
+  ttf-font: ReggaeOne-Regular|12
   virtual: true
 
   $!first:

@@ -5,7 +5,7 @@ ComboBoxPopupScrollMenuButton < UIButton
   text-align: left
   text-offset: 10 0
   color: #FFFFFF
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
 
   $hover !disabled:
     background-color: #1aa562
@@ -21,7 +21,7 @@ ComboBox < UIComboBox
   image-border: 40
   text-align: left
   text-offset: 10 0
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
   image-color: #1fbf6e
 
   $hover !disabled:
@@ -43,7 +43,7 @@ ComboBoxPopupMenuButton < UIButton
   text-align: left
   text-offset: 10 0
   color: #FFFFFF
-  font: DMSans-13px-regular
+  ttf-font: ReggaeOne-Regular|13
 
   $hover:
     background-color: #1aa562
@@ -58,14 +58,14 @@ ComboBoxPopupMenuIcon < UIWidget
   margin-right: 4
 
 ComboBoxPopupMenuShortcutLabel < UILabel
-  font: DMSans-12px-regular
+  ttf-font: ReggaeOne-Regular|12
   color: #FFFFFF
   text-align: right
   anchors.fill: parent
   margin: 1 8 0 5
 
 ComboBoxPopupScrollMenuShortcutLabel < UILabel
-  font: DMSans-12px-regular
+  ttf-font: ReggaeOne-Regular|12
   color: #FFFFFF
   text-align: right
   anchors.fill: parent
@@ -84,7 +84,7 @@ ComboBoxGamePopupScrollMenuButton < UIButton
   text-align: left
   text-offset: 10 0
   color: #FFFFFF
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
 
   $hover !disabled:
     background-color: #1aa562
@@ -99,7 +99,7 @@ ComboBoxGame < UIComboBox
   image-border: 40
   text-align: left
   text-offset: 10 0
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
   &isGame: true
 
   $hover !disabled:
@@ -120,7 +120,7 @@ ComboBoxGamePopupMenuButton < UIButton
   text-align: left
   text-offset: 10 0
   color: #FFFFFF
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
 
   $hover !disabled:
     background-color: #1aa562

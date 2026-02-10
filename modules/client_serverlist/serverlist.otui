@@ -19,7 +19,7 @@ ServerWidget < UIWidget
     color: #aaaaaa
     anchors.top: parent.top
     anchors.left: parent.left
-    font: verdana-11px-monochrome
+    ttf-font: ReggaeOne-Regular|11
     text-auto-resize: true
     background-color: alpha
     text-offset: 2 0
@@ -34,7 +34,7 @@ ServerWidget < UIWidget
     anchors.top: parent.top
     anchors.right: next.left
     margin-right: 5
-    font: verdana-11px-monochrome
+    ttf-font: ReggaeOne-Regular|11
     text-auto-resize: true
     background-color: alpha
     &baseText: '(%s)'

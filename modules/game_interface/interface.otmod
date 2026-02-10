@@ -26,7 +26,6 @@ Module
     - game_paperdolls
     - game_stash
     - game_api
-    - game_creatureinformation
     - game_accounts
     - game_jutsusbar
     - game_dialog

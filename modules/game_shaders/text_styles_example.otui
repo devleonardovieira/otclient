@@ -3,7 +3,7 @@
 -- Note: This requires engine support for text-shader property in OTUI parser
 
 PlayerNameLabel < Label
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   color: #ffffff
   text-auto-resize: true
   
@@ -14,17 +14,17 @@ PlayerNameLabel < Label
     color: #00ff00
     
 HighlightedText < Label
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   color: #ffff00
   -- text-shader: Text - Glow
 
 ImportantText < Label
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   color: #ffffff
   -- text-shader: Text - Outline + Shadow
 
 GoldenText < Label
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   color: #ffffff
   -- text-shader: Text - Gold Outline
 

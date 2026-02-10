@@ -22,7 +22,7 @@ PixQRCodeWindow < MainWindow
     anchors.top: prev.bottom
     anchors.bottom: next.top
     margin: 18 78
-    font: DMSans-20px-bold
+    ttf-font: ReggaeOne-Regular|20
     !text: tr('Loading...')
 
   TextEdit
@@ -61,7 +61,7 @@ PixQRCodeWindow < MainWindow
     anchors.top: closeButton.bottom
     margin: 18 -2 0 -2
     text-auto-resize: true
-    font: DMSans-20px-bold
+    ttf-font: ReggaeOne-Regular|20
     image-color: #242424
     !text: tr('Loading...')
 

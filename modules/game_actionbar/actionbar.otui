@@ -1,7 +1,7 @@
 ActionItem < UIItem
   size: 34 34
   image-source: /images/ui/item
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   background-color: alpha
   color: white
   virtual: true
@@ -55,11 +55,11 @@ ActionButtonBase < Panel
     phantom: true
     anchors.fill: parent
     margin: 1 1 1 1
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
     color: white
 
 ActionButton < ActionButtonBase
-  font: cipsoftFont
+  ttf-font: ReggaeOne-Regular|10
   anchors.top: parent.top
   anchors.bottom: parent.bottom
 

@@ -50,7 +50,7 @@ IgnoreListLabel < Label
       end
 
 WhiteListLabel < Label
-  font: verdana-11px-monochrome
+  ttf-font: ReggaeOne-Regular|11
   background-color: alpha
   text-offset: 2 0
   focusable: true
@@ -89,7 +89,7 @@ CommunicationWindow < MainHeadlessWindow
     text-auto-resize: true
     margin-bottom: 18
     text-offset: 22 2
-    font: window
+    ttf-font: ReggaeOne-Regular|11
     icon: /images/game/icons/icons_four
     icon-clip: 172 0 17 17
     icon-offset: 0 1

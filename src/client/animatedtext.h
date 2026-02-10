@@ -64,4 +64,5 @@ private:
     CachedText m_cachedText;
     Point m_offset;
     Position m_position;
+    PointF m_velocity;
 };

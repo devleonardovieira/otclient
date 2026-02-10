@@ -17,7 +17,7 @@ NewMainWindow
       anchors.left: parent.left
       text-auto-resize: true
       color: #dfdfdf
-      font: verdana-11px-antialised
+      ttf-font: ReggaeOne-Regular|11
 
     UIWidget
       id: presetNameTooltip
@@ -37,7 +37,7 @@ NewMainWindow
       anchors.left: parent.left
       anchors.right: parent.right
       color: #dfdfdf
-      font: verdana-11px-antialised
+      ttf-font: ReggaeOne-Regular|11
       margin-top: 7
       @onTextChange: WheelOfDestiny.onPresetNameChange(self:getText())
       !placeholder: tr('Enter a unique name')

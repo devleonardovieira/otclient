@@ -7,7 +7,7 @@ HorizontalScrollBarValueLabel < Label
   text-align: center
   text-offset: 0 -6
   visible: false
-  font: DMSans-13px-regular
+  ttf-font: ReggaeOne-Regular|13
   color: #FFFFFFFF
 
 ScrollBarSlider < UIButton

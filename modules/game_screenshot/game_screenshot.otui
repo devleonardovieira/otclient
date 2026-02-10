@@ -79,7 +79,7 @@ ScreenshotType < UIWidget
   background-color: alpha
   text-offset: 35 1
   focusable: true
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   text-align: left
 
   CheckBox

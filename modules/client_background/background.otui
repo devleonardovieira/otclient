@@ -12,6 +12,8 @@ Panel
 
   Label-16px-Bold
     id: clientVersionLabel
+    ttf-stroke-width: 2
+    ttf-stroke-color: black
     anchors.bottom: parent.bottom
     anchors.horizontalCenter: parent.horizontalCenter
     text-align: center

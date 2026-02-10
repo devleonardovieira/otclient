@@ -57,7 +57,7 @@ StashWindow < MainWindow
       anchors.top: parent.top
       anchors.left: parent.left
       width: 30
-      font: verdana-11px-rounded
+      ttf-font: ReggaeOne-Regular|11
       text-offset: 0 2
 
     TextEdit

@@ -105,13 +105,14 @@ UIWindow
     Label-16px-Bold
       anchors.top: parent.top
       anchors.left: parent.left
+      margin-left: -55
       text-auto-resize: true
       !text: tr("Don't have an account?")
 
     ButtonLabel
       anchors.top: parent.top
       anchors.left: prev.right
-      font: DMSans-16px-bold
+      ttf-font: ReggaeOne-Regular|16
       margin-left: 6
       !text: tr('Create account')
       @onClick: modules.game_accounts.showAccountPanel()
@@ -120,5 +121,5 @@ UIWindow
       anchors.bottom: parent.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       !text: tr('Forgot your password?')
-      font: DMSans-16px-bold
+      ttf-font: ReggaeOne-Regular|16
       @onClick: modules.game_accounts.showRecoverPanel()

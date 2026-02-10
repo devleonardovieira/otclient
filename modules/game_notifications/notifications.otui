@@ -42,7 +42,7 @@ NotificationToast < Panel
         id: title
         text: ""
         color: #ffffff
-        font: "verdana-11px-antialised"
+        ttf-font: ReggaeOne-Regular|11
         width: 312
         text-align: left
         text-wrap: true
@@ -55,7 +55,7 @@ NotificationToast < Panel
         id: message
         text: ""
         color: #dfdfdf
-        font: "verdana-11px-antialised"
+        ttf-font: ReggaeOne-Regular|11
         width: 312
         text-align: left
         text-wrap: true

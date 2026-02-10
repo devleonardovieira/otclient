@@ -12,7 +12,7 @@ Window
     anchors.left: parent.left
     anchors.right: parent.right
     text-align: center
-    font: verdana-11px-monochrome
+    ttf-font: ReggaeOne-Regular|11
     !text: tr('Escolha uma magia para o slot')
     margin-top: 6
 
@@ -44,7 +44,7 @@ JutsuSpellButton < Button
   image-size: 32 32
   image-offset: 4 4
   text-offset: 44 6
-  font: verdana-11px-monochrome
+  ttf-font: ReggaeOne-Regular|11
   margin-bottom: 2
   focusable: true
   draggable: true

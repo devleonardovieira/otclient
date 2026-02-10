@@ -289,7 +289,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     }
 
     int yOffset = g_configs.getPublicConfig().font.creatureTextOffsetY;
-    auto backgroundRect = Rect(p.x - (15.5), p.y - cropSizeBackGround, 31, 4);
+    auto backgroundRect = Rect(p.x - (31), p.y - cropSizeBackGround, 62, 8);
     auto textRect = Rect(p.x - nameSize.width() / 2.0, p.y - cropSizeText + yOffset, nameSize);
 
     constexpr int minNameBarSpacing = 2;
@@ -314,15 +314,54 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     if (backgroundRect.bottom() == parentRect.bottom())
         textRect.moveTop(backgroundRect.top() - offset);
 
+    // Decay update
+    if (m_damageDisplayedHealth > m_healthPercent && g_clock.millis() > m_lastDamageTime) {
+         float dt = 1.0f / std::max<int>(10, g_app.getFps());
+         m_damageDisplayedHealth -= 950.0 * dt; 
+         if (m_damageDisplayedHealth < m_healthPercent)
+             m_damageDisplayedHealth = m_healthPercent;
+    }
+
     // health rect is based on background rect, so no worries
+    const int barWidth = 60;
+    double totalPercent = std::max<double>(m_damageDisplayedHealth, (double)m_healthPercent) + static_cast<double>(m_shieldPercent);
+    double scale = 1.0;
+    if (totalPercent > 100.0) {
+        scale = 100.0 / totalPercent;
+    }
+
+    int healthWidth = std::round((m_healthPercent * scale / 100.0) * barWidth);
+    int damageWidth = std::round((m_damageDisplayedHealth * scale / 100.0) * barWidth);
+    int shieldWidth = std::round((m_shieldPercent * scale / 100.0) * barWidth);
+
+    if (damageWidth + shieldWidth > barWidth) {
+        shieldWidth = barWidth - damageWidth;
+    }
+
     Rect healthRect = backgroundRect.expanded(-1);
-    healthRect.setWidth(std::round((m_healthPercent / 100.0) * 29));
+    healthRect.setWidth(healthWidth);
+
+    Rect damageRect = backgroundRect.expanded(-1);
+    damageRect.setLeft(healthRect.right());
+    damageRect.setWidth(std::max(0, damageWidth - healthWidth));
 
     Rect barsRect = backgroundRect;
 
     if ((drawFlags & Otc::DrawBars) && (g_game.getClientVersion() >= 1100 ? !isNpc() : true)) {
         g_drawPool.addFilledRect(backgroundRect, Color::black);
-        g_drawPool.addFilledRect(healthRect, fillColor);
+        
+        if (damageRect.width() > 0)
+            g_drawPool.addFilledRect(damageRect, Color(250, 100, 100)); // Light Red
+
+        if (healthWidth > 0)
+            g_drawPool.addFilledRect(healthRect, fillColor);
+
+        if (shieldWidth > 0) {
+            Rect shieldRect = backgroundRect.expanded(-1);
+            shieldRect.setLeft(backgroundRect.left() + 1 + damageWidth);
+            shieldRect.setWidth(shieldWidth);
+            g_drawPool.addFilledRect(shieldRect, Color(192, 192, 192));
+        }
 
         if (drawFlags & Otc::DrawManaBar && isLocalPlayer()) {
             if (const auto& player = g_game.getLocalPlayer()) {
@@ -332,7 +371,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
                     Rect manaShieldRect = barsRect.expanded(-1);
                     const double maxManaShield = player->getMaxManaShield();
-                    manaShieldRect.setWidth((maxManaShield ? player->getManaShield() / maxManaShield : 1) * 29);
+                    manaShieldRect.setWidth((maxManaShield ? player->getManaShield() / maxManaShield : 1) * barWidth);
 
                     g_drawPool.addFilledRect(manaShieldRect, Color::darkPink);
                 }
@@ -342,7 +381,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
                 Rect manaRect = barsRect.expanded(-1);
                 const double maxMana = player->getMaxMana();
-                manaRect.setWidth((maxMana ? player->getMana() / maxMana : 1) * 29);
+                manaRect.setWidth((maxMana ? player->getMana() / maxMana : 1) * barWidth);
 
                 g_drawPool.addFilledRect(manaRect, Color::blue);
             }
@@ -997,6 +1036,13 @@ void Creature::setHealthPercent(const uint8_t healthPercent)
 
     if (m_healthPercent == healthPercent) return;
 
+    if (healthPercent < m_healthPercent) {
+        m_damageDisplayedHealth = std::max<double>(m_damageDisplayedHealth, (double)m_healthPercent);
+        m_lastDamageTime = g_clock.millis() + 500;
+    } else {
+        m_damageDisplayedHealth = healthPercent;
+    }
+
     if (healthPercent > 92)
         m_informationColor = COLOR1;
     else if (healthPercent > 60)
@@ -1017,6 +1063,15 @@ void Creature::setHealthPercent(const uint8_t healthPercent)
 
     if (isDead())
         onDeath();
+}
+
+void Creature::setShieldPercent(const uint8_t shieldPercent)
+{
+    if (m_shieldPercent == shieldPercent)
+        return;
+
+    m_shieldPercent = shieldPercent;
+    callLuaField("onShieldPercentChange", shieldPercent);
 }
 
 void Creature::setDirection(const Otc::Direction direction)

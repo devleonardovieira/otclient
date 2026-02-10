@@ -1,7 +1,7 @@
 WaitPanel < PanelRounded
   size: 354 61
   anchors.centerIn: parent
-  font: DMSans-16px-regular
+  ttf-font: ReggaeOne-Regular|16
   !text: tr('Wait') .. '...'
 
 AccountCreateWindow < MainWindow
@@ -133,7 +133,7 @@ AccountCreateWindow < MainWindow
     text-auto-resize: true
     margin: 3 0 0 2
     phantom: false
-    font: DMSans-13px-bold
+    ttf-font: ReggaeOne-Regular|13
     text-align: left
     @onSetup: self:setMultiColorText(tr("I accept {#1fbf6e|ShinOnline terms and rules}"))
     @onClick: modules.game_accounts.showTermsPanel()

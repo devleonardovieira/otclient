@@ -18,7 +18,7 @@ pingFpsLabel < UIWidget
   anchors.centerIn: parent
   margin-left: 65
   phantom: true
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   focusable: false
 
 

@@ -1,7 +1,7 @@
 OptionCheckBox < CheckBox
   height: 19
   text-offset: 0 0
-  font: DMSans-14px-medium
+  ttf-font: ReggaeOne-Regular|14
   image-source: ~
   @onCheckChange: |
     self.toggle:setChecked(self:isChecked())

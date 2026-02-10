@@ -1,7 +1,7 @@
 Item < UIItem
   size: 34 34
   image-source: /images/ui/item
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   color: white
   border: 0 white
   background-color: alpha
@@ -18,7 +18,7 @@ Item < UIItem
 
 UIDraggingItem < UIItem
   size: 34 34
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11
   border-color: alpha
   &draggingItem: true
   focusable: false

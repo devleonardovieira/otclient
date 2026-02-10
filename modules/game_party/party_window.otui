@@ -28,7 +28,7 @@ PartyListRow < Panel
     text-align: left
     text-offset: 0 0
     color: white
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   ButtonRedBase
     id: actionButton
@@ -52,7 +52,7 @@ PartyInviteRow < Panel
     text-auto-resize: true
     text-align: left
     color: white
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   ButtonBlueBase
     id: acceptButton
@@ -82,7 +82,7 @@ PartySentInviteRow < Panel
     text-auto-resize: true
     text-align: left
     color: white
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   ButtonRedBase
     id: cancelButton
@@ -105,7 +105,7 @@ PartyLootRow < Panel
     text-auto-resize: false
     text-align: left
     color: white
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   Label
     id: loot
@@ -114,7 +114,7 @@ PartyLootRow < Panel
     text-auto-resize: false
     text-align: right
     color: #e0c060
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   Label
     id: supply
@@ -123,7 +123,7 @@ PartyLootRow < Panel
     text-auto-resize: false
     text-align: right
     color: #a0c0ff
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   Label
     id: damage
@@ -132,7 +132,7 @@ PartyLootRow < Panel
     text-auto-resize: false
     text-align: right
     color: #ff9b8a
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   Label
     id: healing
@@ -141,7 +141,7 @@ PartyLootRow < Panel
     text-auto-resize: false
     text-align: right
     color: #9bffb0
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
 PublicGroupRow < Panel
   height: 40
@@ -156,7 +156,7 @@ PublicGroupRow < Panel
     text-auto-resize: true
     text-align: left
     color: white
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
 
   ButtonBlueBase
     id: actionButton
@@ -208,7 +208,7 @@ MainWindow
       anchors.top: prev.bottom
       anchors.horizontalCenter: parent.horizontalCenter
       margin-top: 30
-      font: verdana-11px-rounded
+      ttf-font: ReggaeOne-Regular|11
       text-auto-resize: true
 
     HorizontalSeparator
@@ -243,7 +243,6 @@ MainWindow
         anchors.centerIn: parent
         text-align: center
         color: #888888
-        font: verdana-11px-rounded
 
     Panel
       id: publicGroupsPanel
@@ -256,7 +255,7 @@ MainWindow
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 10
-        font: verdana-11px-rounded
+        ttf-font: ReggaeOne-Regular|11
         text-auto-resize: true
 
       ButtonBlueBase
@@ -298,7 +297,7 @@ MainWindow
         anchors.centerIn: parent
         text-align: center
         color: #888888
-        font: verdana-11px-rounded
+        ttf-font: ReggaeOne-Regular|11
 
   Panel
     id: managementPanel
@@ -321,7 +320,7 @@ MainWindow
         anchors.left: parent.left
         margin-top: 10
         margin-left: 10
-        font: verdana-11px-rounded
+        ttf-font: ReggaeOne-Regular|11
         text-auto-resize: true
         color: white
       
@@ -341,7 +340,7 @@ MainWindow
         anchors.left: parent.left
         margin-top: 15
         margin-left: 10
-        font: verdana-11px-rounded
+        ttf-font: ReggaeOne-Regular|11
         text-auto-resize: true
         color: #888888
 
@@ -352,7 +351,7 @@ MainWindow
         anchors.left: parent.left
         margin-top: 15
         margin-left: 10
-        font: verdana-11px-rounded
+        ttf-font: ReggaeOne-Regular|11
         text-auto-resize: true
         color: #888888
 
@@ -363,7 +362,7 @@ MainWindow
         anchors.left: parent.left
         margin-top: 15
         margin-left: 10
-        font: verdana-11px-rounded
+        ttf-font: ReggaeOne-Regular|11
         text-auto-resize: true
         color: #888888
 
@@ -374,7 +373,7 @@ MainWindow
         anchors.left: parent.left
         margin-top: 15
         margin-left: 10
-        font: verdana-11px-rounded
+        ttf-font: ReggaeOne-Regular|11
         text-auto-resize: true
         color: #888888
   
@@ -433,7 +432,7 @@ MainWindow
             height: 20
             text-align: left
             color: #888888
-            font: verdana-11px-rounded
+            ttf-font: ReggaeOne-Regular|11
 
           Label
             id: lootHeaderLoot
@@ -442,7 +441,7 @@ MainWindow
             height: 20
             text-align: right
             color: #888888
-            font: verdana-11px-rounded
+            ttf-font: ReggaeOne-Regular|11
 
           Label
             id: lootHeaderSupply
@@ -451,7 +450,7 @@ MainWindow
             height: 20
             text-align: right
             color: #888888
-            font: verdana-11px-rounded
+            ttf-font: ReggaeOne-Regular|11
 
           Label
             id: lootHeaderDamage
@@ -460,7 +459,7 @@ MainWindow
             height: 20
             text-align: right
             color: #888888
-            font: verdana-11px-rounded
+            ttf-font: ReggaeOne-Regular|11
 
           Label
             id: lootHeaderHealing
@@ -469,7 +468,7 @@ MainWindow
             height: 20
             text-align: right
             color: #888888
-            font: verdana-11px-rounded
+            ttf-font: ReggaeOne-Regular|11
 
         ScrollablePanel
           id: lootList
@@ -549,7 +548,7 @@ MainWindow
           anchors.left: lootIcon.right
           anchors.verticalCenter: lootIcon.verticalCenter
           margin-left: 5
-          font: verdana-11px-rounded
+          ttf-font: ReggaeOne-Regular|11
           
         Label
           id: lootValue
@@ -557,7 +556,7 @@ MainWindow
           anchors.top: lootIcon.bottom
           anchors.left: lootIcon.left
           margin-top: 5
-          font: verdana-11px-rounded
+          ttf-font: ReggaeOne-Regular|11
           color: #888888
 
         UIWidget
@@ -575,7 +574,7 @@ MainWindow
           anchors.left: expIcon.right
           anchors.verticalCenter: expIcon.verticalCenter
           margin-left: 5
-          font: verdana-11px-rounded
+          ttf-font: ReggaeOne-Regular|11
           
         Label
           id: expValue
@@ -583,7 +582,7 @@ MainWindow
           anchors.top: expIcon.bottom
           anchors.left: expIcon.left
           margin-top: 5
-          font: verdana-11px-rounded
+          ttf-font: ReggaeOne-Regular|11
           color: #888888
 
         UIWidget
@@ -601,7 +600,7 @@ MainWindow
           anchors.left: taskIcon.right
           anchors.verticalCenter: taskIcon.verticalCenter
           margin-left: 5
-          font: verdana-11px-rounded
+          ttf-font: ReggaeOne-Regular|11
           
         Label
           id: taskValue
@@ -609,7 +608,7 @@ MainWindow
           anchors.top: taskIcon.bottom
           anchors.left: taskIcon.left
           margin-top: 5
-          font: verdana-11px-rounded
+          ttf-font: ReggaeOne-Regular|11
           color: #888888
 
 

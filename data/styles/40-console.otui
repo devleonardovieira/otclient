@@ -8,7 +8,7 @@ ConsolePhantom < ScrollablePanel
     align-bottom: true
 
 ConsoleLabel < UITextEdit
-  font: righteous-12px-rounded
+  ttf-font: ReggaeOne-Regular|12
   height: 14
   color: yellow
   margin-left: 2
@@ -25,7 +25,7 @@ ConsoleLabel < UITextEdit
   border: 0 white
 
 ConsolePhantomLabel < UILabel
-  font: righteous-12px-rounded
+  ttf-font: ReggaeOne-Regular|12
   height: 14
   color: yellow
   text-wrap: true
@@ -181,7 +181,7 @@ ConsolePanel < Panel
     shift-navigation: true
     max-length: 255
     text-auto-submit: true
-    font: DMSans-13px-regular
+    ttf-font: ReggaeOne-Regular|13
     !placeholder: tr('Digite aqui...')
     @onSetup: |
       self.placeholderLabel:setMarginTop(1)

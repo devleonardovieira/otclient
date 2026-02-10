@@ -58,7 +58,8 @@ public:
     void setMasterId(const uint32_t id) { m_masterId = id; }
     void setName(std::string_view name);
     void setHealthPercent(uint8_t healthPercent);
-    void setManaPercent(uint8_t value) { m_manaPercent = value; }
+    void setShieldPercent(uint8_t shieldPercent);
+    void setManaPercent(uint8_t manaPercent) { m_manaPercent = manaPercent; }
     void setDirection(Otc::Direction direction);
     void setOutfit(const Outfit& outfit, bool fireEvent = true);
     void setLight(const Light& light) { m_light = light; }
@@ -113,6 +114,7 @@ public:
     uint8_t getType() { return m_type; }
     uint8_t getIcon() { return m_icon; }
     uint8_t getHealthPercent() { return m_healthPercent; }
+    uint8_t getShieldPercent() { return m_shieldPercent; }
     uint8_t getManaPercent() { return m_manaPercent; }
 
     uint16_t getSpeed() { return m_speed; }
@@ -340,6 +342,9 @@ private:
 
     uint8_t m_type;
     uint8_t m_healthPercent{ 101 };
+    double m_damageDisplayedHealth{ 101.0 };
+    double m_lastDamageTime{ 0.0 };
+    uint8_t m_shieldPercent{ 0 };
     uint8_t m_manaPercent{ 101 };
     uint8_t m_skull{ Otc::SkullNone };
     uint8_t m_icon{ Otc::NpcIconNone };

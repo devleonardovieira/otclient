@@ -7,7 +7,7 @@ CheckBox < UICheckBox
   text-auto-resize: true
   text-align: left
   text-offset: 29 3
-  font: DMSans-13px-bold
+  ttf-font: ReggaeOne-Regular|13
   color: #CCCCCC
   change-cursor-image: true
   cursor: pointer
@@ -46,8 +46,8 @@ ColorBox < UICheckBox
     change-cursor-image: false
 
 ButtonBox < UICheckBox
-  font: damas
   color: #a8a8a8
+  ttf-font: ReggaeOne-Regular|12
   size: 106 23
   text-offset: 0 0
   text-align: center

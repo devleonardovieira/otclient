@@ -8,7 +8,7 @@ PerksPanel < Panel
     anchors.top: parent.top
     anchors.left: parent.left
     text-align: topleft
-    font: verdana-11px-antialised
+    ttf-font: ReggaeOne-Regular|11
     color: #dfdfdf
     text-auto-resize: true
   Label
@@ -18,7 +18,7 @@ PerksPanel < Panel
     anchors.top: parent.top
     anchors.right: parent.right
     text-align: topright
-    font: verdana-11px-antialised
+    ttf-font: ReggaeOne-Regular|11
     color: #dfdfdf
     margin-right: 15
   UIWidget
@@ -29,7 +29,7 @@ PerksPanel < Panel
     margin-top: 2
     image-source: /images/skin/show-gui-help-grey
     !tooltip: tr('Increase your mitigation multiplicatively.')
-    tooltip-font: verdana-11px-antialised
+    tooltip-ttf-font: ReggaeOne-Regular|11
     visible: false
 
 PresetLabel < Panel
@@ -45,7 +45,7 @@ PresetLabel < Panel
     anchors.top: parent.top
     anchors.left: parent.left
     text-align: left
-    font: verdana-11px-antialised
+    ttf-font: ReggaeOne-Regular|11
     color: #dfdfdf
     text-offset: 1 0
   
@@ -63,7 +63,7 @@ PresetLabel < Panel
     anchors.left: prev.right
     anchors.right: parent.right
     text-align: right
-    font: verdana-11px-antialised
+    ttf-font: ReggaeOne-Regular|11
     color: #dfdfdf
     margin-right: 6
 
@@ -99,7 +99,7 @@ Panel
         anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 4
         margin-right: 4
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #dfdfdf
         !text: tr('Vessel contains no gem')
         text-align: center
@@ -112,7 +112,7 @@ Panel
         margin-right: 5
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('Gems can be revealed within the Gem Atelier. Different gem\nqualities yield different amounts of mods:\n* Lesser gem: one basic mod\n* Regular gem: two basic mods\n* Greater gem: two basic mods and one supreme mod')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
 
       UILabel
         id: modification0
@@ -121,7 +121,7 @@ Panel
         anchors.left: parent.left
         margin-left: 4
         margin-top: 2
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #888888
         text-wrap: true
         text-auto-resize: true
@@ -133,7 +133,7 @@ Panel
         anchors.left: parent.left
         margin-left: 4
         margin-top: 4
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #888888
         text-wrap: true
         text-auto-resize: true
@@ -145,7 +145,7 @@ Panel
         anchors.left: parent.left
         margin-left: 4
         margin-top: 4
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #888888
         text-auto-resize: true
         text-wrap: true
@@ -156,7 +156,7 @@ Panel
         anchors.horizontalCenter: parent.horizontalCenter
         margin-top: 134
         margin-right: 1
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #dfdfdf
         !text: tr('Sealed Vessel (VR 0)')
         text-auto-resize: true
@@ -169,7 +169,7 @@ Panel
         margin-right: 5
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
 
       UILabel
         id: VRBonus
@@ -177,7 +177,7 @@ Panel
         anchors.left: parent.left
         margin-left: 4
         margin-top: 2
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #888888
         text-auto-resize: true
 
@@ -215,7 +215,7 @@ Panel
         id: dedicationPb
         size: 200 15
         !text: tr('0 / 0')
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #dfdfdf
         image-source: /images/game/destiny_wheel/progressBar
         anchors.top: prev.top
@@ -228,7 +228,7 @@ Panel
         id: dedicationTitle
         size: 200 20
         !text: tr('Dedication Perk')
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #dfdfdf
         anchors.top: prev.bottom
         anchors.left: prev.left
@@ -242,12 +242,12 @@ Panel
         margin-top: 1
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('toDo')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
       Label
         id: dedication
         size: 185 29
         text-align: topleft
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #dfdfdf
         anchors.top: prev.bottom
         anchors.left: parent.left
@@ -258,7 +258,7 @@ Panel
         id: convictionTitle
         size: 200 20
         !text: tr('Conviction Perk')
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #dfdfdf
         anchors.top: prev.bottom
         anchors.left: prev.left
@@ -270,18 +270,18 @@ Panel
         anchors.right: parent.right
         margin-top: 1
         image-source: /images/skin/show-gui-help-grey
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
       UIWidget
         id: conviction
         size: 185 80
         text-align: topleft
-        font: verdana-11px-antialised
+        ttf-font: ReggaeOne-Regular|11
         color: #dfdfdf
         anchors.top: prev.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         tooltip-delayed: true
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
         margin-top: 4
 
       Button
@@ -352,7 +352,7 @@ Panel
       margin-right: 20
       !text: tr('Available Promotion Points')
       text-auto-resize: true
-      font: verdana-11px-antialised
+      ttf-font: ReggaeOne-Regular|11
       color: #dfdfdf
       tooltip-delayed: true
 
@@ -364,7 +364,7 @@ Panel
       margin-right: 20
       !text: tr('0 / 0')
       text-auto-resize: true
-      font: verdana-11px-antialised
+      ttf-font: ReggaeOne-Regular|11
       color: #dfdfdf
       tooltip-delayed: true
 
@@ -459,7 +459,7 @@ Panel
           margin-top: 2
           margin-left: 6
           text-auto-resize: true
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           visible: false
           !text: tr('Fill or empty slice with a\nright-click.\n\nHold Alt, Shift, Ctrl, or\nCtrl+Shift to modify the step\nsize.')
@@ -484,7 +484,7 @@ Panel
             id: dedicationPB2
             size: 200 15
             !text: tr('0 / 0')
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             color: #dfdfdf
             image-source: /images/game/destiny_wheel/progressBar
             anchors.top: prev.top
@@ -497,7 +497,7 @@ Panel
             id: dedicationTitle2
             size: 200 20
             !text: tr('Dedication Perk')
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             color: #dfdfdf
             anchors.top: prev.bottom
             anchors.left: prev.left
@@ -507,7 +507,7 @@ Panel
             id: dedication2
             size: 185 29
             text-align: topleft
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             color: #dfdfdf
             anchors.top: prev.bottom
             anchors.left: parent.left
@@ -519,7 +519,7 @@ Panel
             id: convictionTitle2
             size: 200 20
             !text: tr('Conviction Perk')
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             color: #dfdfdf
             anchors.top: prev.bottom
             anchors.left: prev.left
@@ -529,7 +529,7 @@ Panel
             id: conviction2
             size: 185 105
             text-align: topleft
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             color: #dfdfdf
             anchors.top: prev.bottom
             anchors.left: parent.left
@@ -543,7 +543,7 @@ Panel
             margin-left: -1
             margin-top: -1
             text-auto-resize: true
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             color: #dfdfdf
             !text: tr('Fill or empty a slice with a\nright-click.')
 
@@ -651,7 +651,7 @@ Panel
             !text: tr("Name")
             text-align: left
             text-offset: 2 0
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             color: #dfdfdf
           UIWidget
             anchors.top: parent.top
@@ -666,7 +666,7 @@ Panel
             anchors.top: parent.top
             anchors.left: prev.right
             !text: tr("Points")
-            font: verdana-11px-antialised
+            ttf-font: ReggaeOne-Regular|11
             text-align: left
             text-offset: 4 1
             color: #dfdfdf
@@ -792,7 +792,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -801,7 +801,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       Panel
@@ -816,7 +816,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -825,7 +825,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       Panel
@@ -840,7 +840,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -849,7 +849,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       Panel
@@ -864,7 +864,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -873,7 +873,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
         UIWidget
@@ -884,7 +884,7 @@ Panel
           margin-top: 2
           image-source: /images/skin/show-gui-help-grey
           !tooltip: tr('Increase your mitigation multiplicatively.')
-          tooltip-font: verdana-11px-antialised
+          tooltip-ttf-font: ReggaeOne-Regular|11
 
   Panel
     id: convictionPerks
@@ -1008,7 +1008,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -1017,7 +1017,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       UIWidget
@@ -1028,7 +1028,7 @@ Panel
         margin-top: 2
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('Unlocked Revelation Perks grant a bonus to all damage and \nhealing:\n* Stage 1 grants a bonus of +4 damage and healing\n* Stage 2 increases this bonus to +9\n* Stage 3 increases this bonus to +20')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
       Panel
         id: avatar
         anchors.top: prev.bottom
@@ -1042,7 +1042,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -1051,7 +1051,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       UIWidget
@@ -1062,7 +1062,7 @@ Panel
         margin-top: 2
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('Transforms you into a\npowerful form that reduces\ndamage taken and increases\ndamage dealt.')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
 
       Panel
         id: spell1
@@ -1077,7 +1077,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -1086,7 +1086,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       UIWidget
@@ -1097,7 +1097,7 @@ Panel
         margin-top: 2
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('Increase your mitigation multiplicatively.')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
 
       Panel
         id: spell2
@@ -1112,7 +1112,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -1121,7 +1121,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       UIWidget
@@ -1132,7 +1132,7 @@ Panel
         margin-top: 2
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('Increase your mitigation multiplicatively.')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
 
       Panel
         id: spell3
@@ -1147,7 +1147,7 @@ Panel
           anchors.top: parent.top
           anchors.left: parent.left
           text-align: topleft
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
         Label
           id: value
@@ -1156,7 +1156,7 @@ Panel
           anchors.top: parent.top
           anchors.right: parent.right
           text-align: topright
-          font: verdana-11px-antialised
+          ttf-font: ReggaeOne-Regular|11
           color: #dfdfdf
           margin-right: 15
       UIWidget
@@ -1167,7 +1167,7 @@ Panel
         margin-top: 2
         image-source: /images/skin/show-gui-help-grey
         !tooltip: tr('Increase your mitigation multiplicatively.')
-        tooltip-font: verdana-11px-antialised
+        tooltip-ttf-font: ReggaeOne-Regular|11
 
   UIWidget
     id: wheelPanel

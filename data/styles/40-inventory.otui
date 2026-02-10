@@ -95,7 +95,7 @@ CombatBox < UICheckBox
 
 
 InventoryButton < UIButton
-  font: righteous-12px-rounded-solid
+  ttf-font: ReggaeOne-Regular|12
   height: 18
   margin-top: 2
   text-align: center
@@ -103,7 +103,7 @@ InventoryButton < UIButton
 SoulCapLabel < GameLabel
   text-align: center
   color: #FFFFFF
-  font: cipsoftFont
+  ttf-font: ReggaeOne-Regular|10
   margin-top: 4
   text-offset: 0 3
   width: 36

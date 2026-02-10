@@ -1,5 +1,5 @@
 TextMessageLabel < UILabel
-  font: verdana-11px-rounded
+  ttf-font: ReggaeOne-Regular|11|1.4|gray
   text-align: center
   text-wrap: true
   text-auto-resize: true

@@ -1,6 +1,6 @@
 MainHeadlessWindow
   size: 358 165
-  font: DMSans-20px-bold
+  ttf-font: ReggaeOne-Regular|20
   !text: tr('Add to VIP list')
   @onEnter: modules.game_viplist.addVip()
   @onEscape: modules.game_viplist.destroyAddWindow()

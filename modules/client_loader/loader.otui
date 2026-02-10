@@ -38,7 +38,7 @@ PanelRoundedSolid
       margin.left: 24
       margin.right: 24
       !text: tr('Loading Modules')
-      font: DMSans-26px-bold
+      ttf-font: ReggaeOne-Regular|26
       text-auto-resize: true
       color: #128c4f
 
@@ -61,7 +61,7 @@ PanelRoundedSolid
       margin.top: 8
       margin.right: 24
       text: 0%
-      font: DMSans-26px-bold
+      ttf-font: ReggaeOne-Regular|26
       text-auto-resize: true
       color: #128c4f
 
@@ -71,7 +71,7 @@ LoaderProgressBar < UIProgressBar
   background-color: #1fbf6e
   border: 2 #1e2224
   background-border: 2
-  font: DMSans-26px-bold
+  ttf-font: ReggaeOne-Regular|26
   text-offset: 0 1
   text-auto-resize: true
   color: black

@@ -28,44 +28,92 @@
 #include "framework/core/eventdispatcher.h"
 #include "framework/core/graphicalapplication.h"
 #include "framework/graphics/drawpoolmanager.h"
+#include <framework/stdext/math.h>
 
 AnimatedText::AnimatedText()
 {
     m_cachedText.setFont(g_gameConfig.getAnimatedTextFont());
     m_cachedText.setAlign(Fw::AlignLeft);
+
+    // Initial random velocity for arc movement
+    // "Falls randomly to right, left or north"
+    // We simulate this with initial velocity + gravity
+    int dir = stdext::random_range(0, 2);
+    float vx = 0;
+    float vy = -140.f; // Increased initial upward burst for higher jump
+
+    if (dir == 0) { // Left
+        vx = stdext::random_range(-90.f, -50.f); // Increased side distance
+    } else if (dir == 1) { // Right
+        vx = stdext::random_range(50.f, 90.f); // Increased side distance
+    } else { // North (Up/Center)
+        vx = stdext::random_range(-15.f, 15.f);
+        vy -= 40.f; // Jump slightly higher for center hits
+    }
+    m_velocity = PointF(vx, vy);
 }
 
 void AnimatedText::drawText(const Point& dest, const Rect& visibleRect)
 {
-    const float tf = g_gameConfig.getAnimatedTextDuration(),
-        tftf = g_gameConfig.getAnimatedTextDuration() * g_gameConfig.getAnimatedTextDuration();
-
-    const auto& textSize = m_cachedText.getTextSize();
+    const float tf = g_gameConfig.getAnimatedTextDuration();
     const float t = m_animationTimer.ticksElapsed();
+    const float progress = t / tf;
 
-    Point p = dest;
-    p.x += (24.f / g_app.getAnimatedTextScale() - (textSize.width() / 2.f));
-    if (g_game.getFeature(Otc::GameDiagonalAnimatedText)) {
-        p.x -= (4 * g_app.getAnimatedTextScale() * t / tf) + (8 * g_app.getAnimatedTextScale() * t * t / tftf);
-    }
-
-    p.y += ((8.f / g_app.getAnimatedTextScale()) + ((-48.f * g_app.getAnimatedTextScale() * t) / tf));
-    p += m_offset;
-
-    if (!visibleRect.contains({ p, textSize }))
+    if (progress >= 1.0f)
         return;
 
-    p.scale(g_app.getAnimatedTextScale());
+    const auto& textSize = m_cachedText.getTextSize();
+    const float scale = g_app.getAnimatedTextScale();
 
-    const Rect& rect{ p, textSize };
-    const float t0 = tf / 1.2;
+    // Base position (centered)
+    // Original logic: p.x += (24.f / scale - (textSize.width() / 2.f));
+    PointF p(dest.x, dest.y);
+    p.x += (24.f / scale - (textSize.width() / 2.f));
+    
+    // Physics Arc
+    float t_sec = t / 1000.0f;
+    const float gravity = 350.0f; // Increased gravity for a more pronounced arc
+
+    float dx = m_velocity.x * t_sec;
+    float dy = m_velocity.y * t_sec + 0.5f * gravity * t_sec * t_sec;
+
+    p.x += dx;
+    p.y += dy;
+
+    // Manual Offset
+    p.x += m_offset.x;
+    p.y += m_offset.y;
+
+    // Growth (Size 14 -> 20 implies ~1.43x scale)
+    // Smooth transition
+    float growFactor = 1.0f + (0.43f * progress);
+    
+    // Calculate Scaled Size
+    Size finalSize = textSize * growFactor;
+    
+    // Re-center based on growth
+    // Shift left/up by half the growth difference
+    p.x -= (finalSize.width() - textSize.width()) / 2.0f;
+    p.y -= (finalSize.height() - textSize.height()) / 2.0f;
+
+    // Apply global scale to position (matching original logic)
+    p.x *= scale;
+    p.y *= scale;
+
+    Rect drawRect(std::round(p.x), std::round(p.y), finalSize.width(), finalSize.height());
+
+    // Visibility Check
+    if (!visibleRect.contains(drawRect))
+        return;
 
     Color color = m_color;
-    if (t > t0) {
-        color.setAlpha(1 - (t - t0) / (tf - t0));
+    
+    // Smooth Fade Out (Last 40%)
+    if (progress > 0.6f) {
+        color.setAlpha(1.0f - (progress - 0.6f) / 0.4f);
     }
 
-    m_cachedText.draw(rect, color);
+    m_cachedText.draw(drawRect, color);
 }
 
 void AnimatedText::onAppear()

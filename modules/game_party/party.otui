@@ -26,7 +26,7 @@ PlayerInfo < UIWidget
     id: valueHp
     anchors.left: parent.left
     anchors.top: parent.top
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
     size: 166 29
     margin-top: 19
     margin-left: 78
@@ -47,7 +47,7 @@ PlayerInfo < UIWidget
     id: valueMana
     anchors.left: parent.left
     anchors.bottom: parent.bottom
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
     size: 139 26
     margin-bottom: 36
     margin-left: 87
@@ -78,7 +78,7 @@ PlayerInfo < UIWidget
     id: valueSpecialResource
     anchors.left: parent.left
     anchors.bottom: parent.bottom
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
     size: 138 17
     margin-bottom: 20
     margin-left: 75
@@ -145,7 +145,7 @@ PartyMember < UIWidget
     id: valueHp
     anchors.left: parent.left
     anchors.top: parent.top
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
     size: 125 22
     margin-top: 13
     margin-left: 59
@@ -168,7 +168,7 @@ PartyMember < UIWidget
     id: valueMana
     anchors.left: parent.left
     anchors.bottom: parent.bottom
-    font: verdana-11px-rounded
+    ttf-font: ReggaeOne-Regular|11
     size: 104 20
     margin-bottom: 27
     margin-left: 65
