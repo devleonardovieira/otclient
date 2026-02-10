@@ -37,12 +37,21 @@ struct FontConfig
     std::string staticText;
     std::string animatedText;
     std::string creatureText;
+    int creatureTextOffsetY = 0;
+};
+
+struct CreatureColors
+{
+    std::string player;
+    std::string monster;
+    std::string npc;
 };
 
 struct PublicConfig
 {
     GraphicsConfig graphics;
     FontConfig font;
+    CreatureColors creatureColors;
 };
 
 // @bindsingleton g_configs

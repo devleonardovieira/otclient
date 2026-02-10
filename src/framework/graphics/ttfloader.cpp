@@ -66,12 +66,9 @@ void TTFLoader::terminate() {
 }
 
 BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
-                              double strokeWidth, const Color &strokeColor) {
-  if (!s_initialized) {
-    g_logger.error(
-        "FreeType library not initialized. Call TTFLoader::init() first");
-    return nullptr;
-  }
+                              double strokeWidth, const Color &strokeColor, int spacing) {
+  if (!s_initialized)
+    init();
 
   struct FTFaceDeleter {
     void operator()(FT_Face face) const noexcept {
@@ -193,7 +190,14 @@ BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
       fontName += "_s" + strokeStream.str() + "_" + colorStream.str();
     }
 
+    if (spacing != 0) {
+        fontName += "_sp" + std::to_string(spacing);
+    }
+
     auto font = std::make_shared<BitmapFont>(fontName);
+    if (spacing != 0) {
+        font->m_glyphSpacing = Size(spacing, 0);
+    }
 
     // Rasterize glyphs and collect metrics
     const int firstGlyph = 32;
@@ -240,9 +244,7 @@ BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
       int width = 0;
       int height = 0;
       int advance = (int)((slot->advance.x + 32) >> 6);
-      if (strokeWidth > 0) {
-        advance += strokeWidth;
-      }
+
       int bearingX = 0;
       int bearingY = 0;
 
@@ -552,7 +554,7 @@ BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
     font->m_glyphHeight = std::max(lineHeight, maxYOffset - minYOffset);
     font->m_firstGlyph = 32;
     font->m_yOffset = yShift;
-    font->m_glyphSpacing = Size(0, 0);
+    font->m_glyphSpacing = Size(spacing, 0);
 
     for (int i = 0; i < 256; ++i) {
 

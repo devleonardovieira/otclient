@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2010-2026 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,6 +22,7 @@
 
 #include "creature.h"
 
+#include "framework/core/configmanager.h"
 #include "animator.h"
 #include "attachedeffect.h"
 #include "game.h"
@@ -259,11 +260,14 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     const auto& parentRect = mapRect.rect;
     const auto& creatureOffset = Point(16 - displacementX, -displacementY - 2) + getDrawOffset();
 
-    Point p = dest - mapRect.drawOffset;
-    p += (creatureOffset - Point(std::round(m_jumpOffset.x), std::round(m_jumpOffset.y))) * mapRect.scaleFactor;
-    p.x *= mapRect.horizontalStretchFactor;
-    p.y *= mapRect.verticalStretchFactor;
-    p += parentRect.topLeft();
+    // Calculate using float precision to avoid subpixel jitter
+    PointF pF(dest.x - mapRect.drawOffset.x, dest.y - mapRect.drawOffset.y);
+    pF += (PointF(creatureOffset.x, creatureOffset.y) - PointF(std::round(m_jumpOffset.x), std::round(m_jumpOffset.y))) * mapRect.scaleFactor;
+    pF.x *= mapRect.horizontalStretchFactor;
+    pF.y *= mapRect.verticalStretchFactor;
+    pF += PointF(parentRect.topLeft().x, parentRect.topLeft().y);
+
+    Point p(std::round(pF.x), std::round(pF.y));
 
     auto fillColor = DEFAULT_COLOR;
 
@@ -284,8 +288,9 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         p.scale(g_app.getCreatureInformationScale());
     }
 
+    int yOffset = g_configs.getPublicConfig().font.creatureTextOffsetY;
     auto backgroundRect = Rect(p.x - (15.5), p.y - cropSizeBackGround, 31, 4);
-    auto textRect = Rect(p.x - nameSize.width() / 2.0, p.y - cropSizeText, nameSize);
+    auto textRect = Rect(p.x - nameSize.width() / 2.0, p.y - cropSizeText + yOffset, nameSize);
 
     constexpr int minNameBarSpacing = 2;
     const int currentSpacing = backgroundRect.top() - textRect.bottom();
@@ -311,7 +316,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
     // health rect is based on background rect, so no worries
     Rect healthRect = backgroundRect.expanded(-1);
-    healthRect.setWidth((m_healthPercent / 100.0) * 29);
+    healthRect.setWidth(std::round((m_healthPercent / 100.0) * 29));
 
     Rect barsRect = backgroundRect;
 
@@ -387,7 +392,18 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         if (nameProgram)
             g_drawPool.setShaderProgram(nameProgram);
 
-        m_name.draw(textRect, fillColor);
+        Color nameColor = fillColor;
+        const auto& creatureColors = g_configs.getPublicConfig().creatureColors;
+
+        if (isPlayer() && !creatureColors.player.empty()) {
+            nameColor = Color(creatureColors.player);
+        } else if (isMonster() && !creatureColors.monster.empty()) {
+            nameColor = Color(creatureColors.monster);
+        } else if (isNpc() && !creatureColors.npc.empty()) {
+            nameColor = Color(creatureColors.npc);
+        }
+
+        m_name.draw(textRect, nameColor);
 
         if (nameProgram)
             g_drawPool.resetShaderProgram();

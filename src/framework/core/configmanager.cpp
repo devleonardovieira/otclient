@@ -162,6 +162,12 @@ void ConfigManager::loadPublicConfig(const std::string& fileName) {
         checkTTF("static-text", m_publicConfig.font.staticText);
         checkTTF("animated-text", m_publicConfig.font.animatedText);
         checkTTF("creature-text", m_publicConfig.font.creatureText);
+
+        m_publicConfig.font.creatureTextOffsetY = reader.GetInteger("font", "creature-text-offset-y", m_publicConfig.font.creatureTextOffsetY);
+
+        m_publicConfig.creatureColors.player = reader.Get("creature-colors", "player", m_publicConfig.creatureColors.player);
+        m_publicConfig.creatureColors.monster = reader.Get("creature-colors", "monster", m_publicConfig.creatureColors.monster);
+        m_publicConfig.creatureColors.npc = reader.Get("creature-colors", "npc", m_publicConfig.creatureColors.npc);
     } catch (const std::exception& e) {
         g_logger.error("Failed to parse public config '{}': {}", fileName, e.what());
     }

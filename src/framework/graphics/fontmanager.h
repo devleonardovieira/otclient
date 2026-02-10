@@ -34,7 +34,7 @@ public:
 
     bool importFont(const std::string& file);
     bool importFont(const std::string& file, int fontSize);
-    std::string importTTF(const std::string& file, int fontSize = 12, double strokeWidth = 0.0, const Color& strokeColor = Color::black);
+    std::string importTTF(const std::string& file, int fontSize = 12, double strokeWidth = 0.0, const Color& strokeColor = Color::black, int spacing = 0);
 
     bool fontExists(std::string_view fontName);
     BitmapFontPtr getFont(std::string_view fontName);

@@ -96,6 +96,7 @@ void GameConfig::loadFonts() {
             }
             double strokeWidth = 0.0;
             Color strokeColor = Color::black;
+            int spacing = 0;
             if (parts.size() > 2) {
                 try { strokeWidth = std::stod(parts[2]); } catch (...) { strokeWidth = 0.0; }
                 if (strokeWidth < 0.0) strokeWidth = 0.0;
@@ -107,9 +108,25 @@ void GameConfig::loadFonts() {
                     g_logger.debug("Invalid stroke color in font descriptor: {}", fontName);
                 }
             }
-            std::string actualName = g_fonts.importTTF(file, size, strokeWidth, strokeColor);
+            if (parts.size() > 4) {
+                try {
+                    std::string spacingStr = parts[4];
+                    // Trim whitespace
+                    spacingStr.erase(0, spacingStr.find_first_not_of(" \t\r\n"));
+                    spacingStr.erase(spacingStr.find_last_not_of(" \t\r\n") + 1);
+                    if (!spacingStr.empty())
+                        spacing = std::stoi(spacingStr);
+                } catch (...) {
+                    g_logger.error("Failed to parse spacing from font descriptor: '{}'", parts[4]);
+                    spacing = 0;
+                }
+            }
+            std::string actualName = g_fonts.importTTF(file, size, strokeWidth, strokeColor, spacing);
             if (!actualName.empty()) {
                 fontName = actualName;
+                if (spacing != 0) {
+                    g_logger.info("Loaded font '{}' with spacing {}", fontName, spacing);
+                }
             }
         }
     };
