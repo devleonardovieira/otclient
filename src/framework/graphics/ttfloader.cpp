@@ -109,14 +109,28 @@ BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
       lowerFileName.compare(lowerFileName.size() - 4, 4, ".otf") == 0;
 
     if (!hasTtfSuffix && !hasOtfSuffix) {
-      fileName += ".ttf";
+      if (g_resources.fileExists(fileName + ".ttf"))
+        fileName += ".ttf";
+      else if (g_resources.fileExists(fileName + ".otf"))
+        fileName += ".otf";
+      else if (g_resources.fileExists("/data/fonts/ttf/" + fileName + ".ttf"))
+        fileName += ".ttf"; 
+      else if (g_resources.fileExists("data/fonts/ttf/" + fileName + ".ttf"))
+        fileName += ".ttf";
+      else if (g_resources.fileExists("/data/fonts/" + fileName + ".ttf"))
+        fileName += ".ttf"; 
+      else
+        fileName += ".ttf"; // default fallback
     }
 
     // Search paths for the font file
     std::vector<std::string> searchPaths = {
       fileName,                      // Original path
+      "/data/fonts/" + fileName,     // Direct in fonts
       "/data/fonts/ttf/" + fileName, // Default TTF directory
-      "data/fonts/ttf/" + fileName   // Without leading slash
+      "data/fonts/ttf/" + fileName,  // Without leading slash
+      "data/fonts/" + fileName,      // Direct in fonts without leading slash
+      g_resources.resolvePath(fileName) // Try resolving relative path
     };
 
     // If already absolute in resources, don't prepend search paths
@@ -132,10 +146,39 @@ BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
     }
 
     if (resolvedPath.empty()) {
+      // Try one last desperate search in all known font directories
+      std::vector<std::string> fallbackPaths = {
+          "/data/fonts/",
+          "/data/fonts/ttf/",
+          "data/fonts/",
+          "data/fonts/ttf/"
+      };
+      
+      for(const auto& dir : fallbackPaths) {
+          std::string testPath = dir + fileName;
+          if(g_resources.fileExists(testPath)) {
+              resolvedPath = testPath;
+              break;
+          }
+      }
+    }
+
+    if (resolvedPath.empty()) {
       g_logger.error("TTF font file not found: {} (searched in /data/fonts/ "
                      "and other locations)",
                      file);
+      // Tentativa final de logar o que foi tentado para debug
+      
+      for(const auto& p : searchPaths) {
+          g_logger.debug("Tried path: {}", p);
+      }
+      
       return nullptr;
+    }
+
+    if (!g_resources.fileExists(resolvedPath)) {
+         g_logger.error("TTF font file resolved but not found on disk: {}", resolvedPath);
+         return nullptr;
     }
 
     std::string fontBuffer = g_resources.readFileContents(resolvedPath);

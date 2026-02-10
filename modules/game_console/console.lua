@@ -231,7 +231,8 @@ function init()
 	g_keyboard.bindKeyPress("Ctrl+A", function()
 		consoleTextEdit:clearText()
 	end, consolePanel)
-	consoleTabBar:setNavigation(consolePanel:getChildById("prevChannelButton"), consolePanel:getChildById("nextChannelButton"))
+	consoleTabBar:setNavigation(consolePanel:getChildById("prevChannelButton"),
+		consolePanel:getChildById("nextChannelButton"))
 
 	consoleTabBar.onTabChange = onTabChange
 
@@ -340,11 +341,10 @@ function visibleConsolePanel(state)
 		getCurrentTab().tabPanel:getChildById("consoleBuffer"):setOn(state)
 		getCurrentTab().tabPanel:getChildById("consoleScrollBar"):setVisible(state)
 	end)
-	
 end
 
 function enableChat(temporarily)
-	  if g_platform.isMobile() then
+	if g_platform.isMobile() then
 		return
 	end
 
@@ -382,7 +382,7 @@ function enableChat(temporarily)
 end
 
 function disableChat(temporarily)
-	  if g_platform.isMobile() then
+	if g_platform.isMobile() then
 		return
 	end
 
@@ -698,8 +698,10 @@ function openPlayerReportRuleViolationWindow()
 
 		violationReportTab = addTab(tr("Report Rule") .. "...", true)
 
-		addTabText(tr("Please wait patiently for a gamemaster to reply") .. ".", SpeakTypesSettings.privateRed, violationReportTab)
-		addTabText(applyMessagePrefixies(g_game.getCharacterName(), 0, text), SpeakTypesSettings.say, violationReportTab, g_game.getCharacterName())
+		addTabText(tr("Please wait patiently for a gamemaster to reply") .. ".", SpeakTypesSettings.privateRed,
+			violationReportTab)
+		addTabText(applyMessagePrefixies(g_game.getCharacterName(), 0, text), SpeakTypesSettings.say, violationReportTab,
+			g_game.getCharacterName())
 
 		violationReportTab.locked = true
 
@@ -848,7 +850,7 @@ function addText(text, speaktype, tabName, creatureName)
 	end
 	if tab then
 		addTabText(text, speaktype, tab, creatureName)
-		else
+	else
 		pwarning(string.format('[Console] Failed to log text; tab "%s" unavailable.', tostring(tabName)))
 	end
 end
@@ -1164,7 +1166,7 @@ function addTabText(text, speaktype, tab, creatureName)
 	-- Linha visível (sem prefixo do canal)
 	local coloredStr = ""
 	if ts then
-		coloredStr = coloredStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
+		coloredStr = coloredStr .. "{" .. ts .. " " .. ", " .. "#FFDA2B" .. "}"
 	end
 	local namePart, body = rest:match("^(.-):%s*(.*)$")
 	if namePart then
@@ -1174,22 +1176,22 @@ function addTabText(text, speaktype, tab, creatureName)
 		end
 		if nOnly and lvl then
 			coloredStr = coloredStr .. "{" .. nOnly .. ", " .. "#1fbf6e" .. "}"
-			coloredStr = coloredStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
+			coloredStr = coloredStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFDA2B" .. "}"
 		else
 			coloredStr = coloredStr .. "{" .. namePart .. ": " .. ", " .. "#1fbf6e" .. "}"
 		end
-		coloredStr = coloredStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
+		coloredStr = coloredStr .. "{" .. body .. ", " .. "#FFDA2B" .. "}"
 	else
-		coloredStr = coloredStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
+		coloredStr = coloredStr .. "{" .. rest .. ", " .. "#FFDA2B" .. "}"
 	end
 	label:setColoredText(coloredStr)
 	consoleTabBar:blinkTab(tab)
 
 	if table.contains({
-		4,
-		5,
-		6
-	}, tab.channelId) then
+			4,
+			5,
+			6
+		}, tab.channelId) then
 		local playerName = g_game.getCharacterName():gsub("[%[%]]", "%%%0")
 
 		if string.find(text:lower(), tr("@%s", playerName:lower())) then
@@ -1212,7 +1214,7 @@ function addTabText(text, speaktype, tab, creatureName)
 	local phantomStr = ""
 	phantomStr = phantomStr .. "{" .. "(" .. tabText .. ") " .. ", " .. channelColor .. "}"
 	if ts then
-		phantomStr = phantomStr .. "{" .. ts .. " " .. ", " .. "#FFFFFF" .. "}"
+		phantomStr = phantomStr .. "{" .. ts .. " " .. ", " .. "#FFDA2B" .. "}"
 	end
 	if namePart then
 		local nOnly, lvl = namePart:match("^(.-)%s*%((%d+)%)$")
@@ -1221,13 +1223,13 @@ function addTabText(text, speaktype, tab, creatureName)
 		end
 		if nOnly and lvl then
 			phantomStr = phantomStr .. "{" .. nOnly .. ", " .. "#1fbf6e" .. "}"
-			phantomStr = phantomStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFFFFF" .. "}"
+			phantomStr = phantomStr .. "{" .. " (" .. lvl .. "): " .. ", " .. "#FFDA2B" .. "}"
 		else
 			phantomStr = phantomStr .. "{" .. namePart .. ": " .. ", " .. "#1fbf6e" .. "}"
 		end
-		phantomStr = phantomStr .. "{" .. body .. ", " .. "#FFFFFF" .. "}"
+		phantomStr = phantomStr .. "{" .. body .. ", " .. "#FFDA2B" .. "}"
 	else
-		phantomStr = phantomStr .. "{" .. rest .. ", " .. "#FFFFFF" .. "}"
+		phantomStr = phantomStr .. "{" .. rest .. ", " .. "#FFDA2B" .. "}"
 	end
 	addConsolePhatomLine(phantomStr, speaktype.color)
 
@@ -1473,10 +1475,10 @@ function processMessageMenu(mousePos, mouseButton, creatureName, text, label, ta
 		end
 
 		if table.contains({
-			4,
-			5,
-			6
-		}, tab.channelId) and creatureName ~= g_game.getLocalPlayer():getName() then
+				4,
+				5,
+				6
+			}, tab.channelId) and creatureName ~= g_game.getLocalPlayer():getName() then
 			menu:addOption(tr("Responder Jogador"), function()
 				setTextEditText(tr("@%s ", creatureName))
 			end)
@@ -1539,9 +1541,10 @@ function sendMessage(message, tab)
 	local name = tab:getText()
 
 	if tab == serverTab or tab == getRuleViolationsTab() then
-        tab = defaultTab or tab
-        name = (defaultTab and defaultTab.getText and defaultTab:getText()) or (tab and tab.getText and tab:getText()) or tr("Default")
-    end
+		tab = defaultTab or tab
+		name = (defaultTab and defaultTab.getText and defaultTab:getText()) or (tab and tab.getText and tab:getText()) or
+			tr("Default")
+	end
 
 	local channel = tab.channelId
 	local originalMessage = message
@@ -1586,7 +1589,8 @@ function sendMessage(message, tab)
 		channel = 0
 	end
 
-	local findIni, findEnd, chatCommandInitial, chatCommandPrivate, chatCommandEnd, chatCommandMessage = message:find("([%*%@])(.+)([%*%@])(.*)")
+	local findIni, findEnd, chatCommandInitial, chatCommandPrivate, chatCommandEnd, chatCommandMessage = message:find(
+		"([%*%@])(.+)([%*%@])(.*)")
 
 	if findIni ~= nil and findIni == 1 and chatCommandInitial == chatCommandEnd then
 		chatCommandPrivateRepeat = false
@@ -1617,12 +1621,12 @@ function sendMessage(message, tab)
 
 	local speaktypedesc
 
-	 if (channel or tab == defaultTab) and not chatCommandPrivateReady then
-        if tab == defaultTab then
-            local sayButton = consolePanel and consolePanel:getChildById("sayModeButton")
-            local sayMode = (sayButton and sayButton.sayMode) or 2 -- default index for "say"
-            local sayEntry = SayModes[sayMode]
-            speaktypedesc = chatCommandSayMode or (sayEntry and sayEntry.speakTypeDesc) or "say"
+	if (channel or tab == defaultTab) and not chatCommandPrivateReady then
+		if tab == defaultTab then
+			local sayButton = consolePanel and consolePanel:getChildById("sayModeButton")
+			local sayMode = (sayButton and sayButton.sayMode) or 2 -- default index for "say"
+			local sayEntry = SayModes[sayMode]
+			speaktypedesc = chatCommandSayMode or (sayEntry and sayEntry.speakTypeDesc) or "say"
 
 			if speaktypedesc ~= "say" then
 				sayModeChange(2)
@@ -1632,12 +1636,12 @@ function sendMessage(message, tab)
 		end
 
 		local speaktype = SpeakTypesSettings[speaktypedesc]
-        if speaktype and speaktype.speakType then
-            g_game.talkChannel(speaktype.speakType, channel, message)
-        else
-            g_game.talkChannel(MessageModes.Say, channel or 0, message)
-            speaktype = SpeakTypesSettings.say
-        end
+		if speaktype and speaktype.speakType then
+			g_game.talkChannel(speaktype.speakType, channel, message)
+		else
+			g_game.talkChannel(MessageModes.Say, channel or 0, message)
+			speaktype = SpeakTypesSettings.say
+		end
 
 		return
 	else
@@ -1669,7 +1673,7 @@ function sendMessage(message, tab)
 			speaktypedesc = "privatePlayerToPlayer"
 		end
 
-		 local speaktype = SpeakTypesSettings[speaktypedesc] or SpeakTypesSettings.privatePlayerToPlayer
+		local speaktype = SpeakTypesSettings[speaktypedesc] or SpeakTypesSettings.privatePlayerToPlayer
 		local player = g_game.getLocalPlayer()
 
 		g_game.talkPrivate(speaktype.speakType, name, message)

@@ -5,6 +5,8 @@ local function importTTF(filePath)
     local ok, res = pcall(g_fonts.importTTFFont, name, filePath, 16)
     if not ok or not res then
         g_logger.error(string.format("Failed to import TTF/OTF font '%s'", filePath))
+    else
+        g_logger.info(string.format("Imported TTF font: %s", name))
     end
 end
 
@@ -12,17 +14,17 @@ local resourceLoaders = {
     ["otui"] = g_ui.importStyle,
     ["otfont"] = g_fonts.importFont,
     ["otps"] = g_particles.importParticle,
-    ["ttf"] = importTTF,
-    ["otf"] = importTTF,
+    --[[    ["ttf"] = importTTF,
+    ["otf"] = importTTF, ]]
 }
 
 function init()
     local device = g_platform.getDevice()
     importResources("styles", "otui", device)
     importResources("fonts", "otfont", device)
-    -- Desativado: não importar TTF/OTF
-    -- importResources("fonts", "ttf", device)
-    -- importResources("fonts", "otf", device)
+    -- Import TTF/OTF fonts
+    --[[   importResources("fonts", "ttf", device)
+    importResources("fonts", "otf", device) ]]
     importResources("particles", "otps", device)
 
     g_mouse.loadCursors('/cursors/cursors')

@@ -38,7 +38,7 @@ PanelRoundedSolid
       margin.left: 24
       margin.right: 24
       !text: tr('Loading Modules')
-      ttf-font: ReggaeOne-Regular|26
+      ttf-font: ReggaeOne-Regular|26|0.5|black
       text-auto-resize: true
       color: #128c4f
 

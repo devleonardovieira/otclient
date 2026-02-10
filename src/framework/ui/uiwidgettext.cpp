@@ -313,6 +313,15 @@ void UIWidget::parseTextStyle(const OTMLNodePtr& styleNode)
 
                 if (!parts.empty()) {
                     std::string fontName = parts[0];
+                    // Fix: Strip "ttf-font:" prefix if present (common in legacy OTUI files)
+                    // This prevents passing "ttf-font: Name" to the loader, which causes file not found errors
+                    if (fontName.rfind("ttf-font:", 0) == 0) {
+                        fontName = fontName.substr(9);
+                        if (!fontName.empty() && fontName[0] == ' ') {
+                            fontName.erase(0, 1);
+                        }
+                    }
+
                     int fontSize = parts.size() > 1 ? std::atoi(parts[1].c_str()) : 12;
                     double fontStroke = parts.size() > 2 ? std::atof(parts[2].c_str()) : 0.0;
                     Color fontStrokeColor = parts.size() > 3 ? Color(parts[3]) : Color::black;

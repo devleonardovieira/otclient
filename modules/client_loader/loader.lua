@@ -4,7 +4,7 @@ local loaderWindow
 local scheduledEvent
 local loadFn
 local startMillis = 0
-local minDisplayMs = 1 -- tempo mínimo de exibição da tela de loading
+local minDisplayMs = 500 -- tempo mínimo de exibição da tela de loading
 local hiddenWidgets = {}
 local rootConn
 local bgConn
@@ -30,7 +30,10 @@ local function finalizeStartup()
   local remaining = math.max(minDisplayMs - elapsed, 0)
   local function finish()
     setProgress(100, tr('Finished'))
-    if scheduledEvent then removeEvent(scheduledEvent) scheduledEvent = nil end
+    if scheduledEvent then
+      removeEvent(scheduledEvent)
+      scheduledEvent = nil
+    end
     if loaderWindow then
       -- ensure no input is grabbed and cleanly destroy
       pcall(function() loaderWindow:ungrabMouse() end)
@@ -179,56 +182,74 @@ function Loader.init(loadModulesFunc)
   startMillis = g_clock.millis()
 
   -- Define staged loading mirroring init.lua loadModules
-  steps = {
-    {
-      percent = 10,
-      status = tr('Loading client modules...'),
-      delay = 50,
-      run = function()
-        g_modules.autoLoadModules(499)
+  steps = {}
+
+  local modules = g_modules.getModules()
+  local autoModules = {}
+  for _, m in pairs(modules) do
+    if m:isAutoLoad() then table.insert(autoModules, m) end
+  end
+  table.sort(autoModules, function(a, b)
+    if a:getAutoLoadPriority() == b:getAutoLoadPriority() then
+      return a:getName() < b:getName()
+    end
+    return a:getAutoLoadPriority() < b:getAutoLoadPriority()
+  end)
+
+  -- Debug logs to verify loaded modules
+  print(string.format("[Loader] Found %d autoload modules to load.", #autoModules))
+  for i, m in ipairs(autoModules) do
+    print(string.format("[Loader]   %02d. Priority: %d | Module: %s", i, m:getAutoLoadPriority(), m:getName()))
+  end
+
+  local function addModuleSteps(minP, maxP, startPct, endPct)
+    local subset = {}
+    for _, m in ipairs(autoModules) do
+      local p = m:getAutoLoadPriority()
+      if p > minP and p <= maxP then
+        table.insert(subset, m)
       end
-    },
-    {
-      percent = 25,
-      status = tr('Initializing client...'),
-      delay = 50,
-      run = function()
-        g_modules.ensureModuleLoaded('client')
-      end
-    },
-    {
-      percent = 50,
-      status = tr('Loading game modules...'),
-      delay = 50,
-      run = function()
-        g_modules.autoLoadModules(999)
-      end
-    },
-    {
-      percent = 65,
-      status = tr('Preparing game interface...'),
-      delay = 50,
-      run = function()
-        g_modules.ensureModuleLoaded('game_interface')
-      end
-    },
-    {
-      percent = 85,
-      status = tr('Loading mods...'),
-      delay = 50,
-      run = function()
-        g_modules.autoLoadModules(9999)
-      end
-    },
-    {
-      percent = 95,
-      status = tr('Initializing mods...'),
-      delay = 50,
-      run = function()
-        g_modules.ensureModuleLoaded('client_mods')
-      end
-    }
-  }
+    end
+    local count = #subset
+    if count == 0 then return end
+    for i, m in ipairs(subset) do
+      local module = m
+      local p = startPct + math.floor((i / count) * (endPct - startPct))
+      table.insert(steps, {
+        percent = p,
+        status = tr('Loading module: %s', module:getName()),
+        delay = 150,
+        run = function() module:load() end
+      })
+    end
+  end
+
+  addModuleSteps(-999999, 499, 5, 25)
+
+  table.insert(steps, {
+    percent = 25,
+    status = tr('Initializing client...'),
+    delay = 150,
+    run = function() g_modules.ensureModuleLoaded('client') end
+  })
+
+  addModuleSteps(499, 999, 25, 60)
+
+  table.insert(steps, {
+    percent = 65,
+    status = tr('Preparing game interface...'),
+    delay = 150,
+    run = function() g_modules.ensureModuleLoaded('game_interface') end
+  })
+
+  addModuleSteps(999, 9999, 65, 90)
+
+  table.insert(steps, {
+    percent = 95,
+    status = tr('Initializing mods...'),
+    delay = 150,
+    run = function() g_modules.ensureModuleLoaded('client_mods') end
+  })
 
   setProgress(0, tr('Starting...'))
   currentStep = 0
