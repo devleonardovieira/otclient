@@ -17,5 +17,5 @@ Module
     - client_topmenu
     - client_background
     - client_options
-    - client_entergame2
+    - client_entergame
     - client_camera

@@ -169,6 +169,7 @@ MainWindow
   id: partyWindow
   text: Party
   size: 700 400
+  ttf-font: ReggaeOne-Regular|30
   @onEscape: self:hide()
 
   Panel

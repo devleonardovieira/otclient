@@ -1006,7 +1006,7 @@ protected:
 
     uint16_t m_textOverflowLength{ 0 };
     CoordsBufferPtr m_textUnderline;
-    int m_strokeWidth{ 0 };
+    double m_strokeWidth{ 0.0 };
     Color m_strokeColor{ Color::black };	
 
     // Tracks the originally requested TTF font (base name) and size so we
@@ -1073,8 +1073,8 @@ public:
     }
     void setTextOnlyUpperCase(const bool textOnlyUpperCase) { setProp(PropTextOnlyUpperCase, textOnlyUpperCase); setText(m_text); }
     void setFont(std::string_view fontName);
-    void setTTFFont(std::string_view fontName, int fontSize = 12, int strokeWidth = 0, const Color& strokeColor = Color::black);
-    void setStroke(int strokeWidth, const Color& strokeColor = Color::black);
+    void setTTFFont(std::string_view fontName, int fontSize = 12, double strokeWidth = 0.0, const Color& strokeColor = Color::black);
+    void setStroke(double strokeWidth, const Color& strokeColor = Color::black);
     void setFontScale(const float scale) { m_fontScale = scale; m_textCachedScreenCoords = {}; updateText(); }
     void setTextOverflowLength(uint16_t length) { m_textOverflowLength = length; updateText(); }
     void setTextOverflowCharacter(std::string character) { m_textOverflowCharacter = character; updateText(); }

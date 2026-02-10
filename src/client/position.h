@@ -22,6 +22,15 @@
 
 #pragma once
 
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include <framework/const.h>
+#include <framework/util/point.h>
 #include "const.h"
 
 class Position

@@ -1,7 +1,7 @@
 Module
-  name: client_entergame2
+  name: client_entergame
   description: Basic EnterGame placeholder module
-  author: Deadpool/Leonardo Vieira
+  author: Godness
   website: ShinOnline.com
   scripts: [ entergame, characterlist ]
 

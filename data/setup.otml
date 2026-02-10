@@ -38,7 +38,7 @@ game
     min-static-text-duration: 3000
 
 font
-  widget: ReggaeOne-Regular-12px
-  static-text: ReggaeOne-Regular-12px
-  animated-text: ReggaeOne-Regular-12px
-  creature-text: ReggaeOne-Regular-12px
+  widget: ReggaeOne-Regular|12|0|black
+  static-text: ReggaeOne-Regular|12
+  animated-text: ReggaeOne-Regular|12
+  creature-text: ReggaeOne-Regular|20|1|red

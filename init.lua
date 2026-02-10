@@ -42,7 +42,6 @@ local ENABLE_SERVERS = true
 Servers_init = {}
 
 if ENABLE_SERVERS then
-
     ---
     -- List of servers and their configuration parameters.
     -- Each entry defines port, protocol, and authentication options.
@@ -167,7 +166,7 @@ local function loadModules()
     end
 
     -- uncomment the line below so that modules are reloaded when modified. (Note: Use only mod dev)
-    -- g_modules.enableAutoReload()
+    g_modules.enableAutoReload()
 end
 
 -- run updater, must use data.zip

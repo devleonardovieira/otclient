@@ -20,7 +20,7 @@ Panel
     padding: 2
     color: #1fbf6e
 
-  Label-16px-Bold
+  Label
     id: alphaId
     text: ALPHA
     anchors.bottom: parent.bottom
@@ -31,8 +31,10 @@ Panel
     text-auto-resize: true
     width: 120
     padding: 2
+    ttf-font: ReggaeOne-Regular
+    ttf-font-size: 22
     color: #ffffff
-    Label-13px-Bold
+    Label
       text: version 0.1a
       anchors.bottom: parent.bottom
       anchors.right: parent.right
@@ -40,6 +42,8 @@ Panel
       margin-right: -4
       text-auto-resize: true
       color: #1fbf6e
+      ttf-font: ReggaeOne-Regular
+      ttf-font-size: 12
       
 
   UIParticles
@@ -65,4 +69,4 @@ Panel
     anchors.top: prev.top
     anchors.right: prev.left
     !text: tr('Logout')
-    @onClick: modules.client_entergame2.CharacterList.hide(true)
+    @onClick: modules.client_entergame.CharacterList.hide(true)

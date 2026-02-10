@@ -222,15 +222,32 @@ void UIWidget::parseTextStyle(const OTMLNodePtr& styleNode)
 {
 
     int ttfFontSize = 12; //default
-    int ttfStrokeWidth = 0;
+    double ttfStrokeWidth = 0.0;
     Color ttfStrokeColor = Color::black;	
     std::string ttfFontName;
     
     for (const auto& node : styleNode->children()) {
         if (node->tag() == "ttf-font-size")
             ttfFontSize = node->value<int>();
-        else if (node->tag() == "ttf-font")
-            ttfFontName = node->value();
+        else if (node->tag() == "ttf-font") {
+            std::string value = node->value();
+            if (value.find('|') != std::string::npos) {
+                std::vector<std::string> parts;
+                std::string part;
+                std::istringstream stream(value);
+                while (std::getline(stream, part, '|')) {
+                    parts.push_back(part);
+                }
+                if (!parts.empty()) {
+                    ttfFontName = parts[0];
+                    if (parts.size() > 1) ttfFontSize = std::atoi(parts[1].c_str());
+                    if (parts.size() > 2) ttfStrokeWidth = std::atof(parts[2].c_str());
+                    if (parts.size() > 3) ttfStrokeColor = Color(parts[3]);
+                }
+            } else {
+                ttfFontName = value;
+            }
+        }
         else if (node->tag() == "ttf-stroke") {
 
             std::string strokeValue = node->value();
@@ -242,7 +259,7 @@ void UIWidget::parseTextStyle(const OTMLNodePtr& styleNode)
             }
         }
         else if (node->tag() == "ttf-stroke-width")
-            ttfStrokeWidth = node->value<int>();
+            ttfStrokeWidth = node->value<double>();
         else if (node->tag() == "ttf-stroke-color")
             ttfStrokeColor = Color(node->value());
         else if (node->tag() == "stroke") {
@@ -285,8 +302,26 @@ void UIWidget::parseTextStyle(const OTMLNodePtr& styleNode)
         else if (tag == "text-only-upper-case")
             setTextOnlyUpperCase(node->value<bool>());
         else if (node->tag() == "font") {
-            if (ttfFontName.empty())
-                setFont(node->value());
+            std::string value = node->value();
+            if (value.find('|') != std::string::npos) {
+                std::vector<std::string> parts;
+                std::string part;
+                std::istringstream stream(value);
+                while (std::getline(stream, part, '|')) {
+                    parts.push_back(part);
+                }
+
+                if (!parts.empty()) {
+                    std::string fontName = parts[0];
+                    int fontSize = parts.size() > 1 ? std::atoi(parts[1].c_str()) : 12;
+                    double fontStroke = parts.size() > 2 ? std::atof(parts[2].c_str()) : 0.0;
+                    Color fontStrokeColor = parts.size() > 3 ? Color(parts[3]) : Color::black;
+                    
+                    setTTFFont(fontName, fontSize, fontStroke, fontStrokeColor);
+                }
+            } else if (ttfFontName.empty()) {
+                setFont(value);
+            }
         }
         else if (tag == "font-scale")
             setFontScale(node->value<float>());
@@ -525,7 +560,7 @@ void UIWidget::setFont(const std::string_view fontName)
     refreshHtml(true);
 }
 
-void UIWidget::setTTFFont(const std::string_view fontName, int fontSize, int strokeWidth, const Color& strokeColor)
+void UIWidget::setTTFFont(const std::string_view fontName, int fontSize, double strokeWidth, const Color& strokeColor)
 {
     const std::string fontPath(fontName);
     std::string baseName = std::string(fontName);
@@ -543,7 +578,7 @@ void UIWidget::setTTFFont(const std::string_view fontName, int fontSize, int str
 
     std::string uniqueFontName = baseName + "_" + std::to_string(fontSize);
 	
-    if (strokeWidth > 0) {
+    if (strokeWidth > 0.0) {
 
         std::ostringstream colorStream;
         colorStream << std::hex << std::setfill('0') 
@@ -551,7 +586,13 @@ void UIWidget::setTTFFont(const std::string_view fontName, int fontSize, int str
                     << std::setw(2) << (int)strokeColor.g()
                     << std::setw(2) << (int)strokeColor.b()
                     << std::setw(2) << (int)strokeColor.a();
-        uniqueFontName += "_s" + std::to_string(strokeWidth) + "_" + colorStream.str();
+        
+        // Use stringstream for stroke width to avoid trailing zeros or use specific precision
+        std::ostringstream strokeStream;
+        strokeStream.precision(2);
+        strokeStream << std::fixed << strokeWidth;
+        
+        uniqueFontName += "_s" + strokeStream.str() + "_" + colorStream.str();
     }	
     
     if (!g_fonts.fontExists(uniqueFontName)) {
@@ -575,7 +616,7 @@ void UIWidget::setTTFFont(const std::string_view fontName, int fontSize, int str
     refreshHtml(true);
 }
 
-void UIWidget::setStroke(int strokeWidth, const Color& strokeColor)
+void UIWidget::setStroke(double strokeWidth, const Color& strokeColor)
 {
 
     if (m_font) {

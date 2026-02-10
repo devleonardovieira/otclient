@@ -66,7 +66,7 @@ void TTFLoader::terminate() {
 }
 
 BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
-                              int strokeWidth, const Color &strokeColor) {
+                              double strokeWidth, const Color &strokeColor) {
   if (!s_initialized) {
     g_logger.error(
         "FreeType library not initialized. Call TTFLoader::init() first");
@@ -178,14 +178,19 @@ BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
     fontName = fontName + "_" + std::to_string(fontSize);
 
     // Include stroke settings in the font cache key
-    if (strokeWidth > 0) {
+    if (strokeWidth > 0.0) {
       std::ostringstream colorStream;
       colorStream << std::hex << std::setfill('0') << std::setw(2)
                   << (int)strokeColor.r() << std::setw(2)
                   << (int)strokeColor.g() << std::setw(2)
                   << (int)strokeColor.b() << std::setw(2)
                   << (int)strokeColor.a();
-      fontName += "_s" + std::to_string(strokeWidth) + "_" + colorStream.str();
+      
+      std::ostringstream strokeStream;
+      strokeStream.precision(2);
+      strokeStream << std::fixed << strokeWidth;
+
+      fontName += "_s" + strokeStream.str() + "_" + colorStream.str();
     }
 
     auto font = std::make_shared<BitmapFont>(fontName);
@@ -320,7 +325,7 @@ BitmapFontPtr TTFLoader::load(const std::string &file, int fontSize,
       glyphsCoords[i] =
           Rect(atlasX, atlasY, glyphsSize[i].width(), glyphsSize[i].height());
 
-      if (strokeWidth > 0 && stroker) {
+      if (strokeWidth > 0.0 && stroker) {
         const auto blendPixelRGBA = [&](int dstIdx, uint8_t srcR, uint8_t srcG,
                                         uint8_t srcB, uint8_t srcA) {
           if (srcA == 0)

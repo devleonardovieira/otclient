@@ -872,6 +872,7 @@ void UIWidget::parseBaseStyle(const OTMLNodePtr& styleNode)
                         throw OTMLException(node, "invalid anchor target edge");
 
                     addAnchor(anchoredEdge, hookedWidgetId, hookedEdge);
+                }
             }
         }
         else if (node->tag() == "events") {
@@ -886,7 +887,6 @@ void UIWidget::parseBaseStyle(const OTMLNodePtr& styleNode)
     }
 }
 
-}
 
 void UIWidget::drawBackground(const Rect& screenCoords) const
 {

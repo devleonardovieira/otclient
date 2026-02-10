@@ -149,6 +149,19 @@ void ConfigManager::loadPublicConfig(const std::string& fileName) {
         m_publicConfig.font.staticText = reader.Get("font", "static-text", m_publicConfig.font.staticText);
         m_publicConfig.font.animatedText = reader.Get("font", "animated-text", m_publicConfig.font.animatedText);
         m_publicConfig.font.creatureText = reader.Get("font", "creature-text", m_publicConfig.font.creatureText);
+
+        auto checkTTF = [&](const std::string& key, std::string& target) {
+            std::string ttf = reader.Get("font", key + "-ttf-font", "");
+            int size = reader.GetInteger("font", key + "-ttf-font-size", 0);
+            if (!ttf.empty() && size > 0) {
+                target = ttf + "|" + std::to_string(size);
+            }
+        };
+
+        checkTTF("widget", m_publicConfig.font.widget);
+        checkTTF("static-text", m_publicConfig.font.staticText);
+        checkTTF("animated-text", m_publicConfig.font.animatedText);
+        checkTTF("creature-text", m_publicConfig.font.creatureText);
     } catch (const std::exception& e) {
         g_logger.error("Failed to parse public config '{}': {}", fileName, e.what());
     }

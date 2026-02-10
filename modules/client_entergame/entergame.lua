@@ -2,7 +2,7 @@ EnterGameWindow = nil
 EnterGame = EnterGame or {}
 local LOCAL_API_KEY = "6f8d9c2a1b7e4d3f9a0c5e7b2d6f1a3c8e9b0d4f2a6c7e5b1d3f9a2c4e6b8d0f"
 controller = Controller:new()
-controller.name = 'client_entergame2'
+controller.name = 'client_entergame'
 local function isLoaderActive()
   local ok, loader = pcall(function() return modules.client_loader and modules.client_loader.Loader end)
   if not ok or not loader or not loader.isActive then return false end
@@ -43,7 +43,7 @@ function controller:onInit()
     })
     evt:connect()
   end
-  g_logger.info('client_entergame2: controller init')
+  g_logger.info('client_entergame: controller init')
 end
 
 function controller:onTerminate()
@@ -65,7 +65,7 @@ function controller:toggle()
   end
 end
 
--- Wrapper opcional para chamadas externas: modules.client_entergame2.toggle()
+-- Wrapper opcional para chamadas externas: modules.client_entergame.toggle()
 function toggle()
   controller:toggle()
 end
@@ -76,8 +76,11 @@ local function getChild(id)
 end
 
 local function parseHostPath(url)
-  local host, path = url:match("([^/]+)/([^/].*)")
+  if not url or url == '' then return nil, nil end
+  local cleanUrl = url:gsub("https?://", "")
+  local host, path = cleanUrl:match("([^/]+)/([^/].*)")
   if not path then
+    host = cleanUrl:match("([^/]+)")
     path = ""
   else
     path = '/' .. path
@@ -149,7 +152,7 @@ function EnterGame.doLogin()
   local emailEdit = getChild('accountNameTextEdit')
   local passEdit = getChild('passwordTextEdit')
   if not emailEdit or not passEdit then
-    g_logger.error('client_entergame2: missing login widgets')
+    g_logger.error('client_entergame: missing login widgets')
     return
   end
 
@@ -170,16 +173,29 @@ function EnterGame.doLogin()
   -- Preferir Servers_init, senão usar defaults do URL completo em G.host
   if not G.host or not G.port then
     if Servers_init and table.size(Servers_init) > 0 then
-      local hostInit, valuesInit = next(Servers_init)
-      G.host = hostInit
-      G.port = valuesInit.port or 80
-      G.httpLogin = valuesInit.httpLogin
-      G.protocol = valuesInit.protocol or G.protocol
+      local selectedHost, selectedValues
+      -- Priority: httpLogin = true
+      for host, values in pairs(Servers_init) do
+        if values.httpLogin then
+          selectedHost = host
+          selectedValues = values
+          break
+        end
+      end
+      -- Fallback: first one if no httpLogin found
+      if not selectedHost then
+        selectedHost, selectedValues = next(Servers_init)
+      end
+
+      G.host = selectedHost
+      G.port = selectedValues.port or 80
+      G.httpLogin = selectedValues.httpLogin
+      G.protocol = selectedValues.protocol or G.protocol
     else
       G.host = 'http://127.0.0.1/login.php'
       G.port = 80
       G.httpLogin = true
-      G.protocol = G.protocol or 1098
+      G.protocol = G.protocol or 1412
     end
   end
 
@@ -200,10 +216,20 @@ function EnterGame.doLogin()
   -- Ensure client and protocol versions are set before any world login
   if not G.protocol then
     if Servers_init then
-      local _, valuesInit = next(Servers_init)
-      G.protocol = valuesInit and valuesInit.protocol or 1098
+      local selectedValues
+      for _, values in pairs(Servers_init) do
+        if values.httpLogin then
+          selectedValues = values
+          break
+        end
+      end
+      if not selectedValues then
+        local _, v = next(Servers_init)
+        selectedValues = v
+      end
+      G.protocol = selectedValues and selectedValues.protocol or 1412
     else
-      G.protocol = 1098
+      G.protocol = 1412
     end
   end
   g_game.setClientVersion(tonumber(G.protocol))
@@ -293,10 +319,11 @@ function EnterGame.loginSuccess(requestId, jsonSession, jsonWorlds, jsonCharacte
 
   local characters = {}
   for index, character in ipairs(json.decode(jsonCharacters)) do
-    local world = worlds[character.worldid]
-    local worldName = (world and world.name) or (worldsDecoded and worldsDecoded[1] and worldsDecoded[1].name) or tr("Default")
-    local worldIp   = (world and world.ip)   or G.defaultWorldHost or ""
-    local worldPort = (world and world.port) or G.defaultWorldPort or 0
+    local world       = worlds[character.worldid]
+    local worldName   = (world and world.name) or (worldsDecoded and worldsDecoded[1] and worldsDecoded[1].name) or
+        tr("Default")
+    local worldIp     = (world and world.ip) or G.defaultWorldHost or ""
+    local worldPort   = (world and world.port) or G.defaultWorldPort or 0
     characters[index] = {
       name = character.name,
       level = character.level,

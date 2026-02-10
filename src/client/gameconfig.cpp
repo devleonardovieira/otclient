@@ -94,11 +94,11 @@ void GameConfig::loadFonts() {
                 g_logger.debug("TTF size must be > 0 in font descriptor: {}", fontName);
                 return;
             }
-            int strokeWidth = 0;
+            double strokeWidth = 0.0;
             Color strokeColor = Color::black;
             if (parts.size() > 2) {
-                try { strokeWidth = std::stoi(parts[2]); } catch (...) { strokeWidth = 0; }
-                if (strokeWidth < 0) strokeWidth = 0;
+                try { strokeWidth = std::stod(parts[2]); } catch (...) { strokeWidth = 0.0; }
+                if (strokeWidth < 0.0) strokeWidth = 0.0;
             }
             if (parts.size() > 3) {
                 try {
@@ -153,14 +153,22 @@ void GameConfig::loadGameNode(const OTMLNodePtr& mainNode) {
 
 void GameConfig::loadFontNode(const OTMLNodePtr& mainNode) {
     for (const auto& node : mainNode->children()) {
+        std::string fontName = node->value();
+
+        std::string ttf = node->valueAt<std::string>("ttf-font", "");
+        int size = node->valueAt<int>("ttf-font-size", 0);
+        if (!ttf.empty() && size > 0) {
+            fontName = ttf + "|" + std::to_string(size);
+        }
+
         if (node->tag() == "widget")
-            m_widgetTextFontName = node->value();
+            m_widgetTextFontName = fontName;
         else if (node->tag() == "static-text")
-            m_staticTextFontName = node->value();
+            m_staticTextFontName = fontName;
         else if (node->tag() == "animated-text")
-            m_animatedTextFontName = node->value();
+            m_animatedTextFontName = fontName;
         else if (node->tag() == "creature-text")
-            m_creatureNameFontName = node->value();
+            m_creatureNameFontName = fontName;
     }
 }
 

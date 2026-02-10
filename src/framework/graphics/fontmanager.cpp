@@ -87,7 +87,7 @@ bool FontManager::importFont(const std::string& file, int fontSize)
     }
 }
 
-std::string FontManager::importTTF(const std::string& file, int fontSize, int strokeWidth, const Color& strokeColor)
+std::string FontManager::importTTF(const std::string& file, int fontSize, double strokeWidth, const Color& strokeColor)
 {
     try {
         const auto& font = TTFLoader::load(file, fontSize, strokeWidth, strokeColor);

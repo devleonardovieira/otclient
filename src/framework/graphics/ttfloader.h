@@ -25,7 +25,7 @@ class TTFLoader
 public:
     static void init();
     static void terminate();
-    static BitmapFontPtr load(const std::string& file, int fontSize, int strokeWidth = 0, const Color& strokeColor = Color::black);
+    static BitmapFontPtr load(const std::string& file, int fontSize, double strokeWidth = 0.0, const Color& strokeColor = Color::black);
 
 private:
     static FT_Library s_library;
@@ -37,6 +37,6 @@ private:
                                     Size glyphsSize[256],
                                     Rect glyphsCoords[256],
                                     int& glyphHeight,
-                                    int strokeWidth,
+                                    double strokeWidth,
                                     const Color& strokeColor);
 };
