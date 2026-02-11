@@ -289,13 +289,25 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     }
 
     int yOffset = g_configs.getPublicConfig().font.creatureTextOffsetY;
-    auto backgroundRect = Rect(p.x - (31), p.y - cropSizeBackGround, 62, 8);
+
+    TexturePtr healthBarTexture = g_textures.getTexture("/images/healthbars/default.png");
+    Rect backgroundRect;
+    if (healthBarTexture) {
+        backgroundRect = Rect(p.x - healthBarTexture->getWidth() / 2, p.y - cropSizeBackGround, healthBarTexture->getWidth(), healthBarTexture->getHeight());
+    } else {
+        backgroundRect = Rect(p.x - (31), p.y - cropSizeBackGround, 62, 8);
+    }
+
     auto textRect = Rect(p.x - nameSize.width() / 2.0, p.y - cropSizeText + yOffset, nameSize);
 
     constexpr int minNameBarSpacing = 2;
     const int currentSpacing = backgroundRect.top() - textRect.bottom();
     if (currentSpacing < minNameBarSpacing) {
-        backgroundRect.moveTop(textRect.bottom() + minNameBarSpacing);
+        // Fix: Ensure we don't push the bar down if it's a fixed texture
+        if (!healthBarTexture)
+            backgroundRect.moveTop(textRect.bottom() + minNameBarSpacing);
+        else
+            textRect.moveBottom(backgroundRect.top() - minNameBarSpacing);
     }
 
     if (!isScaled) {
@@ -317,13 +329,13 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     // Decay update
     if (m_damageDisplayedHealth > m_healthPercent && g_clock.millis() > m_lastDamageTime) {
          float dt = 1.0f / std::max<int>(10, g_app.getFps());
-         m_damageDisplayedHealth -= 950.0 * dt; 
+         m_damageDisplayedHealth -= 1400.0 * dt; 
          if (m_damageDisplayedHealth < m_healthPercent)
              m_damageDisplayedHealth = m_healthPercent;
     }
 
     // health rect is based on background rect, so no worries
-    const int barWidth = 60;
+    const int barWidth = healthBarTexture ? (backgroundRect.width() - 2) : 60;
     double totalPercent = std::max<double>(m_damageDisplayedHealth, (double)m_healthPercent) + static_cast<double>(m_shieldPercent);
     double scale = 1.0;
     if (totalPercent > 100.0) {
@@ -334,8 +346,13 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     int damageWidth = std::round((m_damageDisplayedHealth * scale / 100.0) * barWidth);
     int shieldWidth = std::round((m_shieldPercent * scale / 100.0) * barWidth);
 
+    // Safety: Ensure widths don't exceed barWidth
+    if (healthWidth > barWidth) healthWidth = barWidth;
+    if (damageWidth > barWidth) damageWidth = barWidth;
+    
+    // Adjust shield width to fit
     if (damageWidth + shieldWidth > barWidth) {
-        shieldWidth = barWidth - damageWidth;
+        shieldWidth = std::max(0, barWidth - damageWidth);
     }
 
     Rect healthRect = backgroundRect.expanded(-1);
@@ -344,11 +361,19 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     Rect damageRect = backgroundRect.expanded(-1);
     damageRect.setLeft(healthRect.right());
     damageRect.setWidth(std::max(0, damageWidth - healthWidth));
+    // Fix: Clamp damage rect to background bounds
+    if (damageRect.right() > backgroundRect.right() - 1) {
+        damageRect.setRight(backgroundRect.right() - 1);
+    }
 
     Rect barsRect = backgroundRect;
 
     if ((drawFlags & Otc::DrawBars) && (g_game.getClientVersion() >= 1100 ? !isNpc() : true)) {
-        g_drawPool.addFilledRect(backgroundRect, Color::black);
+        if (healthBarTexture) {
+            g_drawPool.addFilledRect(backgroundRect.expanded(-1), Color::black);
+        } else {
+            g_drawPool.addFilledRect(backgroundRect, Color::black);
+        }
         
         if (damageRect.width() > 0)
             g_drawPool.addFilledRect(damageRect, Color(250, 100, 100)); // Light Red
@@ -360,13 +385,25 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
             Rect shieldRect = backgroundRect.expanded(-1);
             shieldRect.setLeft(backgroundRect.left() + 1 + damageWidth);
             shieldRect.setWidth(shieldWidth);
+
+            // Fix: Ensure shield rect doesn't exceed the background bounds (clipping)
+            if (shieldRect.right() > backgroundRect.right() - 1) {
+                shieldRect.setRight(backgroundRect.right() - 1);
+            }
+
             g_drawPool.addFilledRect(shieldRect, Color(192, 192, 192));
+        }
+
+        if (healthBarTexture) {
+            g_drawPool.addTexturedRect(backgroundRect, healthBarTexture, Color::white);
         }
 
         if (drawFlags & Otc::DrawManaBar && isLocalPlayer()) {
             if (const auto& player = g_game.getLocalPlayer()) {
+                int gap = healthBarTexture ? 3 : 0;
+
                 if (player->isMage() && player->getMaxManaShield() > 0) {
-                    barsRect.moveTop(barsRect.bottom());
+                    barsRect.moveTop(barsRect.bottom() + gap);
                     g_drawPool.addFilledRect(barsRect, Color::black);
 
                     Rect manaShieldRect = barsRect.expanded(-1);
@@ -374,9 +411,10 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
                     manaShieldRect.setWidth((maxManaShield ? player->getManaShield() / maxManaShield : 1) * barWidth);
 
                     g_drawPool.addFilledRect(manaShieldRect, Color::darkPink);
+                    gap = 0;
                 }
 
-                barsRect.moveTop(barsRect.bottom());
+                barsRect.moveTop(barsRect.bottom() + gap);
                 g_drawPool.addFilledRect(barsRect, Color::black);
 
                 Rect manaRect = barsRect.expanded(-1);
