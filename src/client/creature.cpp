@@ -290,7 +290,12 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
     int yOffset = g_configs.getPublicConfig().font.creatureTextOffsetY;
 
-    TexturePtr healthBarTexture = g_textures.getTexture("/images/healthbars/default.png");
+    TexturePtr healthBarTexture;
+    if (isMonster()) {
+        healthBarTexture = g_textures.getTexture("/images/healthbars/thinner.png");
+    } else {
+        healthBarTexture = g_textures.getTexture("/images/healthbars/default.png");
+    }
     Rect backgroundRect;
     if (healthBarTexture) {
         backgroundRect = Rect(p.x - healthBarTexture->getWidth() / 2, p.y - cropSizeBackGround, healthBarTexture->getWidth(), healthBarTexture->getHeight());
