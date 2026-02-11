@@ -143,7 +143,34 @@ void Creature::draw(const Point& dest, const bool drawThings, LightView* /*light
         }
 
         if (m_showStaticSquare) {
-            g_drawPool.addBoundingRect(Rect(dest + (m_walkOffset - getDisplacement()) * g_drawPool.getScaleFactor(), Size(g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor())), m_staticSquareColor, std::max<int>(static_cast<int>(2 * g_drawPool.getScaleFactor()), 1));
+            int thingSize = std::max(getThingType()->getWidth(), getThingType()->getHeight()) * g_gameConfig.getSpriteSize();
+            std::string texturePath = "/images/targetselector/white" + std::to_string(thingSize) + ".png";
+            
+            bool drawn = false;
+            if (g_resources.fileExists(texturePath)) {
+                TexturePtr selectionTexture = g_textures.getTexture(texturePath);
+                if (selectionTexture) {
+                    // Centralize texture on the creature
+                    // dest: top-left corner of the tile where creature is standing
+                    // m_walkOffset: animation offset when walking
+                    // getDisplacement(): creature's internal offset (usually for centering in tile)
+                    
+                    Point centerPos = dest + (m_walkOffset - getDisplacement()) * g_drawPool.getScaleFactor();
+                    
+                    // If the texture is larger than the creature, we need to adjust to center it perfectly
+                    // Usually we want the center of the texture to align with the center of the creature
+                    centerPos += Point(g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor() / 2, g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor() / 2);
+                    centerPos -= Point(thingSize * g_drawPool.getScaleFactor() / 2, thingSize * g_drawPool.getScaleFactor() / 2);
+
+                    Rect selectionRect(centerPos, Size(thingSize * g_drawPool.getScaleFactor(), thingSize * g_drawPool.getScaleFactor()));
+                    g_drawPool.addTexturedRect(selectionRect, selectionTexture, m_staticSquareColor);
+                    drawn = true;
+                }
+            }
+            
+            if (!drawn) {
+                g_drawPool.addBoundingRect(Rect(dest + (m_walkOffset - getDisplacement()) * g_drawPool.getScaleFactor(), Size(g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor())), m_staticSquareColor, std::max<int>(static_cast<int>(2 * g_drawPool.getScaleFactor()), 1));
+            }
         }
 
         auto _dest = dest + m_walkOffset * g_drawPool.getScaleFactor();
