@@ -82,7 +82,7 @@ UIWindow
     id: commandTextEdit
     background: #aaaaaa11
     border-color: #aaaaaa88
-    &baseHeight: 12
+    &baseHeight: 24
     anchors.bottom: parent.bottom
     anchors.left: commandSymbolLabel.right
     anchors.right: terminalScroll.left
