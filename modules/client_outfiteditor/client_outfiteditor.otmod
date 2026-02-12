@@ -1,0 +1,8 @@
+Module
+  name: client_outfiteditor
+  description: Outfit Offset Editor
+  author: otclient.ovh
+  website: https://github.com/edubart/otclient
+  scripts: [ outfiteditor ]
+  @onLoad: OutfitEditor.init()
+  @onUnload: OutfitEditor.terminate()

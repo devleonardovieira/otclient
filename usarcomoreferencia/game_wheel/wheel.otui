@@ -1,4 +1,4 @@
-NewMainWindow
+MainWindow
   id: wheelWindow
   !text: tr('Wheel Of Destiny')
   anchors.horizontalCenter: parent.horizontalCenter

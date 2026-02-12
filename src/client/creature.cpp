@@ -281,11 +281,15 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         return;
     }
 
-    const auto displacementX = g_game.getFeature(Otc::GameNegativeOffset) ? 0 : getDisplacementX();
-    const auto displacementY = g_game.getFeature(Otc::GameNegativeOffset) ? 0 : getDisplacementY();
-
+    const auto displacementX = getDisplacementX();
+    const auto displacementY = getDisplacementY();
+    
     const auto& parentRect = mapRect.rect;
-    const auto& creatureOffset = Point(16 - displacementX, -displacementY - 2) + getDrawOffset();
+    auto creatureOffset = Point(16 - displacementX, -displacementY - 2) + getDrawOffset();
+    
+    if (m_outfit.isCreature()) {
+        creatureOffset += g_game.getOutfitOffset(m_outfit.getId(), getDirection());
+    }
 
     // Calculate using float precision to avoid subpixel jitter
     PointF pF(dest.x - mapRect.drawOffset.x, dest.y - mapRect.drawOffset.y);

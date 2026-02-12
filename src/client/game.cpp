@@ -45,6 +45,72 @@ Game g_game;
 void Game::init()
 {
     resetGameStates();
+    loadOutfitOffsets();
+}
+
+void Game::loadOutfitOffsets()
+{
+    m_outfitOffsets.clear();
+    try {
+        if (!g_resources.fileExists("/data/otml/outfits.otml"))
+            return;
+
+        OTMLDocumentPtr doc = OTMLDocument::parse("/data/otml/outfits.otml");
+        if (!doc) return;
+
+        OTMLNodePtr outfitsNode = nullptr;
+        for (const auto& node : doc->children()) {
+            if (node->tag() == "outfits") {
+                outfitsNode = node;
+                break;
+            }
+        }
+
+        if (!outfitsNode) return;
+
+        for (const auto& node : outfitsNode->children()) {
+            int outfitId = 0;
+            try {
+                outfitId = std::stoi(node->tag());
+            } catch (...) {
+                continue;
+            }
+
+            for (const auto& child : node->children()) {
+                std::string dirStr = child->tag();
+                Point offset = child->value<Point>();
+                
+                int dir = -1;
+                if (dirStr == "north") dir = Otc::North;
+                else if (dirStr == "east") dir = Otc::East;
+                else if (dirStr == "south") dir = Otc::South;
+                else if (dirStr == "west") dir = Otc::West;
+                
+                if (dir != -1) {
+                    m_outfitOffsets[outfitId][dir] = offset;
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+        g_logger.error(std::string("Failed to load outfit offsets: ") + e.what());
+    }
+}
+
+void Game::setOutfitOffset(int outfitId, Otc::Direction direction, Point offset)
+{
+    m_outfitOffsets[outfitId][direction] = offset;
+}
+
+Point Game::getOutfitOffset(int outfitId, Otc::Direction direction)
+{
+    auto it = m_outfitOffsets.find(outfitId);
+    if (it != m_outfitOffsets.end()) {
+        auto itDir = it->second.find(direction);
+        if (itDir != it->second.end()) {
+            return itDir->second;
+        }
+    }
+    return Point(0, 0);
 }
 
 void Game::terminate()

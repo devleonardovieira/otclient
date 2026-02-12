@@ -1,0 +1,178 @@
+TextListLabel < Label
+  font: verdana-11px-monochrome
+  background-color: alpha
+  text-offset: 2 0
+  focusable: true
+  
+  $focus:
+    background-color: #ffffff22
+    color: #ffffff
+
+MainWindow
+  id: outfitEditorWindow
+  text: Outfit Editor
+  size: 850 700
+  @onEscape: OutfitEditor.hide()
+
+  TextEdit
+    id: searchInput
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 200
+    margin-top: 5
+    placeholder: Search ID...
+    @onTextChange: OutfitEditor.onSearch(self:getText())
+
+  TextList
+    id: outfitList
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    width: 200
+    margin-top: 5
+    margin-bottom: 5
+    vertical-scrollbar: outfitListScroll
+
+  VerticalScrollBar
+    id: outfitListScroll
+    anchors.top: outfitList.top
+    anchors.bottom: outfitList.bottom
+    anchors.left: outfitList.right
+    step: 14
+    pixels-scroll: true
+
+  // Right Side Panel
+  Panel
+    id: rightPanel
+    anchors.top: parent.top
+    anchors.left: outfitListScroll.right
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-left: 10
+
+    Panel
+      id: creaturePreviewBackground
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      width: 400
+      height: 400
+      margin-top: 20
+      background-color: #000000
+      border-width: 1
+      border-color: #333333
+      padding: 10
+
+      UICreature
+        id: creaturePreview
+        anchors.centerIn: parent
+        width: 64
+        height: 64
+
+      // Simulated Elements inside Preview
+      Label
+        id: namePreview
+        text: Creature Name
+        !font: g_gameConfig.getCreatureNameFontName()
+        text-auto-resize: true
+        color: #00BC00
+        anchors.bottom: healthPreview.top
+        anchors.horizontalCenter: healthPreview.horizontalCenter
+        text-align: center
+        margin-bottom: 2
+
+      ProgressBar
+        id: healthPreview
+        background-color: #00BC00
+        width: 36
+        height: 9
+        border: 1 #000000
+        background-border: 1
+        anchors.top: parent.top
+        anchors.left: parent.left
+        margin-top: 10
+        margin-left: 10
+        
+      ProgressBar
+        id: manaPreview
+        background-color: #0000ff
+        width: 36
+        height: 9
+        border: 1 #000000
+        background-border: 1
+        anchors.top: healthPreview.bottom
+        anchors.left: healthPreview.left
+        margin-top: 3
+
+    // Controls
+    Label
+      id: dirLabel
+      text: Direction:
+      anchors.top: creaturePreviewBackground.bottom
+      anchors.left: parent.left
+      margin-top: 30
+      margin-left: 40
+      width: 70
+
+    ComboBox
+      id: directionCombo
+      anchors.verticalCenter: dirLabel.verticalCenter
+      anchors.left: dirLabel.right
+      anchors.right: parent.right
+      margin-right: 40
+      margin-left: 5
+
+    Label
+      id: xLabel
+      text: Offset X:
+      anchors.top: dirLabel.bottom
+      anchors.left: dirLabel.left
+      margin-top: 20
+      width: 70
+
+    SpinBox
+      id: offsetX
+      anchors.verticalCenter: xLabel.verticalCenter
+      anchors.left: xLabel.right
+      anchors.right: parent.right
+      margin-right: 40
+      margin-left: 5
+      minimum: -100
+      maximum: 100
+      step: 1
+      text-align: center
+      editable: true
+      focusable: true
+
+    Label
+      id: yLabel
+      text: Offset Y:
+      anchors.top: xLabel.bottom
+      anchors.left: xLabel.left
+      margin-top: 20
+      width: 70
+
+    SpinBox
+      id: offsetY
+      anchors.verticalCenter: yLabel.verticalCenter
+      anchors.left: yLabel.right
+      anchors.right: parent.right
+      margin-right: 40
+      margin-left: 5
+      minimum: -100
+      maximum: 100
+      step: 1
+      text-align: center
+      editable: true
+      focusable: true
+
+    ButtonRedSmall
+      id: saveButton
+      text: Save Changes
+      anchors.bottom: parent.bottom
+      anchors.right: parent.right
+      anchors.left: parent.left
+      margin-left: 40
+      margin-right: 40
+      margin-bottom: 10
+      height: 30
+      @onClick: OutfitEditor.saveOffsets()

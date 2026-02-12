@@ -1,4 +1,4 @@
-NewMainWindow
+MainWindow
   id: renamePreset
   !text: tr('Rename Preset')
   anchors.horizontalCenter: parent.horizontalCenter

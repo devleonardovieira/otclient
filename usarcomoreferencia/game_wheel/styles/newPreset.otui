@@ -1,4 +1,4 @@
-NewMainWindow
+MainWindow
   id: newPreset
   !text: tr('New Preset')
   anchors.horizontalCenter: parent.horizontalCenter

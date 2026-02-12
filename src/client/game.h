@@ -391,6 +391,9 @@ public:
     void resetMapUpdatedAt() { m_mapUpdatedAt = 0; }
 
     int getPing() { return m_ping; }
+    Point getOutfitOffset(int outfitId, Otc::Direction direction);
+    void setOutfitOffset(int outfitId, Otc::Direction direction, Point offset);
+    void loadOutfitOffsets();
     int getRecivedPacketsCount() { return m_protocolGame ? m_protocolGame->getRecivedPacketsCount() : 0; }
     int getRecivedPacketsSize() { return m_protocolGame ? m_protocolGame->getRecivedPacketsSize() : 0; }
     ContainerPtr getContainer(const int index) { return m_containers[index]; }
@@ -554,6 +557,8 @@ private:
     Position m_npcFocusPos;
     Timer m_npcFocusTimer;
     uint16_t m_npcFocusWindowMs{ 1500 };
+
+    std::unordered_map<int, std::map<int, Point>> m_outfitOffsets;
 };
 
 extern Game g_game;

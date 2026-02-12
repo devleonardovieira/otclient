@@ -77,6 +77,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_things", "loadDat", &ThingTypeManager::loadDat, &g_things);
     g_lua.bindSingletonFunction("g_things", "loadOtml", &ThingTypeManager::loadOtml, &g_things);
     g_lua.bindSingletonFunction("g_things", "isDatLoaded", &ThingTypeManager::isDatLoaded, &g_things);
+    g_lua.bindSingletonFunction("g_things", "isValidDatId", &ThingTypeManager::isValidDatId, &g_things);
     g_lua.bindSingletonFunction("g_things", "getDatSignature", &ThingTypeManager::getDatSignature, &g_things);
     g_lua.bindSingletonFunction("g_things", "getContentRevision", &ThingTypeManager::getContentRevision, &g_things);
     g_lua.bindSingletonFunction("g_things", "getThingType", &ThingTypeManager::getThingType, &g_things);
@@ -344,6 +345,9 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "isFollowing", &Game::isFollowing, &g_game);
     g_lua.bindSingletonFunction("g_game", "isConnectionOk", &Game::isConnectionOk, &g_game);
     g_lua.bindSingletonFunction("g_game", "getPing", &Game::getPing, &g_game);
+    g_lua.bindSingletonFunction("g_game", "getOutfitOffset", &Game::getOutfitOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "setOutfitOffset", &Game::setOutfitOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "loadOutfitOffsets", &Game::loadOutfitOffsets, &g_game);
     g_lua.bindSingletonFunction("g_game", "getRecivedPacketsCount", &Game::getRecivedPacketsCount, &g_game);
     g_lua.bindSingletonFunction("g_game", "getRecivedPacketsSize", &Game::getRecivedPacketsSize, &g_game);
     g_lua.bindSingletonFunction("g_game", "getContainer", &Game::getContainer, &g_game);

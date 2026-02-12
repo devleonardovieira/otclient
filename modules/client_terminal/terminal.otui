@@ -1,11 +1,11 @@
 TerminalLabel < UILabel
-  ttf-font: ReggaeOne-Regular|10
+  ttf-font: ReggaeOne-Regular|20
   text-wrap: true
   text-auto-resize: true
   phantom: true
 
 TerminalSelectText < UITextEdit
-  ttf-font: ReggaeOne-Regular|10
+  ttf-font: ReggaeOne-Regular|20
   text-wrap: true
   text-align: bottomLeft
   editable: false
@@ -75,7 +75,7 @@ UIWindow
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     margin-left: 2
-    ttf-font: ReggaeOne-Regular|10
+    ttf-font: ReggaeOne-Regular|20
     text: >
 
   UITextEdit
@@ -88,7 +88,7 @@ UIWindow
     anchors.right: terminalScroll.left
     margin-left: 1
     padding-left: 2
-    ttf-font: ReggaeOne-Regular|10
+    ttf-font: ReggaeOne-Regular|20
     selection-color: black
     selection-background-color: white
     border-width-left: 0
