@@ -1045,6 +1045,81 @@ bool Minimap::importOtmm(const std::string& fileName, bool overwrite)
     }
 }
 
+void Minimap::preloadAllBlocks(bool buildTextures, bool forceSync)
+{
+    waitAsyncSaves();
+    flushAllSavedBlocks(true);
+
+    std::vector<std::pair<uint8_t, uint32_t>> blocksToPreload;
+    {
+        std::scoped_lock savedLock(m_savedBlocksLock);
+        size_t totalBlocks = 0;
+        for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z)
+            totalBlocks += m_blockSaved[z].size();
+
+        blocksToPreload.reserve(totalBlocks);
+        for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z) {
+            for (const auto blockIndex : m_blockSaved[z])
+                blocksToPreload.emplace_back(static_cast<uint8_t>(z), blockIndex);
+        }
+    }
+
+    if (blocksToPreload.empty()) {
+        g_logger.info("minimap preload completed: no saved blocks found");
+        return;
+    }
+
+    const auto startedAt = std::chrono::steady_clock::now();
+    uint32_t loadedBlocks = 0;
+    uint32_t failedBlocks = 0;
+    uint32_t texturedBlocks = 0;
+
+    std::unique_lock<std::mutex> lock(m_lock);
+    applyAsyncLoadedBlocks(lock);
+
+    for (const auto& [z, blockIndex] : blocksToPreload) {
+        const auto state = forceSync ? loadSync(z, blockIndex) : load(z, blockIndex, false);
+
+        if (state != EnumCachedBlockLoad::LOADED) {
+            ++failedBlocks;
+            continue;
+        }
+
+        ++loadedBlocks;
+
+        if (!buildTextures)
+            continue;
+
+        const auto pos = getIndexPosition(blockIndex, z);
+        if (!hasBlock(pos))
+            continue;
+
+        const auto& block = getBlock(pos);
+        block->mustUpdate();
+        if (m_hdMode)
+            block->updateHD(pos);
+        else
+            block->update();
+
+        ++texturedBlocks;
+    }
+
+    if (!forceSync)
+        applyAsyncLoadedBlocks(lock);
+
+    const auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startedAt).count();
+    g_logger.info(
+        "minimap preload completed: total={}, loaded={}, failed={}, textured={}, buildTextures={}, forceSync={}, elapsed={}ms",
+        blocksToPreload.size(),
+        loadedBlocks,
+        failedBlocks,
+        texturedBlocks,
+        buildTextures,
+        forceSync,
+        elapsedMs
+    );
+}
+
 void Minimap::queueAsyncLoad(uint8_t z, uint32_t blockIndex)
 {
     const uint64_t key = getAsyncLoadKey(z, blockIndex);

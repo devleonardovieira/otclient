@@ -19,21 +19,28 @@ oldFloor = nil
 panelControls = nil
 confirmTeleport = nil
 
-local DEFAULT_MINIMAP_ZOOM_MIN = -5
+local DEFAULT_MINIMAP_ZOOM_MAX = 5
 
 local function getMinimapZoomMin()
-	if minimapWidget and minimapWidget.getMinZoom then
-		local minZoom = minimapWidget:getMinZoom()
-		if type(minZoom) == 'number' then
-			return minZoom
+	if minimapWidget and minimapWidget.getMaxZoom then
+		local maxZoom = minimapWidget:getMaxZoom()
+		if type(maxZoom) == 'number' then
+			return maxZoom - 1
 		end
 	end
 
-	return DEFAULT_MINIMAP_ZOOM_MIN
+	return DEFAULT_MINIMAP_ZOOM_MAX - 1
 end
 
 local function getMinimapZoomMax()
-	return getMinimapZoomMin() + 1
+	if minimapWidget and minimapWidget.getMaxZoom then
+		local maxZoom = minimapWidget:getMaxZoom()
+		if type(maxZoom) == 'number' then
+			return maxZoom
+		end
+	end
+
+	return DEFAULT_MINIMAP_ZOOM_MAX
 end
 
 local function clampMinimapZoom(zoom)
@@ -47,6 +54,28 @@ local function clampMinimapZoom(zoom)
 		return maxZoom
 	end
 	return zoom
+end
+
+local function applyMinimapCloseZoomRange()
+	if not minimapWidget then
+		return
+	end
+
+	local maxZoom = getMinimapZoomMax()
+	local minZoom = maxZoom - 1
+
+	-- Lua binding has a legacy typo (setMixZoom), keep both for compatibility.
+	if minimapWidget.setMixZoom then
+		minimapWidget:setMixZoom(minZoom)
+	elseif minimapWidget.setMinZoom then
+		minimapWidget:setMinZoom(minZoom)
+	end
+
+	if minimapWidget.setMaxZoom then
+		minimapWidget:setMaxZoom(maxZoom)
+	end
+
+	minimapWidget:setZoom(clampMinimapZoom(minimapWidget:getZoom()))
 end
 
 local searchPokemon = {
@@ -672,6 +701,7 @@ function init()
 
 	minimapWindow:setContentMinimumHeight(64)
 	minimapWidget = minimapWindow:recursiveGetChildById("minimap")
+	applyMinimapCloseZoomRange()
 	-- Ensure children like city labels are clipped to the minimap area
 	if minimapWidget and minimapWidget.setClipping then
 		minimapWidget:setClipping(true)
@@ -785,6 +815,7 @@ function toggle()
 		minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
 		minimapWindow:setContentMinimumHeight(64)
 		minimapWidget = minimapWindow:recursiveGetChildById("minimap")
+		applyMinimapCloseZoomRange()
 		if minimapWidget and minimapWidget.setClipping then
 			minimapWidget:setClipping(true)
 		end
@@ -870,7 +901,7 @@ local function prepareOtmmCache()
 		source = "cache"
 	}
 
-	if cacheBefore > 0 or not g_minimap.importOtmm then
+	if not g_minimap.importOtmm then
 		return minimapPreloadStats
 	end
 
@@ -881,15 +912,29 @@ local function prepareOtmmCache()
 		otmmFile = '/minimap.otmm'
 	end
 
-	if otmmFile then
-		local importedOk = g_minimap.importOtmm(otmmFile, false)
-		local cacheAfter = countCachedMinimapBlocks()
+	if not otmmFile then
+		return minimapPreloadStats
+	end
 
-		minimapPreloadStats.cacheBlocks = cacheAfter
-		minimapPreloadStats.importedBlocks = math.max(cacheAfter - cacheBefore, 0)
-		minimapPreloadStats.usedOtmm = importedOk and minimapPreloadStats.importedBlocks > 0
-		minimapPreloadStats.cacheReady = cacheAfter > 0
-		minimapPreloadStats.source = otmmFile
+	local otmmState = g_settings.getNode('MinimapOtmm') or {}
+	local forceFullRebuild = otmmState.fullImported ~= true
+	local overwrite = forceFullRebuild
+
+	-- First successful run uses overwrite=true to replace partial/old .mmz blocks.
+	-- Next runs switch back to incremental import (overwrite=false).
+	local importedOk = g_minimap.importOtmm(otmmFile, overwrite)
+	local cacheAfter = countCachedMinimapBlocks()
+
+	minimapPreloadStats.cacheBlocks = cacheAfter
+	minimapPreloadStats.importedBlocks = math.max(cacheAfter - cacheBefore, 0)
+	minimapPreloadStats.usedOtmm = importedOk
+	minimapPreloadStats.cacheReady = cacheAfter > 0
+	minimapPreloadStats.source = otmmFile
+
+	if importedOk and forceFullRebuild then
+		otmmState.fullImported = true
+		otmmState.source = otmmFile
+		g_settings.setNode('MinimapOtmm', otmmState)
 	end
 
 	return minimapPreloadStats
@@ -901,10 +946,28 @@ function preload()
 	end
 
 	prepareOtmmCache()
+	local ramPreloadReady = false
+	if g_minimap and g_minimap.preloadAll then
+		local ok, err = pcall(function()
+			g_minimap.preloadAll(false, true)
+		end)
+
+		if not ok then
+			g_logger.warning('Failed to preload minimap blocks into RAM: ' .. tostring(err))
+		else
+			ramPreloadReady = true
+		end
+	end
+
 	loadMap(false)
 
 	preloaded = true
-	return getPreloadSummary()
+	local summary = getPreloadSummary()
+	if ramPreloadReady then
+		return summary .. ' | ' .. tr('RAM cache warmed')
+	end
+
+	return summary
 end
 
 function online()

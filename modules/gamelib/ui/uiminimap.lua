@@ -1,20 +1,27 @@
 -- chunkname: @/modules/gamelib/ui/uiminimap.lua
 
-local DEFAULT_MINIMAP_ZOOM_MIN = -5
+local DEFAULT_MINIMAP_ZOOM_MAX = 5
 
 local function getMinimapZoomMin(widget)
-	if widget and widget.getMinZoom then
-		local minZoom = widget:getMinZoom()
-		if type(minZoom) == 'number' then
-			return minZoom
+	if widget and widget.getMaxZoom then
+		local maxZoom = widget:getMaxZoom()
+		if type(maxZoom) == 'number' then
+			return maxZoom - 1
 		end
 	end
 
-	return DEFAULT_MINIMAP_ZOOM_MIN
+	return DEFAULT_MINIMAP_ZOOM_MAX - 1
 end
 
 local function getMinimapZoomMax(widget)
-	return getMinimapZoomMin(widget) + 1
+	if widget and widget.getMaxZoom then
+		local maxZoom = widget:getMaxZoom()
+		if type(maxZoom) == 'number' then
+			return maxZoom
+		end
+	end
+
+	return DEFAULT_MINIMAP_ZOOM_MAX
 end
 
 local function clampMinimapZoom(widget, zoom)

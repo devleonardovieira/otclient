@@ -166,6 +166,7 @@ public:
 
     EnumCachedBlockLoad load(const uint8_t z, const uint32_t  index, bool forceIfNotLoaded = false);
     void save();
+    void preloadAllBlocks(bool buildTextures = false, bool forceSync = true);
 
     FrameBufferPtr getFrameBuffer() const {
         return m_fbo;
