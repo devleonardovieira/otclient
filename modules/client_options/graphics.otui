@@ -144,18 +144,6 @@ Panel
     minimum: 0
     maximum: 1000
 
-  OptionCheckBox
-    id: minimapHdEnabled
-    !text: tr('Enable HD minimap')
-
-  OptionCheckBox
-    id: minimapSurfaceOffset
-    !text: tr('Minimap surface offset (-1)')
-
-  OptionCheckBox
-    id: minimapShowAllFloors
-    !text: tr('Show all minimap floors')
-
   Label-14px-Medium
     id: backgroundFrameRateLabel
     !text: tr('Game framerate limit: %s', 'max')

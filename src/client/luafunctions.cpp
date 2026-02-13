@@ -207,14 +207,6 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_minimap", "saveImage", &Minimap::saveImage, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "loadOtmm", &Minimap::loadOtmm, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "saveOtmm", &Minimap::saveOtmm, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "setShowAllFloors", &Minimap::setShowAllFloors, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "isShowAllFloors", &Minimap::isShowAllFloors, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "setHdEnabled", &Minimap::setHdEnabled, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "isHdEnabled", &Minimap::isHdEnabled, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "setSurfaceFloorOffset", &Minimap::setSurfaceFloorOffset, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "getSurfaceFloorOffset", &Minimap::getSurfaceFloorOffset, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "setMaxBlocksInMemory", &Minimap::setMaxBlocksInMemory, &g_minimap);
-    g_lua.bindSingletonFunction("g_minimap", "getMaxBlocksInMemory", &Minimap::getMaxBlocksInMemory, &g_minimap);
 
 #ifdef FRAMEWORK_EDITOR
     g_lua.registerSingletonClass("g_creatures");

@@ -43,9 +43,6 @@ local defaultOptions = {
     drawEffectOnTop = false,
     floorViewMode = 1,
     floorFading = 500,
-    minimapShowAllFloors = false,
-    minimapHdEnabled = true,
-    minimapSurfaceOffset = true,
     asyncTxtLoading = false,
     creatureInformationScale = 0,
     staticTextScale = 0,
@@ -374,12 +371,6 @@ function setOption(key, value, force)
         local fadeMode = value == 1
         graphicsPanel:getChildById('floorFading'):setEnabled(fadeMode)
         graphicsPanel:getChildById('floorFadingLabel'):setEnabled(fadeMode)
-    elseif key == 'minimapShowAllFloors' then
-        g_minimap.setShowAllFloors(value)
-    elseif key == 'minimapHdEnabled' then
-        g_minimap.setHdEnabled(value)
-    elseif key == 'minimapSurfaceOffset' then
-        g_minimap.setSurfaceFloorOffset(value and -1 or 0)
     end
 
     -- change value for keybind updates
