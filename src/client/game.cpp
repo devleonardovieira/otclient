@@ -28,6 +28,7 @@
 #include "item.h"
 #include "localplayer.h"
 #include "map.h"
+#include "minimap.h"
 #include "protocolgame.h"
 #include "protocolcodes.h"
 #include "thingtype.h"
@@ -262,6 +263,9 @@ void Game::processGameEnd()
 
     m_online = false;
     g_lua.callGlobalField("g_game", "onGameEnd");
+
+    g_minimap.save();
+    g_minimap.clean();
 
     if (m_connectionFailWarned) {
         g_lua.callGlobalField("g_game", "onConnectionFailing", false);

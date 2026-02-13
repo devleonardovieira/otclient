@@ -11,19 +11,38 @@ local bgConn
 
 local steps = {}
 local currentStep = 0
+local minimapPreloaded = false
 
 local function preloadMinimap()
   g_modules.ensureModuleLoaded('game_minimap')
 
-  local ok, err = pcall(function()
+  local ok, result = pcall(function()
+    local summary = nil
     if modules and modules.game_minimap and modules.game_minimap.preload then
-      modules.game_minimap.preload()
+      summary = modules.game_minimap.preload()
     end
+
+    if modules and modules.game_minimap and modules.game_minimap.getPreloadSummary then
+      summary = modules.game_minimap.getPreloadSummary() or summary
+    end
+
+    return summary
   end)
 
   if not ok then
-    g_logger.warning('Failed to preload minimap: ' .. tostring(err))
+    g_logger.warning('Failed to preload minimap: ' .. tostring(result))
+    minimapPreloaded = false
+    return false
   end
+
+  local status = tr('Minimap preloaded')
+  if type(result) == 'string' and result ~= '' then
+    status = result
+  end
+
+  g_logger.info(status)
+  minimapPreloaded = true
+  return status
 end
 
 local function setProgress(p, statusText)
@@ -39,6 +58,10 @@ local function setProgress(p, statusText)
 end
 
 local function finalizeStartup()
+  if not minimapPreloaded then
+    preloadMinimap()
+  end
+
   -- finalizar após respeitar tempo mínimo
   local elapsed = g_clock.millis() - startMillis
   local remaining = math.max(minDisplayMs - elapsed, 0)
@@ -68,6 +91,7 @@ local function finalizeStartup()
     end
     steps = {}
     currentStep = 0
+    minimapPreloaded = false
     loadFn = nil
     -- Restaurar widgets ocultados
     for _, w in ipairs(hiddenWidgets) do
@@ -107,12 +131,17 @@ local function nextStep()
     return
   end
   -- run step and schedule next
-  local ok, err = pcall(step.run)
+  local ok, stepResult = pcall(step.run)
+  local status = step.status
+
   if not ok then
     -- even on error, try to continue to avoid a stuck UI
-    g_logger.warning('Loader step error: ' .. tostring(err))
+    g_logger.warning('Loader step error: ' .. tostring(stepResult))
+  elseif type(stepResult) == 'string' and stepResult ~= '' then
+    status = stepResult
   end
-  setProgress(step.percent, step.status)
+
+  setProgress(step.percent, status)
   scheduledEvent = scheduleEvent(nextStep, step.delay or 50)
 end
 
@@ -197,6 +226,7 @@ function Loader.init(loadModulesFunc)
 
   -- Define staged loading mirroring init.lua loadModules
   steps = {}
+  minimapPreloaded = false
 
   local modules = g_modules.getModules()
   local autoModules = {}
@@ -250,20 +280,20 @@ function Loader.init(loadModulesFunc)
   addModuleSteps(499, 999, 25, 60)
 
   table.insert(steps, {
-    percent = 65,
+    percent = 60,
     status = tr('Preparing game interface...'),
     delay = 150,
     run = function() g_modules.ensureModuleLoaded('game_interface') end
   })
 
-  addModuleSteps(999, 9999, 65, 90)
-
   table.insert(steps, {
-    percent = 85,
+    percent = 72,
     status = tr('Preloading minimap...'),
     delay = 150,
     run = preloadMinimap
   })
+
+  addModuleSteps(999, 9999, 72, 92)
 
   table.insert(steps, {
     percent = 95,
@@ -309,6 +339,7 @@ function Loader.abort()
   hiddenWidgets = {}
   steps = {}
   currentStep = 0
+  minimapPreloaded = false
   loadFn = nil
   -- Fallback: perform synchronous loading quickly
   g_modules.autoLoadModules(499)
@@ -344,5 +375,6 @@ function terminate()
   end
   steps = {}
   currentStep = 0
+  minimapPreloaded = false
   loadFn = nil
 end

@@ -5,11 +5,49 @@ minimapButton = nil
 minimapWindow = nil
 preloaded = false
 mapPrepared = false
+otmmCachePrepared = false
+minimapPreloadStats = {
+	cacheBlocks = 0,
+	importedBlocks = 0,
+	usedOtmm = false,
+	cacheReady = false,
+	source = "none"
+}
 oldZoom = nil
 oldPos = nil
 oldFloor = nil
 panelControls = nil
 confirmTeleport = nil
+
+local DEFAULT_MINIMAP_ZOOM_MIN = -5
+
+local function getMinimapZoomMin()
+	if minimapWidget and minimapWidget.getMinZoom then
+		local minZoom = minimapWidget:getMinZoom()
+		if type(minZoom) == 'number' then
+			return minZoom
+		end
+	end
+
+	return DEFAULT_MINIMAP_ZOOM_MIN
+end
+
+local function getMinimapZoomMax()
+	return getMinimapZoomMin() + 1
+end
+
+local function clampMinimapZoom(zoom)
+	local minZoom = getMinimapZoomMin()
+	local maxZoom = getMinimapZoomMax()
+	zoom = tonumber(zoom) or minZoom
+	if zoom <= minZoom then
+		return minZoom
+	end
+	if zoom >= maxZoom then
+		return maxZoom
+	end
+	return zoom
+end
 
 local searchPokemon = {
 	name = "",
@@ -23,10 +61,10 @@ local controlsMinimapWidget = {
 		minimapWidget:onFloorDown(1)
 	end,
 	zoomIn = function()
-		minimapWidget:zoomIn()
+		minimapWidget:setZoom(clampMinimapZoom(minimapWidget:getZoom() + 1))
 	end,
 	zoomOut = function()
-		minimapWidget:zoomOut()
+		minimapWidget:setZoom(clampMinimapZoom(minimapWidget:getZoom() - 1))
 	end,
 	reset = function()
 		minimapWidget:reset()
@@ -629,22 +667,22 @@ local GUIDES = {
 }
 
 function init()
-    -- Carrega a miniwindow diretamente no RootPanel para evitar ajuste automático aos side panels
-    minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
+	-- Carrega a miniwindow diretamente no RootPanel para evitar ajuste automático aos side panels
+	minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
 
 	minimapWindow:setContentMinimumHeight(64)
-    minimapWidget = minimapWindow:recursiveGetChildById("minimap")
-    -- Ensure children like city labels are clipped to the minimap area
-    if minimapWidget and minimapWidget.setClipping then
-        minimapWidget:setClipping(true)
-    end
-    panelControls = minimapWidget:getChildById("panelControls")
-    -- Garantir que o painel de controles do fullmap fique oculto ao iniciar a miniwindow
-    if panelControls then panelControls:hide() end
-    if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
-        minimapWidget:setAlternativeWidgetsVisible(false)
-    end
-    minimapWidget.fullView = false
+	minimapWidget = minimapWindow:recursiveGetChildById("minimap")
+	-- Ensure children like city labels are clipped to the minimap area
+	if minimapWidget and minimapWidget.setClipping then
+		minimapWidget:setClipping(true)
+	end
+	panelControls = minimapWidget:getChildById("panelControls")
+	-- Garantir que o painel de controles do fullmap fique oculto ao iniciar a miniwindow
+	if panelControls then panelControls:hide() end
+	if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
+		minimapWidget:setAlternativeWidgetsVisible(false)
+	end
+	minimapWidget.fullView = false
 
 	local gameRootPanel = modules.game_interface.getRootPanel()
 
@@ -680,9 +718,9 @@ function init()
 end
 
 function terminate()
-    if g_game.isOnline() then
-        saveMap()
-    end
+	if g_game.isOnline() then
+		saveMap()
+	end
 
 	disconnect(g_game, {
 		onGameStart = online,
@@ -703,37 +741,37 @@ function terminate()
 	g_keyboard.unbindKeyPress("Alt+Down", gameRootPanel)
 	g_keyboard.unbindKeyDown("Ctrl+M")
 	g_keyboard.unbindKeyDown("Ctrl+Tab")
-    -- Ensure any open flag window is closed to release child refs (like 'description')
-    if minimapWidget and minimapWidget.destroyFlagWindow then
-        minimapWidget:destroyFlagWindow()
-    end
+	-- Ensure any open flag window is closed to release child refs (like 'description')
+	if minimapWidget and minimapWidget.destroyFlagWindow then
+		minimapWidget:destroyFlagWindow()
+	end
 
-    -- If full map is active, minimapWidget may be parented to root; destroy it explicitly
-    if minimapWidget and minimapWidget.fullView then
-        if panelControls then panelControls:hide() end
-        if minimapWidget.setAlternativeWidgetsVisible then
-            minimapWidget:setAlternativeWidgetsVisible(false)
-        end
-        minimapWidget:destroy()
-    end
+	-- If full map is active, minimapWidget may be parented to root; destroy it explicitly
+	if minimapWidget and minimapWidget.fullView then
+		if panelControls then panelControls:hide() end
+		if minimapWidget.setAlternativeWidgetsVisible then
+			minimapWidget:setAlternativeWidgetsVisible(false)
+		end
+		minimapWidget:destroy()
+	end
 
-    -- Destroy the miniwindow and clear Lua references
-    if minimapWindow and not minimapWindow:isDestroyed() then
-        if panelControls then panelControls:hide() end
-        if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
-            minimapWidget:setAlternativeWidgetsVisible(false)
-        end
-        minimapWindow:destroy()
-    end
-    minimapWindow = nil
-    minimapWidget = nil
-    panelControls = nil
+	-- Destroy the miniwindow and clear Lua references
+	if minimapWindow and not minimapWindow:isDestroyed() then
+		if panelControls then panelControls:hide() end
+		if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
+			minimapWidget:setAlternativeWidgetsVisible(false)
+		end
+		minimapWindow:destroy()
+	end
+	minimapWindow = nil
+	minimapWidget = nil
+	panelControls = nil
 
-    if confirmTeleport and not confirmTeleport:isDestroyed() then
-        confirmTeleport:destroy()
+	if confirmTeleport and not confirmTeleport:isDestroyed() then
+		confirmTeleport:destroy()
 
-        confirmTeleport = nil
-    end
+		confirmTeleport = nil
+	end
 
 	--[[ if minimapButton then
 		minimapButton:destroy()
@@ -742,9 +780,9 @@ end
 
 function toggle()
 	-- Se a janela foi destruída ou ainda não existe, recria
-    if not minimapWindow or minimapWindow:isDestroyed() then
-        -- Recria a miniwindow no RootPanel para preservar posição absoluta ao abrir/fechar
-        minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
+	if not minimapWindow or minimapWindow:isDestroyed() then
+		-- Recria a miniwindow no RootPanel para preservar posição absoluta ao abrir/fechar
+		minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
 		minimapWindow:setContentMinimumHeight(64)
 		minimapWidget = minimapWindow:recursiveGetChildById("minimap")
 		if minimapWidget and minimapWidget.setClipping then
@@ -752,21 +790,23 @@ function toggle()
 		end
 		panelControls = minimapWidget and minimapWidget:getChildById("panelControls") or nil
 		-- Recriação da miniwindow: manter painel do fullmap oculto
-        if panelControls then panelControls:hide() end
+		if panelControls then panelControls:hide() end
 		if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
 			minimapWidget:setAlternativeWidgetsVisible(false)
 		end
 		minimapWidget.fullView = false
 		minimapWindow:setup()
+		loadMap(false)
+		updateCameraPosition()
 	end
 
-    -- Não reparentar para o painel direito ao alternar; manter no RootPanel para evitar snap
+	-- Não reparentar para o painel direito ao alternar; manter no RootPanel para evitar snap
 	if minimapWidget and minimapWidget.fullView then
 		toggleFullMap()
 	end
 
 	-- Abrindo/fechando a miniwindow: garantir que o painel do fullmap não apareça
-    if panelControls then panelControls:hide() end
+	if panelControls then panelControls:hide() end
 	if minimapWidget and minimapWidget.setAlternativeWidgetsVisible then
 		minimapWidget:setAlternativeWidgetsVisible(false)
 	end
@@ -786,14 +826,85 @@ function onMiniWindowClose()
 	end
 end
 
-function preload()
-	if preloaded then
-		return
+local function countCachedMinimapBlocks()
+	local files = g_resources.listDirectoryFiles('/minimap') or {}
+	local count = 0
+	for _, file in pairs(files) do
+		if string.match(file, '^minimap_%d+_%d+%.mmz$') then
+			count = count + 1
+		end
 	end
 
+	return count
+end
+
+function getPreloadStats()
+	return minimapPreloadStats
+end
+
+function getPreloadSummary()
+	local stats = minimapPreloadStats
+	if stats.usedOtmm then
+		return tr("Minimap pronto: %d blocos em cache (+%d importados de OTMM)", stats.cacheBlocks, stats.importedBlocks)
+	end
+
+	if stats.cacheReady then
+		return tr("Minimap pronto: %d blocos em cache", stats.cacheBlocks)
+	end
+
+	return tr("Minimap pronto: cache vazio")
+end
+
+local function prepareOtmmCache()
+	if otmmCachePrepared then
+		return minimapPreloadStats
+	end
+
+	otmmCachePrepared = true
+	local cacheBefore = countCachedMinimapBlocks()
+	minimapPreloadStats = {
+		cacheBlocks = cacheBefore,
+		importedBlocks = 0,
+		usedOtmm = false,
+		cacheReady = cacheBefore > 0,
+		source = "cache"
+	}
+
+	if cacheBefore > 0 or not g_minimap.importOtmm then
+		return minimapPreloadStats
+	end
+
+	local otmmFile = nil
+	if g_resources.fileExists('/data/minimap.otmm') then
+		otmmFile = '/data/minimap.otmm'
+	elseif g_resources.fileExists('/minimap.otmm') then
+		otmmFile = '/minimap.otmm'
+	end
+
+	if otmmFile then
+		local importedOk = g_minimap.importOtmm(otmmFile, false)
+		local cacheAfter = countCachedMinimapBlocks()
+
+		minimapPreloadStats.cacheBlocks = cacheAfter
+		minimapPreloadStats.importedBlocks = math.max(cacheAfter - cacheBefore, 0)
+		minimapPreloadStats.usedOtmm = importedOk and minimapPreloadStats.importedBlocks > 0
+		minimapPreloadStats.cacheReady = cacheAfter > 0
+		minimapPreloadStats.source = otmmFile
+	end
+
+	return minimapPreloadStats
+end
+
+function preload()
+	if preloaded then
+		return getPreloadSummary()
+	end
+
+	prepareOtmmCache()
 	loadMap(false)
 
 	preloaded = true
+	return getPreloadSummary()
 end
 
 function online()
@@ -835,45 +946,47 @@ function loadComposition()
 				g_game.talk(tr("h\" %s", composition.text))
 			end
 
-			confirmTeleport = displayConfirmBox(tr("Teleport"), tr("Voc\xEA realmente deseja teleportar para {%s|%s}?", "#e2bb5b", composition.text), onConfirm)
+			confirmTeleport = displayConfirmBox(tr("Teleport"),
+				tr("Voc\xEA realmente deseja teleportar para {%s|%s}?", "#e2bb5b", composition.text), onConfirm)
 		end
 
 		minimapWidget:insertChild(1, flag)
 		minimapWidget:centerInPosition(flag, flag.pos)
-		minimapWidget:addAlternativeWidget(flag, flag.pos, -1)
+		-- sempre visível no full map (qualquer zoom)
+		minimapWidget:addAlternativeWidget(flag, flag.pos, getMinimapZoomMin(), getMinimapZoomMax())
 	end
 end
 
 function loadGuides()
-    if not minimapWidget then return end
+	if not minimapWidget then return end
 
-    for k, city in pairs(GUIDES) do
-        for _, mark in pairs(city) do
-            -- Adiciona flags das cidades/locais guiados
-            minimapWidget:addFlag(mark.position, mark.type, tr(mark.description), true, tocolor(mark.color))
-            -- Armazena posições para alternar visibilidade posteriormente
-            table.insert(COMPOSITIONS_POS_GUIDES, mark.position)
-        end
-    end
+	for k, city in pairs(GUIDES) do
+		for _, mark in pairs(city) do
+			-- Adiciona flags das cidades/locais guiados
+			minimapWidget:addFlag(mark.position, mark.type, tr(mark.description), true, tocolor(mark.color))
+			-- Armazena posições para alternar visibilidade posteriormente
+			table.insert(COMPOSITIONS_POS_GUIDES, mark.position)
+		end
+	end
 end
 
 function toggleGuides()
-    if not minimapWidget then return end
+	if not minimapWidget then return end
 
-    for _, pos in pairs(COMPOSITIONS_POS_GUIDES) do
-        local flag = minimapWidget:getFlag(pos)
-        if flag then
-            flag:setVisible(minimapWidget.fullView)
-        end
-    end
+	for _, pos in pairs(COMPOSITIONS_POS_GUIDES) do
+		local flag = minimapWidget:getFlag(pos)
+		if flag then
+			flag:setVisible(minimapWidget.fullView)
+		end
+	end
 end
 
 function destroySearchPokemon()
-    for i, pin in pairs(searchPokemon.list) do
-        if pin and not pin:isDestroyed() then
-            pin:destroy()
-        end
-    end
+	for i, pin in pairs(searchPokemon.list) do
+		if pin and not pin:isDestroyed() then
+			pin:destroy()
+		end
+	end
 
 	searchPokemon = {
 		name = "",
@@ -970,50 +1083,54 @@ local fullMapMode = 'icons'
 local suppressModeEvents = false
 
 function setFullMapMode(mode)
-  fullMapMode = (mode == 'teleports') and 'teleports' or 'icons'
-  if not panelControls then return end
-  local rightPanel = panelControls:getChildById('fullRightPanel')
-  if not rightPanel then return end
-  local icons = rightPanel:getChildById('modeIcons')
-  local teleports = rightPanel:getChildById('modeTeleports')
-  local filtersPanel = rightPanel:getChildById('filtersPanel')
-  suppressModeEvents = true
-  if icons then icons:setChecked(fullMapMode == 'icons') end
-  if teleports then teleports:setChecked(fullMapMode == 'teleports') end
-  suppressModeEvents = false
-  -- For now the same filters are shown; later, swap contents by mode
-  if filtersPanel then filtersPanel:setVisible(true) end
+	fullMapMode = (mode == 'teleports') and 'teleports' or 'icons'
+	if not panelControls then return end
+	local rightPanel = panelControls:getChildById('fullRightPanel')
+	if not rightPanel then return end
+	local icons = rightPanel:getChildById('modeIcons')
+	local teleports = rightPanel:getChildById('modeTeleports')
+	local filtersPanel = rightPanel:getChildById('filtersPanel')
+	suppressModeEvents = true
+	if icons then icons:setChecked(fullMapMode == 'icons') end
+	if teleports then teleports:setChecked(fullMapMode == 'teleports') end
+	suppressModeEvents = false
+	-- For now the same filters are shown; later, swap contents by mode
+	if filtersPanel then filtersPanel:setVisible(true) end
 end
 
 function onModeIconsChange(checked)
-  if suppressModeEvents then return end
-  if checked then setFullMapMode('icons') end
+	if suppressModeEvents then return end
+	if checked then setFullMapMode('icons') end
 end
 
 function onModeTeleportsChange(checked)
-  if suppressModeEvents then return end
-  if checked then setFullMapMode('teleports') end
+	if suppressModeEvents then return end
+	if checked then setFullMapMode('teleports') end
 end
 
 function clearAllFullMapFilters()
-  if not panelControls then return end
-  local rightPanel = panelControls:getChildById('fullRightPanel')
-  if not rightPanel then return end
-  local filtersPanel = rightPanel:getChildById('filtersPanel')
-  if not filtersPanel then return end
-  for _, child in ipairs(filtersPanel:getChildren()) do
-    if child.setChecked then child:setChecked(false) end
-  end
+	if not panelControls then return end
+	local rightPanel = panelControls:getChildById('fullRightPanel')
+	if not rightPanel then return end
+	local filtersPanel = rightPanel:getChildById('filtersPanel')
+	if not filtersPanel then return end
+	for _, child in ipairs(filtersPanel:getChildren()) do
+		if child.setChecked then child:setChecked(false) end
+	end
 end
 
 local function setupFullMapUI()
-  if not panelControls then return end
-  local rightPanel = panelControls:getChildById('fullRightPanel')
-  if not rightPanel then return end
-  setFullMapMode(fullMapMode)
+	if not panelControls then return end
+	local rightPanel = panelControls:getChildById('fullRightPanel')
+	if not rightPanel then return end
+	setFullMapMode(fullMapMode)
 end
 
 function toggleFullMap()
+	-- salva estado atual
+	oldZoom = clampMinimapZoom(minimapWidget:getZoom())
+	oldPos  = minimapWidget:getCameraPosition()
+
 	if not minimapWidget.fullView then
 		minimapWidget.fullView = true
 
@@ -1021,9 +1138,9 @@ function toggleFullMap()
 		minimapWidget:setParent(modules.game_interface.getRootPanel())
 		minimapWidget:fill("parent")
 		minimapWidget:setAlternativeWidgetsVisible(true)
-        panelControls:show()
-        setupFullMapUI()
-        minimapWidget:setMargin(90, 210, 140, 210)
+		if panelControls then panelControls:show() end
+		setupFullMapUI()
+		minimapWidget:setMargin(90, 210, 140, 210)
 	else
 		minimapWidget.fullView = false
 
@@ -1031,20 +1148,18 @@ function toggleFullMap()
 		minimapWidget:fill("parent")
 		minimapWindow:show()
 		minimapWidget:setAlternativeWidgetsVisible(false)
-        panelControls:hide()
+		if panelControls then panelControls:hide() end
 		minimapWidget:setMargin(0)
 		destroySearchPokemon()
 	end
 
-	local zoom = oldZoom or 2
+	-- aplica estado desejado
 	local pos = oldPos or minimapWidget:getCameraPosition()
-
-	oldZoom = minimapWidget:getZoom()
-	oldPos = minimapWidget:getCameraPosition()
 	pos.z = oldFloor or pos.z
 
-	minimapWidget:setZoom(zoom)
+	minimapWidget:setZoom(clampMinimapZoom(oldZoom or getMinimapZoomMin()))
 	minimapWidget:setCameraPosition(pos)
+
 	toggleGuides()
 end
 
@@ -1066,67 +1181,67 @@ end
 local npcFlagsByCid = {}
 
 local function npcGetMinimapIconPath(creature)
-  local iconId = creature:getIcon()
-  if not iconId or iconId == NpcIconNone then
-    return nil
-  end
-  if type(iconId) == 'string' then
-    return iconId
-  end
-  return getIconImagePath and getIconImagePath(iconId) or nil
+	local iconId = creature:getIcon()
+	if not iconId or iconId == NpcIconNone then
+		return nil
+	end
+	if type(iconId) == 'string' then
+		return iconId
+	end
+	return getIconImagePath and getIconImagePath(iconId) or nil
 end
 
 local function npcAddOrUpdateFlag(creature)
 	print(creature:getName())
-  if not minimapWidget then return end
-  if not creature:isNpc() then return end
-  local iconPath = npcGetMinimapIconPath(creature)
-  if not iconPath then return end
+	if not minimapWidget then return end
+	if not creature:isNpc() then return end
+	local iconPath = npcGetMinimapIconPath(creature)
+	if not iconPath then return end
 
-  local cid = creature:getId()
-  local prevPos = npcFlagsByCid[cid]
-  if prevPos then
-    minimapWidget:removeFlag(prevPos)
-  end
+	local cid = creature:getId()
+	local prevPos = npcFlagsByCid[cid]
+	if prevPos then
+		minimapWidget:removeFlag(prevPos)
+	end
 
-  local pos = creature:getPosition()
-  minimapWidget:addFlag(pos, iconPath, creature:getName(), true, 'white')
-  print('pos', pos)
-  npcFlagsByCid[cid] = pos
+	local pos = creature:getPosition()
+	minimapWidget:addFlag(pos, iconPath, creature:getName(), true, 'white')
+	print('pos', pos)
+	npcFlagsByCid[cid] = pos
 end
 
 local function npcRemoveFlag(creature)
-  if not minimapWidget then return end
-  local cid = creature:getId()
-  local prevPos = npcFlagsByCid[cid]
-  if prevPos then
-    minimapWidget:removeFlag(prevPos)
-    npcFlagsByCid[cid] = nil
-  end
+	if not minimapWidget then return end
+	local cid = creature:getId()
+	local prevPos = npcFlagsByCid[cid]
+	if prevPos then
+		minimapWidget:removeFlag(prevPos)
+		npcFlagsByCid[cid] = nil
+	end
 end
 
 local npcFlagController = Controller:new()
 
 function npcFlagController:onGameStart()
-  npcFlagController:registerEvents(Creature, {
-    onAppear = function(creature)
-      if not creature:isNpc() then return end
-      npcAddOrUpdateFlag(creature)
-    end,
-    onIconChange = function(creature, iconId)
-      if not creature:isNpc() then return end
-      if not iconId or iconId == NpcIconNone then
-        npcRemoveFlag(creature)
-      else
-        npcAddOrUpdateFlag(creature)
-      end
-    end,
-    onDisappear = function(creature)
-      npcRemoveFlag(creature)
-    end
-  })
+	npcFlagController:registerEvents(Creature, {
+		onAppear = function(creature)
+			if not creature:isNpc() then return end
+			npcAddOrUpdateFlag(creature)
+		end,
+		onIconChange = function(creature, iconId)
+			if not creature:isNpc() then return end
+			if not iconId or iconId == NpcIconNone then
+				npcRemoveFlag(creature)
+			else
+				npcAddOrUpdateFlag(creature)
+			end
+		end,
+		onDisappear = function(creature)
+			npcRemoveFlag(creature)
+		end
+	})
 end
 
 function npcFlagController:onGameEnd()
-  npcFlagsByCid = {}
+	npcFlagsByCid = {}
 end

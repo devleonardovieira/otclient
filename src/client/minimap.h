@@ -22,6 +22,10 @@
 
 #pragma once
 
+#include <condition_variable>
+#include <deque>
+#include <unordered_set>
+
 #include <framework/graphics/declarations.h>
 #include "declarations.h"
 #include "gameconfig.h"
@@ -82,9 +86,13 @@ struct MinimapTile
     }
 };
 
+static_assert(sizeof(MinimapTile::ItemData) == 7, "Minimap item layout changed");
+static_assert(sizeof(MinimapTile) == 38, "Minimap tile layout changed, this breaks .mmz compatibility");
+
 class MinimapBlock : public std::enable_shared_from_this<MinimapBlock>
 {
 public:
+    MinimapBlock();
     void clean();
     void updateHD(const Position& pos);
     void update();
@@ -97,6 +105,7 @@ public:
         return m_texture;
     }
     auto& getTiles() { return m_tiles; }
+    void touch() { m_lastUpdate.restart(); }
     void mustUpdate() { m_mustUpdate = true; }
     void justSaw() { m_wasSeen = true; }
     bool wasSeen() const { return m_wasSeen; }
@@ -116,6 +125,7 @@ enum class EnumCachedBlockLoad
 {
     FILE_NOT_FOUND,
     NOT_LOADED,
+    LOADING,
     LOADED,
     UNLOADED
 };
@@ -152,6 +162,7 @@ public:
 
     bool loadImage(const std::string& fileName, const Position& topLeft, float colorFactor);
     void saveImage(const std::string& fileName, const Rect& mapRect);
+    bool importOtmm(const std::string& fileName, bool overwrite = false);
 
     EnumCachedBlockLoad load(const uint8_t z, const uint32_t  index, bool forceIfNotLoaded = false);
     void save();
@@ -168,15 +179,56 @@ public:
     void cacheBlockFileName();
 
 private:
-    bool saveBlock(const uint8_t z, const uint32_t index);
+    struct AsyncLoadRequest
+    {
+        uint8_t z = 0;
+        uint32_t blockIndex = 0;
+        uint32_t generation = 0;
+    };
+
+    struct AsyncLoadedBlock
+    {
+        uint8_t z = 0;
+        uint32_t blockIndex = 0;
+        uint32_t generation = 0;
+        EnumCachedBlockLoad state = EnumCachedBlockLoad::NOT_LOADED;
+        std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE> tiles;
+    };
+
+    struct AsyncSaveRequest
+    {
+        uint8_t z = 0;
+        uint32_t blockIndex = 0;
+        std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE> tiles;
+    };
+
+    // Saves using an immutable tile snapshot captured by the caller while m_lock is held.
+    bool saveBlock(const uint8_t z, const uint32_t index, const std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& tiles);
+    bool hasSavedBlock(uint8_t z, uint32_t blockIndex) const;
+    void markSavedBlock(uint8_t z, uint32_t blockIndex);
+    void flushSavedBlocks(uint8_t z, bool force = false);
+    void flushAllSavedBlocks(bool force = false);
+    void queueAsyncLoad(uint8_t z, uint32_t blockIndex);
+    void invalidateAsyncLoad(uint8_t z, uint32_t blockIndex);
+    void dispatchAsyncLoads();
+    void queueAsyncSave(uint8_t z, uint32_t blockIndex, const std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& tiles);
+    void dispatchAsyncSaves();
+    void waitAsyncSaves();
+    static bool writeMinimapBlockData(uint8_t z, uint32_t index, const std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& tiles);
+    // Must be called with m_lock held (main thread).
+    void applyAsyncLoadedBlocks(const std::unique_lock<std::mutex>& minimapLock);
+    EnumCachedBlockLoad loadSync(const uint8_t z, const uint32_t block);
+    static uint64_t getAsyncLoadKey(uint8_t z, uint32_t blockIndex) { return (static_cast<uint64_t>(z) << 32) | blockIndex; }
 
     Rect calcMapRect(const Rect& screenRect, const Position& mapCenter, float scale) const;
     bool hasBlock(const Position& pos);
     bool hasCachedBlock(const Position& pos) const {
-        return m_cachedBlock[pos.z].contains(getBlockIndex(pos));
+        const auto& floorBlocks = m_cachedBlock[pos.z];
+        return floorBlocks.find(getBlockIndex(pos)) != floorBlocks.end();
     }
 
-    bool checkUpdatedTiles();
+    // Must be called with m_lock held (main thread).
+    bool checkUpdatedTiles(const std::unique_lock<std::mutex>& minimapLock);
 
     MinimapBlock_ptr getBlock(const Position& pos) { return getBlock(pos.z, getBlockIndex(pos)); }
     MinimapBlock_ptr getBlock(uint8_t z, uint32_t blockIndex)
@@ -219,9 +271,27 @@ private:
 
     std::vector<std::unordered_map<uint32_t, MinimapBlock_ptr>> m_tileBlocks;
     std::vector<std::unordered_map<uint32_t, CacheBlock>> m_cachedBlock;
-    std::vector<std::unordered_set<uint32_t>> m_blockSaved;
+    std::vector<std::vector<uint32_t>> m_blockSaved;
+    std::vector<std::vector<uint32_t>> m_newSavedBlocks;
     std::vector<std::unordered_map<Position, MinimapTile, Position::Hasher>> updatedTiles;
+    Timer m_savedBlocksMergeTimer;
+    std::deque<AsyncLoadRequest> m_asyncLoadQueue;
+    std::deque<AsyncLoadedBlock> m_asyncLoadedBlocks;
+    std::unordered_set<uint64_t> m_asyncQueuedBlocks;
+    std::unordered_map<uint64_t, uint32_t> m_asyncLoadGeneration;
+    uint16_t m_asyncActiveLoads{ 0 };
+    std::unordered_map<uint64_t, AsyncSaveRequest> m_asyncSavePending;
+    std::deque<uint64_t> m_asyncSaveOrder;
+    std::unordered_set<uint64_t> m_asyncSaveInFlight;
+    uint16_t m_asyncActiveSaves{ 0 };
 
+    // Locking policy:
+    // 1) Never call flushAllSavedBlocks while m_lock is held.
+    // 2) For nested locks, never acquire m_lock after m_savedBlocksLock/m_asyncLoadLock/m_asyncSaveLock.
+    mutable std::mutex m_savedBlocksLock;
+    mutable std::mutex m_asyncLoadLock;
+    mutable std::mutex m_asyncSaveLock;
+    std::condition_variable m_asyncSaveCv;
     std::mutex m_lock;
 
     ScheduledEventPtr m_gcEvent;

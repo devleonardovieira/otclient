@@ -1,18 +1,44 @@
 -- chunkname: @/modules/gamelib/ui/uiminimap.lua
 
+local DEFAULT_MINIMAP_ZOOM_MIN = -5
+
+local function getMinimapZoomMin(widget)
+	if widget and widget.getMinZoom then
+		local minZoom = widget:getMinZoom()
+		if type(minZoom) == 'number' then
+			return minZoom
+		end
+	end
+
+	return DEFAULT_MINIMAP_ZOOM_MIN
+end
+
+local function getMinimapZoomMax(widget)
+	return getMinimapZoomMin(widget) + 1
+end
+
+local function clampMinimapZoom(widget, zoom)
+	local minZoom = getMinimapZoomMin(widget)
+	local maxZoom = getMinimapZoomMax(widget)
+	zoom = tonumber(zoom) or minZoom
+	if zoom < minZoom then return minZoom end
+	if zoom > maxZoom then return maxZoom end
+	return zoom
+end
+
 function UIMinimap:onCreate()
-    self.autowalk = true
-    -- Garantir estado inicial: não está em modo fullView
-    self.fullView = false
-    -- Inicializa estruturas para evitar nil em chamadas precoces
-    self.alternatives = {}
-    self.flags = {}
+	self.autowalk = true
+	-- Garantir estado inicial: não está em modo fullView
+	self.fullView = false
+	-- Inicializa estruturas para evitar nil em chamadas precoces
+	self.alternatives = {}
+	self.flags = {}
 end
 
 function UIMinimap:onSetup()
-    self.flagWindow = nil
-    self.flags = {}
-    self.alternatives = {}
+	self.flagWindow = nil
+	self.flags = {}
+	self.alternatives = {}
 
 	function self.onAddAutomapFlag(pos, icon, description)
 		self:addFlag(pos, icon, description)
@@ -22,19 +48,19 @@ function UIMinimap:onSetup()
 		self:removeFlag(pos, icon, description)
 	end
 
-    connect(g_game, {
-        onAddAutomapFlag = self.onAddAutomapFlag,
-        onRemoveAutomapFlag = self.onRemoveAutomapFlag
-    })
+	connect(g_game, {
+		onAddAutomapFlag = self.onAddAutomapFlag,
+		onRemoveAutomapFlag = self.onRemoveAutomapFlag
+	})
 
-    -- Garantir que o painel de controles do fullmap inicie oculto em miniwindow
-    local panelControls = self:getChildById('panelControls')
-    if panelControls then panelControls:hide() end
-    self.fullView = false
-    -- Evitar widgets alternativos visíveis fora do fullmap
-    if self.setAlternativeWidgetsVisible then
-        self:setAlternativeWidgetsVisible(false)
-    end
+	-- Garantir que o painel de controles do fullmap inicie oculto em miniwindow
+	local panelControls = self:getChildById('panelControls')
+	if panelControls then panelControls:hide() end
+	self.fullView = false
+	-- Evitar widgets alternativos visíveis fora do fullmap
+	if self.setAlternativeWidgetsVisible then
+		self:setAlternativeWidgetsVisible(false)
+	end
 end
 
 function UIMinimap:onDestroy()
@@ -54,19 +80,19 @@ function UIMinimap:onDestroy()
 end
 
 function UIMinimap:onVisibilityChange()
-    if not self:isVisible() then
-        self:destroyFlagWindow()
-    end
+	if not self:isVisible() then
+		self:destroyFlagWindow()
+	end
 
-    -- Sincroniza a visibilidade do painel de controles do fullmap com o estado fullView
-    local panelControls = self:getChildById('panelControls')
-    if panelControls then
-        if self.fullView then
-            panelControls:show()
-        else
-            panelControls:hide()
-        end
-    end
+	-- Sincroniza a visibilidade do painel de controles do fullmap com o estado fullView
+	local panelControls = self:getChildById('panelControls')
+	if panelControls then
+		if self.fullView then
+			panelControls:show()
+		else
+			panelControls:hide()
+		end
+	end
 end
 
 function UIMinimap:onCameraPositionChange(cameraPos)
@@ -76,13 +102,13 @@ function UIMinimap:onCameraPositionChange(cameraPos)
 end
 
 function UIMinimap:hideFloor()
-	self.floorUpWidget:hide()
-	self.floorDownWidget:hide()
+	if self.floorUpWidget then self.floorUpWidget:hide() end
+	if self.floorDownWidget then self.floorDownWidget:hide() end
 end
 
 function UIMinimap:hideZoom()
-	self.zoomInWidget:hide()
-	self.zoomOutWidget:hide()
+	if self.zoomInWidget then self.zoomInWidget:hide() end
+	if self.zoomOutWidget then self.zoomOutWidget:hide() end
 end
 
 function UIMinimap:disableAutoWalk()
@@ -99,7 +125,7 @@ function UIMinimap:load()
 			end
 		end
 
-		self:setZoom(settings.zoom)
+		self:setZoom(clampMinimapZoom(self, settings.zoom))
 	end
 end
 
@@ -203,40 +229,55 @@ function UIMinimap:addFlag(pos, icon, description, temporary, color)
 	self:centerInPosition(flag, pos)
 end
 
-function UIMinimap:addAlternativeWidget(widget, pos, maxZoom)
+function UIMinimap:addAlternativeWidget(widget, pos, minZoom, maxZoom)
 	widget.pos = pos
-	widget.maxZoom = maxZoom or 0
 	widget.minZoom = minZoom
-
+	widget.maxZoom = maxZoom or getMinimapZoomMax(self)
 	table.insert(self.alternatives, widget)
 end
 
-function UIMinimap:setAlternativeWidgetsVisible(show)
-    -- Proteção: evita erro se alternativas ainda não estiver inicializado
-    if not self.alternatives or type(self.alternatives) ~= 'table' then
-        self.alternatives = {}
-        return
-    end
-
-    for _, widget in pairs(self.alternatives) do
-        if show then
-            widget:show()
-        else
-            widget:hide()
-        end
-    end
-end
-
 function UIMinimap:onZoomChange(zoom)
+	local clampedZoom = clampMinimapZoom(self, zoom)
+	if clampedZoom ~= zoom then
+		self:setZoom(clampedZoom)
+		return
+	end
+
 	if self.fullView then
 		for _, widget in pairs(self.alternatives) do
-			if (not widget.minZoom or zoom <= widget.minZoom) and zoom >= widget.maxZoom then
+			local minZ = widget.minZoom or getMinimapZoomMin(self)
+			local maxZ = widget.maxZoom or getMinimapZoomMax(self)
+			if zoom >= minZ and zoom <= maxZ then
 				widget:show()
 			else
 				widget:hide()
 			end
 		end
 	end
+end
+
+function UIMinimap:setAlternativeWidgetsVisible(show)
+	-- Proteção: evita erro se alternativas ainda não estiver inicializado
+	if not self.alternatives or type(self.alternatives) ~= 'table' then
+		self.alternatives = {}
+		return
+	end
+
+	for _, widget in pairs(self.alternatives) do
+		if show then
+			widget:show()
+		else
+			widget:hide()
+		end
+	end
+end
+
+function UIMinimap:zoomIn()
+	self:setZoom(clampMinimapZoom(self, self:getZoom() + 1))
+end
+
+function UIMinimap:zoomOut()
+	self:setZoom(clampMinimapZoom(self, self:getZoom() - 1))
 end
 
 function UIMinimap:getFlag(pos)
@@ -258,7 +299,7 @@ function UIMinimap:removeFlag(pos, icon, description)
 end
 
 function UIMinimap:reset()
-	self:setZoom(2)
+	self:setZoom(getMinimapZoomMin(self))
 
 	if self.cross then
 		self:setCameraPosition(self.cross.pos)
@@ -327,21 +368,21 @@ function UIMinimap:onMouseRelease(pos, button)
 		return
 	end
 
-    if button == MouseLeftButton then
-        local player = g_game.getLocalPlayer()
+	if button == MouseLeftButton then
+		local player = g_game.getLocalPlayer()
 
-        -- Reativa o autowalk ao clicar no minimapa/fullmap.
-        -- Faz checagens seguras para evitar erro caso o módulo de minigame não exista.
-        local canAutoWalk = true
-        if modules and modules.game_minigame and type(modules.game_minigame.isPlaying) == 'function' then
-            canAutoWalk = not modules.game_minigame.isPlaying()
-        end
+		-- Reativa o autowalk ao clicar no minimapa/fullmap.
+		-- Faz checagens seguras para evitar erro caso o módulo de minigame não exista.
+		local canAutoWalk = true
+		if modules and modules.game_minigame and type(modules.game_minigame.isPlaying) == 'function' then
+			canAutoWalk = not modules.game_minigame.isPlaying()
+		end
 
-        if self.autowalk and canAutoWalk then
-            player:autoWalk(mapPos)
-        end
+		if self.autowalk and canAutoWalk then
+			player:autoWalk(mapPos)
+		end
 
-        return true
+		return true
 	elseif button == MouseRightButton then
 		local menu = g_ui.createWidget("PopupMenu")
 
@@ -441,7 +482,8 @@ function UIMinimap:createFlagWindow(pos)
 	end
 
 	local function successFunc()
-		self:addFlag(pos, flagRadioGroup:getSelectedWidget().icon, description:getText(), false, flagRadioGroup:getSelectedWidget():getIconColor())
+		self:addFlag(pos, flagRadioGroup:getSelectedWidget().icon, description:getText(), false,
+			flagRadioGroup:getSelectedWidget():getIconColor())
 		self:destroyFlagWindow()
 	end
 
@@ -474,11 +516,11 @@ function UIMinimap:createFlagWindow(pos)
 end
 
 function UIMinimap:destroyFlagWindow()
-    if self.flagWindow then
-        if not self.flagWindow:isDestroyed() then
-            self.flagWindow:destroy()
-        end
+	if self.flagWindow then
+		if not self.flagWindow:isDestroyed() then
+			self.flagWindow:destroy()
+		end
 
-        self.flagWindow = nil
-    end
+		self.flagWindow = nil
+	end
 end

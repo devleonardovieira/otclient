@@ -86,10 +86,10 @@ end
 -- public functions
 function init()
     connect(g_game, {
-       
+        onPingBack = updatePing
     })
     connect(g_app, {
-      
+        onFps = updateFps
     })
 
     topMenu = g_ui.displayUI('topmenu')
@@ -100,8 +100,8 @@ function init()
     rightButtonsPanel = topMenu:getChildById('rightButtonsPanel')
     leftButtonsPanel = topMenu:getChildById('leftButtonsPanel')
     rightGameButtonsPanel = topMenu:getChildById('rightGameButtonsPanel')
-    --[[ pingLabel = topMenu:getChildById('pingLabel')
-    fpsLabel = topMenu:getChildById('fpsLabel') ]]
+    pingLabel = topMenu:getChildById('pingLabel')
+    fpsLabel = topMenu:getChildById('fpsLabel')
 
     topLeftOnlinePlayersLabel = topMenu:recursiveGetChildById('topLeftOnlinePlayersLabel')
 
@@ -142,10 +142,10 @@ end
 
 function terminate()
     disconnect(g_game, {
-       
+        onPingBack = updatePing
     })
     disconnect(g_app, {
-     
+        onFps = updateFps
     })
 
     topMenu:destroy()
@@ -223,11 +223,19 @@ function online()
             end
         end ]]
 
-        pingImg:setVisible(showPing)
-        pingPanel:setVisible(showPing)
-        
-        local showFps = modules.client_options.getOption('showFps')
-        fpsPanel2:setVisible(showFps)
+        pingImg:setVisible(showPing and pingFeatureAvailable)
+        pingPanel:setVisible(showPing and pingFeatureAvailable)
+
+        if not modules.client_options.getOption('showFps') then
+            modules.client_options.setOption('showFps', true)
+        end
+
+        if fpsPanel2 then
+            fpsPanel2:setVisible(true)
+        end
+        if fpsLabel then
+            fpsLabel:setVisible(true)
+        end
     end)
 end
 
@@ -242,7 +250,7 @@ function offline()
 end
 
 function updateFps(fps)
-    if fpsLabel:isVisible() then -- for the time being retained for the extended view
+    if fpsLabel and fpsLabel:isVisible() then -- for the time being retained for the extended view
         local text = 'FPS ' .. fps
         if g_game.isOnline() then
             local vsync = modules.client_options.getOption('vsync')
@@ -276,10 +284,14 @@ function updateFps(fps)
     end
 
     local text = fps .. ' fps'
-    if fpsPanel2 and fpsPanel2:isVisible() then
-        if g_game.isOnline() then
-            fpsPanel2:setText(text)
-        end
+    if fpsPanel2 and g_game.isOnline() then
+        fpsPanel2:setText(text)
+        fpsPanel2:setVisible(true)
+    end
+
+    if fpsLabel and g_game.isOnline() then
+        fpsLabel:setText('FPS ' .. fps)
+        fpsLabel:setVisible(true)
     end
 
 end
@@ -337,10 +349,12 @@ function setPingVisible(enable)
 end
 
 function setFpsVisible(enable)
-    --[[ fpsLabel:setVisible(enable)
+    if fpsLabel then
+        fpsLabel:setVisible(enable)
+    end
     if fpsPanel2 then
         fpsPanel2:setVisible(enable)
-    end ]]
+    end
 end
 
 function setPlayersOnline(value)

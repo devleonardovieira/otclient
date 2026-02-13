@@ -205,6 +205,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_minimap", "clean", &Minimap::clean, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "loadImage", &Minimap::loadImage, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "saveImage", &Minimap::saveImage, &g_minimap);
+    g_lua.bindSingletonFunction("g_minimap", "importOtmm", &Minimap::importOtmm, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "save", &Minimap::save, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "setHDMode", &Minimap::setHDMode, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "isHDMode", &Minimap::isHDMode, &g_minimap);

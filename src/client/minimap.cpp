@@ -25,19 +25,34 @@
 #include "game.h"
 #include "localplayer.h"
 
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <iterator>
+#include <limits>
 #include <zlib.h>
+#include <framework/core/asyncdispatcher.h>
 #include <framework/core/filestream.h>
 #include <framework/core/resourcemanager.h>
 #include <framework/core/eventdispatcher.h>
 #include <framework/graphics/drawpoolmanager.h>
 #include <framework/graphics/image.h>
 #include <framework/graphics/texture.h>
+#include <type_traits>
 
 Minimap g_minimap;
-static MinimapTile nulltile;
-static CacheBlock nullCachedBlock;
+static const MinimapTile nulltile{};
 
 const auto& MINIMAP_PATH = std::string("/minimap/");
+static std::mutex g_minimapIOLock;
+
+static constexpr uint16_t MINIMAP_MAX_ASYNC_LOADS = 3;
+static constexpr uint16_t MINIMAP_MAX_ASYNC_SAVES = 2;
+
+MinimapBlock::MinimapBlock()
+{
+    m_lastUpdate.restart();
+}
 
 void MinimapBlock::clean()
 {
@@ -47,6 +62,8 @@ void MinimapBlock::clean()
 
 void MinimapBlock::update()
 {
+    m_lastUpdate.restart();
+
     if (!m_mustUpdate)
         return;
 
@@ -76,6 +93,8 @@ void MinimapBlock::update()
 void MinimapBlock::updateHD(const Position& pos)
 {
     static Timer m_timerToLoader;
+
+    m_lastUpdate.restart();
 
     if (!m_mustUpdate)
         return;
@@ -162,6 +181,8 @@ void MinimapBlock::updateHD(const Position& pos)
 
 bool MinimapBlock::updateTile(int x, int y, const MinimapTile& newTile)
 {
+    m_lastUpdate.restart();
+
     auto& tile = m_tiles[getTileIndex(x, y)];
     if (tile.equalsItems(newTile)) {
         tile.flags = newTile.flags;
@@ -177,13 +198,17 @@ bool MinimapBlock::updateTile(int x, int y, const MinimapTile& newTile)
 
 void Minimap::init() {
     g_dispatcher.addEvent([this] {
-        g_resources.makeDir(MINIMAP_PATH);
+        {
+            std::scoped_lock ioLock(g_minimapIOLock);
+            g_resources.makeDir(MINIMAP_PATH);
+        }
         cacheBlockFileName();
     });
 
     m_tileBlocks.resize(g_gameConfig.getMapMaxZ() + 1);
     m_cachedBlock.resize(g_gameConfig.getMapMaxZ() + 1);
     m_blockSaved.resize(g_gameConfig.getMapMaxZ() + 1);
+    m_newSavedBlocks.resize(g_gameConfig.getMapMaxZ() + 1);
     updatedTiles.resize(g_gameConfig.getMapMaxZ() + 1);
 
     m_fbo = std::make_shared<FrameBuffer>();
@@ -191,18 +216,42 @@ void Minimap::init() {
     // Garbage Collection
     {
         static constexpr uint16_t
-            WAITING_TIME = 10 * 1000, // waiting time for next check, default 1 min.
-            IDLE_TIME = 10 * 1000,     // Maximum time it can be idle, default 1 min.
-            CACHED_IDLE_TIME = 60 * 1000,
-            MAX_UNLOADS_PER_CYCLE = 24,
-            MAX_CACHED_PRUNE_PER_CYCLE = 64;
+            WAITING_TIME = 2 * 1000,
+            IDLE_TIME = 7 * 1000,
+            CACHED_IDLE_TIME = 20 * 1000,
+            MAX_UNLOADS_PER_CYCLE = 64,
+            MAX_CACHED_PRUNE_PER_CYCLE = 256;
 
         m_gcEvent = g_dispatcher.cycleEvent([&] {
-            std::scoped_lock lock(m_lock);
+            flushAllSavedBlocks(false);
+
+            std::unique_lock<std::mutex> lock(m_lock, std::try_to_lock);
+            if (!lock.owns_lock())
+                return;
+
+            applyAsyncLoadedBlocks(lock);
 
             const auto& playerPos = g_game.getLocalPlayer() ? g_game.getLocalPlayer()->getPosition() : Position();
             uint16_t unloadedBlocks = 0;
             uint16_t prunedCachedBlocks = 0;
+            static uint32_t gcCycleCount = 0;
+
+            const auto shrinkUnordered = [](auto& container, const size_t minBuckets = 2048) {
+                if (container.bucket_count() <= minBuckets)
+                    return;
+
+                if (container.size() * 4 >= container.bucket_count())
+                    return;
+
+                using Container = std::remove_reference_t<decltype(container)>;
+                Container compacted;
+                compacted.reserve(container.size());
+                compacted.insert(container.begin(), container.end());
+                container.swap(compacted);
+            };
+
+            ++gcCycleCount;
+            const bool shouldShrink = (gcCycleCount % 5) == 0;
 
             for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z) {
                 if (unloadedBlocks >= MAX_UNLOADS_PER_CYCLE && prunedCachedBlocks >= MAX_CACHED_PRUNE_PER_CYCLE)
@@ -222,14 +271,13 @@ void Minimap::init() {
                     }
 
                     if (block->lastUpdate() > IDLE_TIME) {
-                        saveBlock(z, index);
+                        invalidateAsyncLoad(z, index);
+                        if (block && block->wasSeen())
+                            saveBlock(z, index, block->getTiles());
 
                         auto& cachedBlock = getCachedBlock(z, index);
                         cachedBlock.loaded = EnumCachedBlockLoad::UNLOADED;
-                        if (!m_hdMode && block->getTexture())
-                            cachedBlock.texture = block->getTexture();
-                        else
-                            cachedBlock.texture = nullptr;
+                        cachedBlock.texture = nullptr;
 
                         it = tileBlocks.erase(it);
                         if (++unloadedBlocks >= MAX_UNLOADS_PER_CYCLE)
@@ -251,22 +299,45 @@ void Minimap::init() {
                     }
 
                     if (block.lastUpdate() > CACHED_IDLE_TIME) {
+                        invalidateAsyncLoad(z, index);
                         it = cachedBlocks.erase(it);
                         if (++prunedCachedBlocks >= MAX_CACHED_PRUNE_PER_CYCLE)
                             break;
                     } else ++it;
                 }
+
+            }
+
+            if (shouldShrink) {
+                static uint8_t shrinkFloor = 0;
+                const uint8_t floorCount = static_cast<uint8_t>(g_gameConfig.getMapMaxZ() + 1);
+                const uint8_t z = shrinkFloor % floorCount;
+
+                shrinkUnordered(m_tileBlocks[z]);
+                shrinkUnordered(m_cachedBlock[z]);
+                shrinkUnordered(updatedTiles[z], 512);
+
+                shrinkFloor = static_cast<uint8_t>((shrinkFloor + 1) % floorCount);
             }
         }, WAITING_TIME);
     }
 }
 
 void Minimap::cacheBlockFileName() {
-    for (uint_fast8_t i = 0; i <= g_gameConfig.getMapMaxZ(); ++i)
+    std::list<std::string> files;
+    {
+        std::scoped_lock ioLock(g_minimapIOLock);
+        files = g_resources.listDirectoryFiles(MINIMAP_PATH);
+    }
+
+    std::scoped_lock savedLock(m_savedBlocksLock);
+    for (uint_fast8_t i = 0; i <= g_gameConfig.getMapMaxZ(); ++i) {
         m_blockSaved[i].clear();
+        m_newSavedBlocks[i].clear();
+    }
 
     const std::string& minimapNameStart = "minimap_";
-    for (auto file : g_resources.listDirectoryFiles(MINIMAP_PATH)) {
+    for (auto file : files) {
         if (file.size() <= minimapNameStart.length())
             continue;
 
@@ -282,8 +353,84 @@ void Minimap::cacheBlockFileName() {
         if (z < 0 || z > g_gameConfig.getMapMaxZ())
             continue;
 
-        m_blockSaved[z].insert(block);
+        m_blockSaved[z].push_back(block);
     }
+
+    for (uint_fast8_t i = 0; i <= g_gameConfig.getMapMaxZ(); ++i) {
+        auto& blocks = m_blockSaved[i];
+        std::sort(blocks.begin(), blocks.end());
+        blocks.erase(std::unique(blocks.begin(), blocks.end()), blocks.end());
+    }
+}
+
+bool Minimap::hasSavedBlock(uint8_t z, uint32_t blockIndex) const
+{
+    std::scoped_lock savedLock(m_savedBlocksLock);
+
+    const auto& savedBlocks = m_blockSaved[z];
+    if (std::binary_search(savedBlocks.begin(), savedBlocks.end(), blockIndex))
+        return true;
+
+    const auto& pendingBlocks = m_newSavedBlocks[z];
+    return std::binary_search(pendingBlocks.begin(), pendingBlocks.end(), blockIndex);
+}
+
+void Minimap::markSavedBlock(uint8_t z, uint32_t blockIndex)
+{
+    bool shouldForceFlush = false;
+    {
+        std::scoped_lock savedLock(m_savedBlocksLock);
+
+        const auto& savedBlocks = m_blockSaved[z];
+        if (std::binary_search(savedBlocks.begin(), savedBlocks.end(), blockIndex))
+            return;
+
+        auto& pendingBlocks = m_newSavedBlocks[z];
+        const auto it = std::lower_bound(pendingBlocks.begin(), pendingBlocks.end(), blockIndex);
+        if (it != pendingBlocks.end() && *it == blockIndex)
+            return;
+
+        pendingBlocks.insert(it, blockIndex);
+        shouldForceFlush = pendingBlocks.size() >= 128;
+    }
+
+    if (shouldForceFlush)
+        flushSavedBlocks(z, true);
+}
+
+void Minimap::flushSavedBlocks(uint8_t z, bool force)
+{
+    std::scoped_lock savedLock(m_savedBlocksLock);
+
+    auto& pendingBlocks = m_newSavedBlocks[z];
+    if (pendingBlocks.empty())
+        return;
+
+    static constexpr uint16_t MERGE_INTERVAL = 5 * 1000;
+    static constexpr size_t MIN_PENDING_TO_MERGE = 64;
+
+    if (!force) {
+        if (pendingBlocks.size() < MIN_PENDING_TO_MERGE && m_savedBlocksMergeTimer.ticksElapsed() < MERGE_INTERVAL)
+            return;
+    }
+
+    auto& savedBlocks = m_blockSaved[z];
+
+    std::vector<uint32_t> merged;
+    merged.reserve(savedBlocks.size() + pendingBlocks.size());
+    std::merge(savedBlocks.begin(), savedBlocks.end(), pendingBlocks.begin(), pendingBlocks.end(), std::back_inserter(merged));
+    merged.erase(std::unique(merged.begin(), merged.end()), merged.end());
+
+    savedBlocks.swap(merged);
+    std::vector<uint32_t>().swap(pendingBlocks);
+
+    m_savedBlocksMergeTimer.restart();
+}
+
+void Minimap::flushAllSavedBlocks(bool force)
+{
+    for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z)
+        flushSavedBlocks(z, force);
 }
 
 void Minimap::terminate() {
@@ -299,12 +446,24 @@ void Minimap::terminate() {
 
 void Minimap::clean()
 {
-    std::scoped_lock lock(m_lock);
-    for (uint_fast8_t i = 0; i <= g_gameConfig.getMapMaxZ(); ++i) {
-        m_tileBlocks[i].clear();
-        m_cachedBlock[i].clear();
+    waitAsyncSaves();
+    flushAllSavedBlocks(true);
+
+    {
+        std::scoped_lock asyncLock(m_asyncLoadLock);
+        std::deque<AsyncLoadRequest>().swap(m_asyncLoadQueue);
+        std::deque<AsyncLoadedBlock>().swap(m_asyncLoadedBlocks);
+        std::unordered_set<uint64_t>().swap(m_asyncQueuedBlocks);
+        std::unordered_map<uint64_t, uint32_t>().swap(m_asyncLoadGeneration);
+        m_asyncActiveLoads = 0;
     }
-    cacheBlockFileName();
+
+    std::unique_lock<std::mutex> lock(m_lock);
+    for (uint_fast8_t i = 0; i <= g_gameConfig.getMapMaxZ(); ++i) {
+        std::unordered_map<uint32_t, MinimapBlock_ptr>().swap(m_tileBlocks[i]);
+        std::unordered_map<uint32_t, CacheBlock>().swap(m_cachedBlock[i]);
+        std::unordered_map<Position, MinimapTile, Position::Hasher>().swap(updatedTiles[i]);
+    }
 }
 
 void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color)
@@ -312,7 +471,7 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
     if (screenRect.isEmpty())
         return;
 
-    std::scoped_lock lock(m_lock);
+    std::unique_lock<std::mutex> lock(m_lock);
 
     struct Data
     {
@@ -321,10 +480,11 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
         float opacity = 1.f;
     };
 
-    static std::vector<Data> textures;
-    static std::vector<std::pair<Point, Position>> positionsToDraw;
+    std::vector<Data> textures;
+    std::vector<std::pair<Point, Position>> positionsToDraw;
 
-    checkUpdatedTiles();
+    applyAsyncLoadedBlocks(lock);
+    checkUpdatedTiles(lock);
 
     const auto& preDraw = [&](const Position& camera) {
         const auto& mapRect = calcMapRect(screenRect, camera, scale);
@@ -332,8 +492,6 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
         auto off = (Point((mapRect.size() * scale).toPoint() - screenRect.size().toPoint()) / 2);
 
         const auto& start = screenRect.topLeft() - (mapRect.topLeft() - blockOff) * scale - off;
-
-        bool _break = false;
 
         for (int_fast32_t y = blockOff.y, ys = start.y; ys < screenRect.bottom(); y += MMBLOCK_SIZE, ys += MMBLOCK_SIZE * scale) {
             if (y < 0 || y >= 65536)
@@ -345,7 +503,8 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
 
                 const auto& pos = Position(x, y, camera.z);
 
-                load(pos.z, getBlockIndex(pos), false); // Load first time
+                if (!hasBlock(pos))
+                    load(pos.z, getBlockIndex(pos), false); // Load first time
 
                 if (hasBlock(pos) || hasCachedBlock(pos) && getCachedBlock(pos).texture)
                     positionsToDraw.emplace_back(Point(xs, ys), pos);
@@ -383,6 +542,7 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
 
             if (hasBlock(pos)) {
                 const auto& block = getBlock(pos);
+                block->touch();
                 if (m_hdMode)
                     block->updateHD(pos);
                 else
@@ -423,7 +583,8 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
 }
 
 bool Minimap::hasBlock(const Position& pos) {
-    return m_tileBlocks[pos.z].contains(getBlockIndex(pos));
+    const auto& floorBlocks = m_tileBlocks[pos.z];
+    return floorBlocks.find(getBlockIndex(pos)) != floorBlocks.end();
 }
 
 Point Minimap::getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale)
@@ -529,7 +690,10 @@ void Minimap::updateTile(const Position& pos, const TilePtr& tile)
     }
 }
 
-bool Minimap::checkUpdatedTiles() {
+bool Minimap::checkUpdatedTiles(const std::unique_lock<std::mutex>& minimapLock) {
+    assert(minimapLock.owns_lock());
+    assert(minimapLock.mutex() == &m_lock);
+
     for (auto& tiles : updatedTiles) {
         std::unordered_map<uint32_t, MinimapBlock_ptr> loadedBlocks;
         loadedBlocks.reserve(std::min<size_t>(tiles.size(), 256));
@@ -538,7 +702,9 @@ bool Minimap::checkUpdatedTiles() {
             const uint32_t blockIndex = getBlockIndex(pos);
             auto it = loadedBlocks.find(blockIndex);
             if (it == loadedBlocks.end()) {
-                load(pos.z, blockIndex, true); // forced loading if discarded by GC
+                invalidateAsyncLoad(pos.z, blockIndex);
+                if (!hasBlock(pos))
+                    load(pos.z, blockIndex, true); // forced loading if discarded by GC
                 it = loadedBlocks.emplace(blockIndex, getBlock(pos)).first;
             }
 
@@ -602,6 +768,7 @@ bool Minimap::loadImage(const std::string& fileName, const Position& topLeft, fl
         const ImagePtr image = Image::load(fileName);
 
         const uint8_t waterc = Color::to8bit("#3300cc"sv);
+        std::scoped_lock lock(m_lock);
 
         for (int_fast32_t y = -1; ++y < image->getHeight();) {
             for (int_fast32_t x = -1; ++x < image->getWidth();) {
@@ -662,10 +829,570 @@ std::string getFileName(const uint8_t z, const uint32_t block) {
     return MINIMAP_PATH + "minimap_" + std::to_string(z) + "_" + std::to_string(block) + ".mmz";
 }
 
-EnumCachedBlockLoad Minimap::load(const uint8_t z, const uint32_t block, bool forceLoad) {
+bool Minimap::writeMinimapBlockData(const uint8_t z, const uint32_t index, const std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& tiles)
+{
+    static constexpr uint32_t blockSize = MMBLOCK_SIZE * MMBLOCK_SIZE * sizeof(MinimapTile);
+    static constexpr uint32_t COMPRESS_LEVEL = 3;
+    static const uint32_t maxCompressedSize = static_cast<uint32_t>(compressBound(blockSize));
+
+    thread_local std::vector<uint8_t> compressBuffer;
+    if (compressBuffer.size() < maxCompressedSize)
+        compressBuffer.resize(maxCompressedSize);
+
+    unsigned long len = static_cast<unsigned long>(compressBuffer.size());
+    const int ret = compress2(compressBuffer.data(), &len, reinterpret_cast<const uint8_t*>(tiles.data()), blockSize, COMPRESS_LEVEL);
+    if (ret != Z_OK)
+        return false;
+    if (len > std::numeric_limits<uint16_t>::max())
+        return false;
+
+    std::scoped_lock ioLock(g_minimapIOLock);
+    const auto& fin = g_resources.createFile(getFileName(z, index));
+    if (!fin)
+        return false;
+
+    fin->cache();
+
+    const Position pos = getIndexPosition(index, z);
+    fin->addU16(pos.x);
+    fin->addU16(pos.y);
+    fin->addU8(pos.z);
+    fin->addU16(static_cast<uint16_t>(len));
+    fin->write(compressBuffer.data(), len);
+
+    // end marker for reader validation
+    const Position invalidPos;
+    fin->addU16(invalidPos.x);
+    fin->addU16(invalidPos.y);
+    fin->addU8(invalidPos.z);
+
+    fin->flush();
+    fin->close();
+    return true;
+}
+
+static bool readMinimapBlockData(const uint8_t z, const uint32_t block, std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& outTiles)
+{
+    static constexpr uint32_t blockSize = MMBLOCK_SIZE * MMBLOCK_SIZE * sizeof(MinimapTile);
+    static const uint32_t maxCompressedSize = static_cast<uint32_t>(compressBound(blockSize));
+    static constexpr uint32_t blocksPerAxis = 65536 / MMBLOCK_SIZE;
+    thread_local std::vector<uint8_t> compressBuffer;
+    thread_local std::vector<uint8_t> decompressBuffer;
+    if (compressBuffer.size() < maxCompressedSize)
+        compressBuffer.resize(maxCompressedSize);
+    if (decompressBuffer.size() < blockSize)
+        decompressBuffer.resize(blockSize);
+
+    uint16_t compressedSize = 0;
+
+    {
+        std::scoped_lock ioLock(g_minimapIOLock);
+        const auto& fin = g_resources.openFile(getFileName(z, block));
+        if (!fin) {
+            g_logger.warning("invalid minimap block {}:{} (open failed)", z, block);
+            return false;
+        }
+
+        Position pos;
+        pos.x = fin->getU16();
+        pos.y = fin->getU16();
+        pos.z = fin->getU8();
+        if (!pos.isValid() || pos.z >= g_gameConfig.getMapMaxZ() + 1 || pos.z != z) {
+            g_logger.warning("invalid minimap block {}:{} (invalid header position: {})", z, block, pos);
+            return false;
+        }
+
+        const uint32_t fileBlockIndex = ((pos.y / MMBLOCK_SIZE) * blocksPerAxis) + (pos.x / MMBLOCK_SIZE);
+        if (fileBlockIndex != block) {
+            g_logger.warning("invalid minimap block {}:{} (header index mismatch: {})", z, block, fileBlockIndex);
+            return false;
+        }
+
+        const uint16_t len = fin->getU16();
+        if (len == 0 || len > maxCompressedSize) {
+            g_logger.warning("invalid minimap block {}:{} (compressed size out of range: {})", z, block, len);
+            return false;
+        }
+
+        fin->read(compressBuffer.data(), len);
+        compressedSize = len;
+
+        Position endPos;
+        endPos.x = fin->getU16();
+        endPos.y = fin->getU16();
+        endPos.z = fin->getU8();
+        if (endPos.isValid()) {
+            g_logger.warning("invalid minimap block {}:{} (missing end marker)", z, block);
+            return false;
+        }
+
+        fin->close();
+    }
+
+    if (compressedSize == 0) {
+        g_logger.warning("invalid minimap block {}:{} (missing compressed payload)", z, block);
+        return false;
+    }
+
+    unsigned long destLen = blockSize;
+    const int ret = uncompress(decompressBuffer.data(), &destLen, compressBuffer.data(), static_cast<unsigned long>(compressedSize));
+    if (ret != Z_OK || destLen != blockSize) {
+        g_logger.warning("invalid minimap block {}:{} (decompress failed: ret={}, size={})", z, block, ret, destLen);
+        return false;
+    }
+
+    memcpy(reinterpret_cast<uint8_t*>(outTiles.data()), decompressBuffer.data(), blockSize);
+    return true;
+}
+
+bool Minimap::importOtmm(const std::string& fileName, bool overwrite)
+{
+    try {
+        static constexpr uint32_t blockSize = MMBLOCK_SIZE * MMBLOCK_SIZE * sizeof(MinimapTile);
+        static const uint32_t maxCompressedSize = static_cast<uint32_t>(compressBound(blockSize));
+
+        uint32_t imported = 0;
+        uint32_t skipped = 0;
+        {
+            std::scoped_lock ioLock(g_minimapIOLock);
+
+            const auto& fin = g_resources.openFile(fileName);
+            if (!fin)
+                throw stdext::exception("unable to open file");
+
+            const uint32_t signature = fin->getU32();
+            if (signature != OTMM_SIGNATURE)
+                throw stdext::exception("invalid OTMM file");
+
+            const uint16_t start = fin->getU16();
+            const uint16_t version = fin->getU16();
+            fin->getU32(); // flags
+
+            switch (version) {
+                case OTMM_VERSION:
+                    fin->getString(); // description
+                    break;
+                default:
+                    throw stdext::exception("OTMM version not supported");
+            }
+
+            fin->seek(start);
+            g_resources.makeDir(MINIMAP_PATH);
+
+            std::vector<uint8_t> compressedBlock;
+            while (true) {
+                Position pos;
+                pos.x = fin->getU16();
+                pos.y = fin->getU16();
+                pos.z = fin->getU8();
+
+                // end of file or file is corrupted
+                if (!pos.isValid() || pos.z >= g_gameConfig.getMapMaxZ() + 1)
+                    break;
+
+                const uint16_t len = fin->getU16();
+                if (len == 0 || len > maxCompressedSize) {
+                    g_logger.warning(
+                        "invalid OTMM block {}:{} (compressed size out of range: {}) while importing '{}'",
+                        pos.z,
+                        getBlockIndex(pos),
+                        len,
+                        fileName
+                    );
+                    break;
+                }
+
+                compressedBlock.resize(len);
+                fin->read(compressedBlock.data(), len);
+
+                const uint32_t blockIndex = getBlockIndex(pos);
+                if (!overwrite && hasSavedBlock(pos.z, blockIndex)) {
+                    ++skipped;
+                    continue;
+                }
+
+                const auto& fout = g_resources.createFile(getFileName(pos.z, blockIndex));
+                fout->cache();
+                fout->addU16(pos.x);
+                fout->addU16(pos.y);
+                fout->addU8(pos.z);
+                fout->addU16(len);
+                fout->write(compressedBlock.data(), len);
+
+                // end of file marker
+                const Position invalidPos;
+                fout->addU16(invalidPos.x);
+                fout->addU16(invalidPos.y);
+                fout->addU8(invalidPos.z);
+
+                fout->flush();
+                fout->close();
+
+                markSavedBlock(pos.z, blockIndex);
+                ++imported;
+            }
+
+            fin->close();
+        }
+
+        flushAllSavedBlocks(true);
+
+        g_logger.info("minimap OTMM import completed: {} imported, {} skipped", imported, skipped);
+        return true;
+    } catch (const stdext::exception& e) {
+        g_logger.error("failed to import OTMM minimap '{}': {}", fileName, e.what());
+        return false;
+    }
+}
+
+void Minimap::queueAsyncLoad(uint8_t z, uint32_t blockIndex)
+{
+    const uint64_t key = getAsyncLoadKey(z, blockIndex);
+
+    {
+        std::scoped_lock asyncLock(m_asyncLoadLock);
+        if (m_asyncQueuedBlocks.find(key) != m_asyncQueuedBlocks.end())
+            return;
+
+        const uint32_t generation = ++m_asyncLoadGeneration[key];
+        m_asyncQueuedBlocks.emplace(key);
+        m_asyncLoadQueue.push_back({ z, blockIndex, generation });
+    }
+
+    dispatchAsyncLoads();
+}
+
+void Minimap::invalidateAsyncLoad(uint8_t z, uint32_t blockIndex)
+{
+    const uint64_t key = getAsyncLoadKey(z, blockIndex);
+    std::scoped_lock asyncLock(m_asyncLoadLock);
+
+    if (const auto it = m_asyncLoadGeneration.find(key); it != m_asyncLoadGeneration.end())
+        ++it->second;
+
+    m_asyncQueuedBlocks.erase(key);
+
+    m_asyncLoadQueue.erase(
+        std::remove_if(m_asyncLoadQueue.begin(), m_asyncLoadQueue.end(), [key](const AsyncLoadRequest& req) {
+            return getAsyncLoadKey(req.z, req.blockIndex) == key;
+        }),
+        m_asyncLoadQueue.end()
+    );
+
+    m_asyncLoadedBlocks.erase(
+        std::remove_if(m_asyncLoadedBlocks.begin(), m_asyncLoadedBlocks.end(), [key](const AsyncLoadedBlock& block) {
+            return getAsyncLoadKey(block.z, block.blockIndex) == key;
+        }),
+        m_asyncLoadedBlocks.end()
+    );
+}
+
+void Minimap::dispatchAsyncLoads()
+{
+    std::vector<AsyncLoadRequest> jobs;
+    jobs.reserve(MINIMAP_MAX_ASYNC_LOADS);
+
+    {
+        std::scoped_lock asyncLock(m_asyncLoadLock);
+        while (m_asyncActiveLoads < MINIMAP_MAX_ASYNC_LOADS && !m_asyncLoadQueue.empty()) {
+            jobs.emplace_back(m_asyncLoadQueue.front());
+            m_asyncLoadQueue.pop_front();
+            ++m_asyncActiveLoads;
+        }
+    }
+
+    for (const auto& request : jobs) {
+        g_asyncDispatcher.detach_task([this, request] {
+            AsyncLoadedBlock loadedBlock;
+            loadedBlock.z = request.z;
+            loadedBlock.blockIndex = request.blockIndex;
+            loadedBlock.generation = request.generation;
+
+            try {
+                loadedBlock.state = readMinimapBlockData(request.z, request.blockIndex, loadedBlock.tiles)
+                    ? EnumCachedBlockLoad::LOADED
+                    : EnumCachedBlockLoad::NOT_LOADED;
+            } catch (const stdext::exception& e) {
+                loadedBlock.state = EnumCachedBlockLoad::NOT_LOADED;
+                g_logger.error("failed to load minimap({}): {}", getFileName(request.z, request.blockIndex), e.what());
+            } catch (...) {
+                loadedBlock.state = EnumCachedBlockLoad::NOT_LOADED;
+                g_logger.error("failed to load minimap({}): unknown exception", getFileName(request.z, request.blockIndex));
+            }
+
+            {
+                std::scoped_lock asyncLock(m_asyncLoadLock);
+                m_asyncLoadedBlocks.emplace_back(std::move(loadedBlock));
+                if (m_asyncActiveLoads > 0)
+                    --m_asyncActiveLoads;
+            }
+
+            g_dispatcher.addEvent([this] {
+                dispatchAsyncLoads();
+            });
+        });
+    }
+}
+
+void Minimap::queueAsyncSave(uint8_t z, uint32_t blockIndex, const std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& tiles)
+{
+    const uint64_t key = getAsyncLoadKey(z, blockIndex);
+    bool shouldDispatch = false;
+
+    {
+        std::scoped_lock asyncSaveLock(m_asyncSaveLock);
+        auto [it, inserted] = m_asyncSavePending.try_emplace(key, AsyncSaveRequest{ z, blockIndex, tiles });
+        if (!inserted)
+            it->second.tiles = tiles;
+
+        const bool isInFlight = m_asyncSaveInFlight.find(key) != m_asyncSaveInFlight.end();
+        if (isInFlight)
+            return;
+
+        const bool alreadyQueued = std::find(m_asyncSaveOrder.begin(), m_asyncSaveOrder.end(), key) != m_asyncSaveOrder.end();
+        if (!alreadyQueued)
+            m_asyncSaveOrder.push_back(key);
+
+        shouldDispatch = true;
+    }
+
+    if (shouldDispatch)
+        dispatchAsyncSaves();
+}
+
+void Minimap::dispatchAsyncSaves()
+{
+    std::vector<AsyncSaveRequest> jobs;
+    jobs.reserve(MINIMAP_MAX_ASYNC_SAVES);
+
+    {
+        std::scoped_lock asyncSaveLock(m_asyncSaveLock);
+        while (m_asyncActiveSaves < MINIMAP_MAX_ASYNC_SAVES && !m_asyncSaveOrder.empty()) {
+            const uint64_t key = m_asyncSaveOrder.front();
+            m_asyncSaveOrder.pop_front();
+
+            const auto it = m_asyncSavePending.find(key);
+            if (it == m_asyncSavePending.end())
+                continue;
+
+            jobs.emplace_back(std::move(it->second));
+            m_asyncSavePending.erase(it);
+            m_asyncSaveInFlight.emplace(key);
+            ++m_asyncActiveSaves;
+        }
+    }
+
+    for (const auto& request : jobs) {
+        g_asyncDispatcher.detach_task([this, request] {
+            bool saved = false;
+
+            try {
+                saved = writeMinimapBlockData(request.z, request.blockIndex, request.tiles);
+            } catch (const stdext::exception& e) {
+                g_logger.error("failed to save minimap({}): {}", getFileName(request.z, request.blockIndex), e.what());
+            } catch (...) {
+                g_logger.error("failed to save minimap({}): unknown exception", getFileName(request.z, request.blockIndex));
+            }
+
+            if (saved)
+                markSavedBlock(request.z, request.blockIndex);
+
+            const uint64_t key = getAsyncLoadKey(request.z, request.blockIndex);
+            bool shouldNotify = false;
+            {
+                std::scoped_lock asyncSaveLock(m_asyncSaveLock);
+                if (m_asyncActiveSaves > 0)
+                    --m_asyncActiveSaves;
+                m_asyncSaveInFlight.erase(key);
+
+                if (m_asyncSavePending.find(key) != m_asyncSavePending.end()) {
+                    const bool alreadyQueued = std::find(m_asyncSaveOrder.begin(), m_asyncSaveOrder.end(), key) != m_asyncSaveOrder.end();
+                    if (!alreadyQueued)
+                        m_asyncSaveOrder.push_back(key);
+                }
+
+                shouldNotify = m_asyncActiveSaves == 0 && m_asyncSaveOrder.empty() && m_asyncSavePending.empty();
+            }
+
+            if (shouldNotify)
+                m_asyncSaveCv.notify_all();
+
+            g_dispatcher.addEvent([this] {
+                dispatchAsyncSaves();
+            });
+        });
+    }
+}
+
+void Minimap::waitAsyncSaves()
+{
+    std::unique_lock<std::mutex> lock(m_asyncSaveLock);
+    auto isIdle = [this] {
+        return m_asyncActiveSaves == 0 && m_asyncSaveOrder.empty() && m_asyncSavePending.empty();
+    };
+
+    static constexpr auto STEP = std::chrono::milliseconds(500);
+    static constexpr auto TIMEOUT = std::chrono::seconds(15);
+
+    auto waited = std::chrono::milliseconds::zero();
+    while (!isIdle()) {
+        if (m_asyncSaveCv.wait_for(lock, STEP, isIdle))
+            break;
+
+        waited += STEP;
+
+        if (waited < TIMEOUT)
+            continue;
+
+        g_logger.warning(
+            "minimap async save wait timeout: active={}, queued={}, pending={}; forcing sync flush of pending jobs",
+            m_asyncActiveSaves,
+            m_asyncSaveOrder.size(),
+            m_asyncSavePending.size()
+        );
+
+        if (m_asyncActiveSaves == 0) {
+            std::vector<AsyncSaveRequest> fallbackJobs;
+            fallbackJobs.reserve(m_asyncSavePending.size());
+
+            while (!m_asyncSaveOrder.empty()) {
+                const uint64_t key = m_asyncSaveOrder.front();
+                m_asyncSaveOrder.pop_front();
+
+                const auto it = m_asyncSavePending.find(key);
+                if (it == m_asyncSavePending.end())
+                    continue;
+
+                fallbackJobs.emplace_back(std::move(it->second));
+                m_asyncSavePending.erase(it);
+            }
+
+            for (auto& [key, request] : m_asyncSavePending)
+                fallbackJobs.emplace_back(std::move(request));
+            m_asyncSavePending.clear();
+
+            lock.unlock();
+            for (const auto& request : fallbackJobs) {
+                bool saved = false;
+                try {
+                    saved = writeMinimapBlockData(request.z, request.blockIndex, request.tiles);
+                } catch (const stdext::exception& e) {
+                    g_logger.error("failed to save minimap({}): {}", getFileName(request.z, request.blockIndex), e.what());
+                } catch (...) {
+                    g_logger.error("failed to save minimap({}): unknown exception", getFileName(request.z, request.blockIndex));
+                }
+
+                if (saved)
+                    markSavedBlock(request.z, request.blockIndex);
+            }
+            lock.lock();
+        }
+
+        if (!isIdle()) {
+            g_logger.warning(
+                "minimap async save wait aborted to avoid freeze: active={}, queued={}, pending={}",
+                m_asyncActiveSaves,
+                m_asyncSaveOrder.size(),
+                m_asyncSavePending.size()
+            );
+        }
+        break;
+    }
+}
+
+void Minimap::applyAsyncLoadedBlocks(const std::unique_lock<std::mutex>& minimapLock)
+{
+    assert(minimapLock.owns_lock());
+    assert(minimapLock.mutex() == &m_lock);
+
+    std::deque<AsyncLoadedBlock> loadedBlocks;
+
+    {
+        std::scoped_lock asyncLock(m_asyncLoadLock);
+        if (m_asyncLoadedBlocks.empty())
+            return;
+
+        loadedBlocks.swap(m_asyncLoadedBlocks);
+    }
+
+    for (const auto& loadedBlock : loadedBlocks) {
+        const uint64_t key = getAsyncLoadKey(loadedBlock.z, loadedBlock.blockIndex);
+        bool isExpectedGeneration = false;
+
+        {
+            std::scoped_lock asyncLock(m_asyncLoadLock);
+            m_asyncQueuedBlocks.erase(key);
+
+            const auto it = m_asyncLoadGeneration.find(key);
+            if (it != m_asyncLoadGeneration.end() && it->second == loadedBlock.generation) {
+                isExpectedGeneration = true;
+                m_asyncLoadGeneration.erase(it);
+            }
+        }
+
+        if (!isExpectedGeneration)
+            continue;
+
+        auto& cachedBlock = getCachedBlock(loadedBlock.z, loadedBlock.blockIndex);
+        if (cachedBlock.loaded != EnumCachedBlockLoad::LOADING)
+            continue;
+
+        if (loadedBlock.state != EnumCachedBlockLoad::LOADED) {
+            cachedBlock.loaded = EnumCachedBlockLoad::NOT_LOADED;
+            continue;
+        }
+
+        auto& floorBlocks = m_tileBlocks[loadedBlock.z];
+        auto itBlock = floorBlocks.find(loadedBlock.blockIndex);
+        if (itBlock != floorBlocks.end() && itBlock->second && itBlock->second->wasSeen()) {
+            cachedBlock.loaded = EnumCachedBlockLoad::LOADED;
+            cachedBlock.m_lastUpdate.restart();
+            continue;
+        }
+
+        const auto pos = getIndexPosition(loadedBlock.blockIndex, loadedBlock.z);
+        const auto& block = (itBlock != floorBlocks.end() && itBlock->second) ? itBlock->second : getBlock(pos);
+        memcpy(reinterpret_cast<uint8_t*>(&block->getTiles()), reinterpret_cast<const uint8_t*>(loadedBlock.tiles.data()), sizeof(loadedBlock.tiles));
+        if (!cachedBlock.texture)
+            block->mustUpdate();
+        block->touch();
+
+        cachedBlock.loaded = EnumCachedBlockLoad::LOADED;
+        cachedBlock.m_lastUpdate.restart();
+    }
+}
+
+EnumCachedBlockLoad Minimap::loadSync(const uint8_t z, const uint32_t block)
+{
     static Timer m_timerLoader;
 
-    if (!m_blockSaved[z].contains(block))
+    auto& cachedBlock = getCachedBlock(z, block);
+
+    try {
+        std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE> tiles;
+        if (!readMinimapBlockData(z, block, tiles)) {
+            cachedBlock.loaded = EnumCachedBlockLoad::NOT_LOADED;
+            return cachedBlock.loaded;
+        }
+
+        const auto pos = getIndexPosition(block, z);
+        const auto& loadedBlock = getBlock(pos);
+        memcpy(reinterpret_cast<uint8_t*>(&loadedBlock->getTiles()), reinterpret_cast<const uint8_t*>(tiles.data()), sizeof(tiles));
+        if (!cachedBlock.texture)
+            loadedBlock->mustUpdate();
+
+        cachedBlock.loaded = EnumCachedBlockLoad::LOADED;
+        m_timerLoader.restart();
+    } catch (const stdext::exception& e) {
+        cachedBlock.loaded = EnumCachedBlockLoad::NOT_LOADED;
+        g_logger.error("failed to load minimap({}): {}", getFileName(z, block), e.what());
+    }
+
+    return cachedBlock.loaded;
+}
+
+EnumCachedBlockLoad Minimap::load(const uint8_t z, const uint32_t block, bool forceLoad) {
+    if (!hasSavedBlock(z, block))
         return EnumCachedBlockLoad::FILE_NOT_FOUND;
 
     auto& cachedBlock = getCachedBlock(z, block);
@@ -676,113 +1403,37 @@ EnumCachedBlockLoad Minimap::load(const uint8_t z, const uint32_t block, bool fo
     if (cachedBlock.loaded == EnumCachedBlockLoad::UNLOADED && !forceLoad && cachedBlock.texture)
         return EnumCachedBlockLoad::UNLOADED;
 
-    // is very slow
-    //if (!g_resources.fileExists(getFileName(z, block)))
-    //     cachedBlock.loaded = EnumCachedBlockLoad::FILE_NOT_FOUND;
+    if (forceLoad)
+        return loadSync(z, block);
 
-    try {
-        const auto& fin = g_resources.openFile(getFileName(z, block));
+    if (cachedBlock.loaded == EnumCachedBlockLoad::LOADING)
+        return cachedBlock.loaded;
 
-        static constexpr uint32_t blockSize = MMBLOCK_SIZE * MMBLOCK_SIZE * sizeof(MinimapTile);
-        std::vector<uint8_t> compressBuffer(compressBound(blockSize));
-        std::vector<uint8_t> decompressBuffer(blockSize);
-
-        while (true) {
-            Position pos;
-            pos.x = fin->getU16();
-            pos.y = fin->getU16();
-            pos.z = fin->getU8();
-
-            // end of file or file is corrupted
-            if (!pos.isValid() || pos.z >= g_gameConfig.getMapMaxZ() + 1)
-                break;
-
-            const auto& block = getBlock(pos);
-            const uint16_t len = fin->getU16();
-            fin->read(compressBuffer.data(), len);
-
-            unsigned long destLen = blockSize;
-            const int ret = uncompress(decompressBuffer.data(), &destLen, compressBuffer.data(), len);
-
-            if (ret != Z_OK || destLen != blockSize)
-                break;
-
-            memcpy(reinterpret_cast<uint8_t*>(&block->getTiles()), decompressBuffer.data(), blockSize);
-
-            if (!cachedBlock.texture) {
-                block->mustUpdate();
-            }
-        }
-
-        fin->close();
-
-        cachedBlock.loaded = EnumCachedBlockLoad::LOADED;
-
-        m_timerLoader.restart();
-    } catch (const stdext::exception& e) {
-        cachedBlock.loaded = EnumCachedBlockLoad::NOT_LOADED;
-        g_logger.error("failed to load minimap({}): {}", getFileName(z, block), e.what());
-    }
-
+    cachedBlock.loaded = EnumCachedBlockLoad::LOADING;
+    cachedBlock.m_lastUpdate.restart();
+    queueAsyncLoad(z, block);
     return cachedBlock.loaded;
 }
 
-bool Minimap::saveBlock(const uint8_t z, const uint32_t index) {
-    static constexpr uint32_t blockSize = MMBLOCK_SIZE * MMBLOCK_SIZE * sizeof(MinimapTile);
-    static constexpr uint32_t COMPRESS_LEVEL = 3;
-
-    auto it = m_tileBlocks[z].find(index);
-    if (it == m_tileBlocks[z].end())
-        return false;
-
-    auto block = it->second;
-
-    if (!block->wasSeen())
-        return false;
-
-    try {
-        const auto& fin = g_resources.createFile(getFileName(z, index));
-        fin->cache();
-
-        const auto& pos = getIndexPosition(index, z);
-        fin->addU16(pos.x);
-        fin->addU16(pos.y);
-        fin->addU8(pos.z);
-
-        std::vector<uint8_t> compressBuffer(compressBound(blockSize));
-
-        unsigned long len = blockSize;
-        compress2(compressBuffer.data(), &len, (uint8_t*)&block->getTiles(), blockSize, COMPRESS_LEVEL);
-        fin->addU16(len);
-        fin->write(compressBuffer.data(), len);
-
-        // Evitar erro de leitura
-        const Position invalidPos;
-        fin->addU16(invalidPos.x);
-        fin->addU16(invalidPos.y);
-        fin->addU8(invalidPos.z);
-
-        fin->flush();
-        fin->close();
-
-        m_blockSaved[z].insert(index);
-
-        return true;
-    } catch (const stdext::exception& e) {
-        g_logger.error("failed to save minimap: {}", e.what());
-    }
-
-    return false;
+bool Minimap::saveBlock(const uint8_t z, const uint32_t index, const std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& tiles) {
+    queueAsyncSave(z, index, tiles);
+    return true;
 }
 
 void Minimap::save()
 {
-    std::scoped_lock lock(m_lock);
-    for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z) {
-        for (const auto& [index, block] : m_tileBlocks[z]) {
-            saveBlock(z, index);
+    {
+        std::scoped_lock lock(m_lock);
+        for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z) {
+            for (const auto& [index, block] : m_tileBlocks[z]) {
+                if (block && block->wasSeen())
+                    saveBlock(z, index, block->getTiles());
+            }
         }
     }
+
+    waitAsyncSaves();
+    flushAllSavedBlocks(true);
 }
 
 void Minimap::setHDMode(bool v) {
