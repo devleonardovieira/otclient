@@ -12,6 +12,20 @@ local bgConn
 local steps = {}
 local currentStep = 0
 
+local function preloadMinimap()
+  g_modules.ensureModuleLoaded('game_minimap')
+
+  local ok, err = pcall(function()
+    if modules and modules.game_minimap and modules.game_minimap.preload then
+      modules.game_minimap.preload()
+    end
+  end)
+
+  if not ok then
+    g_logger.warning('Failed to preload minimap: ' .. tostring(err))
+  end
+end
+
 local function setProgress(p, statusText)
   if not loaderWindow then return end
   -- Buscar widgets recursivamente, pois agora estão dentro de painéis
@@ -245,6 +259,13 @@ function Loader.init(loadModulesFunc)
   addModuleSteps(999, 9999, 65, 90)
 
   table.insert(steps, {
+    percent = 85,
+    status = tr('Preloading minimap...'),
+    delay = 150,
+    run = preloadMinimap
+  })
+
+  table.insert(steps, {
     percent = 95,
     status = tr('Initializing mods...'),
     delay = 150,
@@ -294,6 +315,7 @@ function Loader.abort()
   g_modules.ensureModuleLoaded('client')
   g_modules.autoLoadModules(999)
   g_modules.ensureModuleLoaded('game_interface')
+  preloadMinimap()
   g_modules.autoLoadModules(9999)
   g_modules.ensureModuleLoaded('client_mods')
   local script = '/' .. g_app.getCompactName() .. 'rc.lua'

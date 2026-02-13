@@ -464,18 +464,18 @@ function terminate()
 		violationWindow:destroy()
 	end
 
+	-- destruir widgets filhos
+	if consolePanel then
+		consolePanel:destroyChildren()
+		consolePanel:destroy()
+		consolePanel = nil
+	end
+
 	consoleTabBar = nil
 	consoleContentPanel = nil
 	consoleToggleChat = nil
 	consoleTextEdit = nil
 
-	-- destruir widgets filhos
-	consolePanel:destroyChildren()
-	consoleContentPanel:destroyChildren()
-
-	consolePanel:destroy()
-
-	consolePanel = nil
 	ownPrivateName = nil
 	Console = nil
 end

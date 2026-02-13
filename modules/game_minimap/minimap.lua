@@ -3,8 +3,8 @@
 minimapWidget = nil
 minimapButton = nil
 minimapWindow = nil
-otmm = true
 preloaded = false
+mapPrepared = false
 oldZoom = nil
 oldPos = nil
 oldFloor = nil
@@ -787,6 +787,10 @@ function onMiniWindowClose()
 end
 
 function preload()
+	if preloaded then
+		return
+	end
+
 	loadMap(false)
 
 	preloaded = true
@@ -916,48 +920,23 @@ function onSearchPokemon(name, posZ)
 end
 
 function loadMap(clean)
-	local clientVersion = g_game.getClientVersion()
-
 	if clean then
 		g_minimap.clean()
+		mapPrepared = false
 	end
 
-	if otmm then
-		local minimapFile = "/minimap.otmm"
-
-		if g_resources.fileExists("/data" .. minimapFile) then
-			g_minimap.loadOtmm("/data" .. minimapFile)
-		elseif g_resources.fileExists(minimapFile) then
-			g_minimap.loadOtmm(minimapFile)
-		end
-	else
-		local minimapFile = "/minimap_" .. clientVersion .. ".otcm"
-
-		if g_resources.fileExists("/data" .. minimapFile) then
-			g_map.loadOtcm("/data" .. minimapFile)
-		elseif g_resources.fileExists(minimapFile) then
-			g_map.loadOtcm(minimapFile)
-		end
+	if not mapPrepared then
+		loadGuides()
+		loadComposition()
+		minimapWidget:load()
+		mapPrepared = true
 	end
 
-	loadGuides()
 	toggleGuides()
-	loadComposition()
-	minimapWidget:load()
 end
 
 function saveMap()
-	local clientVersion = g_game.getClientVersion()
-
-	if otmm then
-		local minimapFile = "/minimap.otmm"
-
-		g_minimap.saveOtmm(minimapFile)
-	else
-		local minimapFile = "/minimap_" .. clientVersion .. ".otcm"
-
-		g_map.saveOtcm(minimapFile)
-	end
+	g_minimap.save()
 
 	minimapWidget:save()
 end

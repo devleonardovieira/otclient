@@ -43,6 +43,12 @@ function controller:onInit()
     })
     evt:connect()
   end
+
+  -- Ensure login screen is shown if loader is not active (e.g. after module reload)
+  if EnterGame and EnterGame.show and not g_game.isOnline() then
+    EnterGame.show()
+  end
+
   g_logger.info('client_entergame: controller init')
 end
 
