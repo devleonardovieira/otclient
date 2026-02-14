@@ -26,6 +26,7 @@
 #include "localplayer.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <chrono>
 #include <iterator>
@@ -48,6 +49,11 @@ static std::mutex g_minimapIOLock;
 
 static constexpr uint16_t MINIMAP_MAX_ASYNC_LOADS = 3;
 static constexpr uint16_t MINIMAP_MAX_ASYNC_SAVES = 2;
+static constexpr uint16_t MINIMAP_MAX_UPDATED_TILES_PER_CYCLE = 256;
+static constexpr uint16_t MINIMAP_PRIORITY_FLOOR_UPDATES_PER_CYCLE = 192;
+static constexpr uint16_t MINIMAP_BACKGROUND_FLOOR_UPDATES_PER_CYCLE = 24;
+static constexpr uint16_t MINIMAP_MAX_SYNC_LOADS_PER_CYCLE = 4;
+static constexpr uint8_t MINIMAP_HD_BUILD_INTERVAL_MS = 2;
 
 MinimapBlock::MinimapBlock()
 {
@@ -58,6 +64,7 @@ void MinimapBlock::clean()
 {
     m_texture = nullptr;
     m_mustUpdate = false;
+    m_hdTextureReady = false;
 }
 
 void MinimapBlock::update()
@@ -87,6 +94,7 @@ void MinimapBlock::update()
     else
         m_texture.reset();
 
+    m_hdTextureReady = false;
     m_mustUpdate = false;
 }
 
@@ -99,7 +107,7 @@ void MinimapBlock::updateHD(const Position& pos)
     if (!m_mustUpdate)
         return;
 
-    if (m_timerToLoader.ticksElapsed() < DrawPool::FPS60) {
+    if (m_timerToLoader.ticksElapsed() < MINIMAP_HD_BUILD_INTERVAL_MS) {
         m_lastUpdate.restart();
         return;
     }
@@ -122,6 +130,7 @@ void MinimapBlock::updateHD(const Position& pos)
 
     if (!shouldDraw) {
         m_texture = nullptr;
+        m_hdTextureReady = true;
         return;
     }
 
@@ -137,7 +146,8 @@ void MinimapBlock::updateHD(const Position& pos)
     const auto& getTile = [&](int x, int y) {
         if (x == MMBLOCK_SIZE || y == MMBLOCK_SIZE) {
             const auto& position = pos.translated(x, y);
-            g_minimap.load(pos.z, g_minimap.getBlockIndex(position), true);
+            // Avoid synchronous disk load while drawing HD minimap blocks.
+            g_minimap.load(pos.z, g_minimap.getBlockIndex(position), false);
             return g_minimap.hasBlock(position) ? g_minimap.getTile(position) : nulltile;
         }
 
@@ -177,6 +187,7 @@ void MinimapBlock::updateHD(const Position& pos)
     g_drawPool.flush();
 
     g_drawPool.setScaleFactor(oldScale);
+    m_hdTextureReady = true;
 }
 
 bool MinimapBlock::updateTile(int x, int y, const MinimapTile& newTile)
@@ -193,6 +204,7 @@ bool MinimapBlock::updateTile(int x, int y, const MinimapTile& newTile)
 
     tile = newTile;
     m_mustUpdate = true;
+    m_hdTextureReady = false;
     return true;
 }
 
@@ -217,8 +229,8 @@ void Minimap::init() {
     {
         static constexpr uint16_t
             WAITING_TIME = 2 * 1000,
-            IDLE_TIME = 7 * 1000,
-            CACHED_IDLE_TIME = 20 * 1000,
+            IDLE_TIME = 20 * 1000,
+            CACHED_IDLE_TIME = 60 * 1000,
             MAX_UNLOADS_PER_CYCLE = 64,
             MAX_CACHED_PRUNE_PER_CYCLE = 256;
 
@@ -515,14 +527,23 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
     g_drawPool.resetClipRect();
 
     const auto& oldClipRect = g_drawPool.getClipRect();
-    const auto startFloor = mapCenter.z <= g_gameConfig.getMapSeaFloor() ? g_gameConfig.getMapSeaFloor() : std::min<int>(mapCenter.z + 2, g_gameConfig.getMapMaxZ());
     if (m_hdMode) {
-        for (int_fast8_t i = startFloor; i >= mapCenter.z; --i) {
-            const int offset = mapCenter.z - i;
-            const auto& pos = mapCenter.translated(offset, offset, -offset);
+        if (mapCenter.z >= g_gameConfig.getMapSeaFloor()) {
+            // Surface and underground: render only the current floor to keep frame time stable.
+            if (MMBLOCK_SIZE * scale > 1 && mapCenter.isMapPosition())
+                preDraw(mapCenter);
+        } else {
+            // Above sea floor: keep one auxiliary floor for context, avoiding full multi-floor cost.
+            if (MMBLOCK_SIZE * scale > 1 && mapCenter.isMapPosition())
+                preDraw(mapCenter);
 
-            if (MMBLOCK_SIZE * scale > 1 && pos.isMapPosition())
-                preDraw(pos);
+            const int auxFloor = std::min<int>(mapCenter.z + 1, g_gameConfig.getMapSeaFloor());
+            if (auxFloor != mapCenter.z) {
+                const int offset = mapCenter.z - auxFloor;
+                const auto& auxPos = mapCenter.translated(offset, offset, -offset);
+                if (MMBLOCK_SIZE * scale > 1 && auxPos.isMapPosition())
+                    preDraw(auxPos);
+            }
         }
     } else preDraw(mapCenter);
 
@@ -543,9 +564,11 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
             if (hasBlock(pos)) {
                 const auto& block = getBlock(pos);
                 block->touch();
-                if (m_hdMode)
+                if (m_hdMode) {
+                    if (!block->isHDReady())
+                        block->mustUpdate();
                     block->updateHD(pos);
-                else
+                } else
                     block->update();
 
                 tex = block->getTexture();
@@ -694,26 +717,78 @@ bool Minimap::checkUpdatedTiles(const std::unique_lock<std::mutex>& minimapLock)
     assert(minimapLock.owns_lock());
     assert(minimapLock.mutex() == &m_lock);
 
-    for (auto& tiles : updatedTiles) {
-        std::unordered_map<uint32_t, MinimapBlock_ptr> loadedBlocks;
-        loadedBlocks.reserve(std::min<size_t>(tiles.size(), 256));
+    uint16_t remainingBudget = MINIMAP_MAX_UPDATED_TILES_PER_CYCLE;
+    uint16_t syncLoads = 0;
 
-        for (const auto& [pos, minimapTile] : tiles) {
+    const auto processFloor = [&](uint8_t z, uint16_t floorBudget, bool allowSyncLoad) -> uint16_t {
+        if (floorBudget == 0 || z > g_gameConfig.getMapMaxZ())
+            return 0;
+
+        auto& tiles = updatedTiles[z];
+        if (tiles.empty())
+            return 0;
+
+        uint16_t processed = 0;
+        std::unordered_map<uint32_t, MinimapBlock_ptr> loadedBlocks;
+        loadedBlocks.reserve(std::min<size_t>(tiles.size(), 96));
+
+        for (auto itTile = tiles.begin(); itTile != tiles.end() && processed < floorBudget;) {
+            const auto pos = itTile->first;
+            const auto minimapTile = itTile->second;
             const uint32_t blockIndex = getBlockIndex(pos);
-            auto it = loadedBlocks.find(blockIndex);
-            if (it == loadedBlocks.end()) {
-                invalidateAsyncLoad(pos.z, blockIndex);
-                if (!hasBlock(pos))
-                    load(pos.z, blockIndex, true); // forced loading if discarded by GC
-                it = loadedBlocks.emplace(blockIndex, getBlock(pos)).first;
+
+            auto itLoaded = loadedBlocks.find(blockIndex);
+            if (itLoaded == loadedBlocks.end()) {
+                if (!hasBlock(pos) && hasSavedBlock(pos.z, blockIndex)) {
+                    if (!allowSyncLoad) {
+                        load(pos.z, blockIndex, false);
+                        ++itTile;
+                        continue;
+                    }
+
+                    if (syncLoads >= MINIMAP_MAX_SYNC_LOADS_PER_CYCLE) {
+                        ++itTile;
+                        continue;
+                    }
+
+                    invalidateAsyncLoad(pos.z, blockIndex);
+                    load(pos.z, blockIndex, true); // sync load only for current floor and strict budget
+                    ++syncLoads;
+                }
+
+                itLoaded = loadedBlocks.emplace(blockIndex, getBlock(pos)).first;
             }
 
             const auto& offsetPos = getBlockOffset(Point(pos.x, pos.y));
-            if (it->second->updateTile(pos.x - offsetPos.x, pos.y - offsetPos.y, minimapTile))
-                it->second->justSaw();
+            if (itLoaded->second->updateTile(pos.x - offsetPos.x, pos.y - offsetPos.y, minimapTile))
+                itLoaded->second->justSaw();
+
+            itTile = tiles.erase(itTile);
+            ++processed;
         }
 
-        tiles.clear();
+        return processed;
+    };
+
+    uint8_t playerFloor = g_gameConfig.getMapMaxZ() + 1;
+    if (const auto& player = g_game.getLocalPlayer()) {
+        const Position pos = player->getPosition();
+        if (pos.isValid())
+            playerFloor = pos.z;
+    }
+
+    if (playerFloor <= g_gameConfig.getMapMaxZ() && remainingBudget > 0) {
+        const uint16_t playerBudget = std::min<uint16_t>(remainingBudget, MINIMAP_PRIORITY_FLOOR_UPDATES_PER_CYCLE);
+        remainingBudget -= processFloor(playerFloor, playerBudget, true);
+    }
+
+    for (int z = 0; z <= g_gameConfig.getMapMaxZ() && remainingBudget > 0; ++z) {
+        const auto floor = static_cast<uint8_t>(z);
+        if (z == playerFloor)
+            continue;
+
+        const uint16_t floorBudget = std::min<uint16_t>(remainingBudget, MINIMAP_BACKGROUND_FLOOR_UPDATES_PER_CYCLE);
+        remainingBudget -= processFloor(floor, floorBudget, false);
     }
 
     return true;
@@ -874,6 +949,9 @@ bool Minimap::writeMinimapBlockData(const uint8_t z, const uint32_t index, const
 static bool readMinimapBlockData(const uint8_t z, const uint32_t block, std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& outTiles)
 {
     static constexpr uint32_t blockSize = MMBLOCK_SIZE * MMBLOCK_SIZE * sizeof(MinimapTile);
+    static constexpr uint32_t tilesPerBlock = MMBLOCK_SIZE * MMBLOCK_SIZE;
+    static constexpr uint32_t legacyBasicBlockSize = tilesPerBlock * 3; // flags + color + speed
+    static constexpr uint32_t legacyGroundTopBlockSize = tilesPerBlock * 7; // flags + color + speed + groundId + topId
     static const uint32_t maxCompressedSize = static_cast<uint32_t>(compressBound(blockSize));
     static constexpr uint32_t blocksPerAxis = 65536 / MMBLOCK_SIZE;
     thread_local std::vector<uint8_t> compressBuffer;
@@ -934,15 +1012,116 @@ static bool readMinimapBlockData(const uint8_t z, const uint32_t block, std::arr
         return false;
     }
 
+    // Current format (HD-capable MinimapTile)
     unsigned long destLen = blockSize;
-    const int ret = uncompress(decompressBuffer.data(), &destLen, compressBuffer.data(), static_cast<unsigned long>(compressedSize));
-    if (ret != Z_OK || destLen != blockSize) {
-        g_logger.warning("invalid minimap block {}:{} (decompress failed: ret={}, size={})", z, block, ret, destLen);
-        return false;
+    int ret = uncompress(decompressBuffer.data(), &destLen, compressBuffer.data(), static_cast<unsigned long>(compressedSize));
+    if (ret == Z_OK && destLen == blockSize) {
+        memcpy(reinterpret_cast<uint8_t*>(outTiles.data()), decompressBuffer.data(), blockSize);
+        return true;
     }
 
-    memcpy(reinterpret_cast<uint8_t*>(outTiles.data()), decompressBuffer.data(), blockSize);
-    return true;
+#pragma pack(push, 1)
+    struct LegacyBasicTile {
+        uint8_t flags;
+        uint8_t color;
+        uint8_t speed;
+    };
+
+    struct LegacyGroundTopTile {
+        uint8_t flags;
+        uint8_t color;
+        uint8_t speed;
+        uint16_t groundId;
+        uint16_t topId;
+    };
+#pragma pack(pop)
+
+    const auto chooseLegacyLayout = [&](const uint8_t* rawData, size_t stride) -> std::array<uint8_t, 3> {
+        static constexpr std::array<std::array<uint8_t, 3>, 6> candidates{ {
+            { 0, 1, 2 }, // flags, color, speed
+            { 0, 2, 1 }, // flags, speed, color
+            { 1, 0, 2 }, // color, flags, speed
+            { 1, 2, 0 }, // color, speed, flags
+            { 2, 0, 1 }, // speed, flags, color
+            { 2, 1, 0 }  // speed, color, flags
+        } };
+
+        constexpr uint8_t allowedFlagsMask = MinimapTileWasSeen | MinimapTileNotPathable | MinimapTileNotWalkable | MinimapTileEmpty;
+
+        uint32_t bestScore = 0;
+        std::array<uint8_t, 3> best = candidates[0];
+
+        for (const auto& candidate : candidates) {
+            uint32_t validFlags = 0;
+            uint32_t plausibleSpeed = 0;
+
+            for (size_t i = 0; i < outTiles.size(); ++i) {
+                const auto* tilePtr = rawData + (i * stride);
+                const uint8_t flags = tilePtr[candidate[0]];
+                const uint8_t speed = tilePtr[candidate[2]];
+
+                if ((flags & ~allowedFlagsMask) == 0)
+                    ++validFlags;
+                if (speed <= 40)
+                    ++plausibleSpeed;
+            }
+
+            const uint32_t score = validFlags * 4 + plausibleSpeed;
+            if (score > bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+
+        return best;
+    };
+
+    // Legacy format: flags/color/speed + ground/top ids
+    destLen = legacyGroundTopBlockSize;
+    ret = uncompress(decompressBuffer.data(), &destLen, compressBuffer.data(), static_cast<unsigned long>(compressedSize));
+    if (ret == Z_OK && destLen == legacyGroundTopBlockSize) {
+        const auto layout = chooseLegacyLayout(decompressBuffer.data(), sizeof(LegacyGroundTopTile));
+        const auto* legacyTiles = reinterpret_cast<const LegacyGroundTopTile*>(decompressBuffer.data());
+        for (size_t i = 0; i < outTiles.size(); ++i) {
+            MinimapTile tile{};
+            const auto* rawTile = reinterpret_cast<const uint8_t*>(&legacyTiles[i]);
+            tile.flags = rawTile[layout[0]];
+            tile.color = rawTile[layout[1]];
+            tile.speed = rawTile[layout[2]];
+            if (tile.color != UINT8_MAX)
+                tile.flags |= MinimapTileWasSeen;
+
+            if (legacyTiles[i].groundId > 0)
+                tile.items[0].id = legacyTiles[i].groundId;
+            if (legacyTiles[i].topId > 0)
+                tile.items[1].id = legacyTiles[i].topId;
+
+            outTiles[i] = tile;
+        }
+        return true;
+    }
+
+    // Legacy format: flags/color/speed
+    destLen = legacyBasicBlockSize;
+    ret = uncompress(decompressBuffer.data(), &destLen, compressBuffer.data(), static_cast<unsigned long>(compressedSize));
+    if (ret == Z_OK && destLen == legacyBasicBlockSize) {
+        const auto layout = chooseLegacyLayout(decompressBuffer.data(), sizeof(LegacyBasicTile));
+        const auto* legacyTiles = reinterpret_cast<const LegacyBasicTile*>(decompressBuffer.data());
+        for (size_t i = 0; i < outTiles.size(); ++i) {
+            MinimapTile tile{};
+            const auto* rawTile = reinterpret_cast<const uint8_t*>(&legacyTiles[i]);
+            tile.flags = rawTile[layout[0]];
+            tile.color = rawTile[layout[1]];
+            tile.speed = rawTile[layout[2]];
+            if (tile.color != UINT8_MAX)
+                tile.flags |= MinimapTileWasSeen;
+            outTiles[i] = tile;
+        }
+        return true;
+    }
+
+    g_logger.warning("invalid minimap block {}:{} (decompress failed for known formats, last ret={}, size={})", z, block, ret, destLen);
+    return false;
 }
 
 bool Minimap::importOtmm(const std::string& fileName, bool overwrite)

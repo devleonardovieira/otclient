@@ -876,14 +876,14 @@ end
 function getPreloadSummary()
 	local stats = minimapPreloadStats
 	if stats.usedOtmm then
-		return tr("Minimap pronto: %d blocos em cache (+%d importados de OTMM)", stats.cacheBlocks, stats.importedBlocks)
+		return tr("Minimap pronto: %d blocos em cache (+%d importados de OTMM) [%s]", stats.cacheBlocks, stats.importedBlocks, stats.source or 'unknown')
 	end
 
 	if stats.cacheReady then
-		return tr("Minimap pronto: %d blocos em cache", stats.cacheBlocks)
+		return tr("Minimap pronto: %d blocos em cache [%s]", stats.cacheBlocks, stats.source or 'cache')
 	end
 
-	return tr("Minimap pronto: cache vazio")
+	return tr("Minimap pronto: cache vazio [%s]", stats.source or 'none')
 end
 
 local function prepareOtmmCache()
@@ -906,23 +906,37 @@ local function prepareOtmmCache()
 	end
 
 	local otmmFile = nil
-	if g_resources.fileExists('/data/minimap.otmm') then
-		otmmFile = '/data/minimap.otmm'
-	elseif g_resources.fileExists('/minimap.otmm') then
-		otmmFile = '/minimap.otmm'
+	local otmmCandidates = {
+		'/data/minimap.otmm',
+		'data/minimap.otmm',
+		'/data/minimap/minimap.otmm',
+		'data/minimap/minimap.otmm',
+		'/data/world/minimap.otmm',
+		'data/world/minimap.otmm',
+		'/data/world/minimap/minimap.otmm',
+		'data/world/minimap/minimap.otmm',
+		'/mods/game_minimap/minimap.otmm',
+		'mods/game_minimap/minimap.otmm',
+		'/minimap.otmm',
+		'minimap.otmm',
+		'/modules/game_minimap/minimap.otmm',
+		'modules/game_minimap/minimap.otmm'
+	}
+
+	for _, candidate in ipairs(otmmCandidates) do
+		if g_resources.fileExists(candidate) then
+			otmmFile = candidate
+			break
+		end
 	end
 
 	if not otmmFile then
+		g_logger.warning('OTMM not found in known paths; minimap will rely on existing /minimap .mmz cache')
 		return minimapPreloadStats
 	end
 
-	local otmmState = g_settings.getNode('MinimapOtmm') or {}
-	local forceFullRebuild = otmmState.fullImported ~= true
-	local overwrite = forceFullRebuild
-
-	-- First successful run uses overwrite=true to replace partial/old .mmz blocks.
-	-- Next runs switch back to incremental import (overwrite=false).
-	local importedOk = g_minimap.importOtmm(otmmFile, overwrite)
+	-- Force full rebuild from OTMM to avoid stale/partial .mmz cache.
+	local importedOk = g_minimap.importOtmm(otmmFile, true)
 	local cacheAfter = countCachedMinimapBlocks()
 
 	minimapPreloadStats.cacheBlocks = cacheAfter
@@ -931,10 +945,10 @@ local function prepareOtmmCache()
 	minimapPreloadStats.cacheReady = cacheAfter > 0
 	minimapPreloadStats.source = otmmFile
 
-	if importedOk and forceFullRebuild then
-		otmmState.fullImported = true
-		otmmState.source = otmmFile
-		g_settings.setNode('MinimapOtmm', otmmState)
+	if not importedOk then
+		g_logger.warning('Failed to import OTMM from: ' .. tostring(otmmFile))
+	elseif cacheAfter <= 0 then
+		g_logger.warning('OTMM import finished but cache is empty: ' .. tostring(otmmFile))
 	end
 
 	return minimapPreloadStats

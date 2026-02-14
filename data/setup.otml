@@ -40,5 +40,5 @@ game
 font
   widget: ReggaeOne-Regular|12|0|black
   static-text: ReggaeOne-Regular|12
-  animated-text: ReggaeOne-Regular|12
+  animated-text: game|20|0.3|gray
   creature-text: ReggaeOne-Regular|20|1|red

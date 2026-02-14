@@ -104,6 +104,24 @@
       }
     },
     {
+      "name": "windows-release-editor",
+      "inherits": "windows-release",
+      "displayName": "Windows - Release + Editor",
+      "description": "Release build with FRAMEWORK_EDITOR enabled",
+      "cacheVariables": {
+        "TOGGLE_FRAMEWORK_EDITOR": "ON"
+      }
+    },
+    {
+      "name": "windows-debug-editor",
+      "inherits": "windows-debug",
+      "displayName": "Windows - Debug + Editor",
+      "description": "Debug build with FRAMEWORK_EDITOR enabled",
+      "cacheVariables": {
+        "TOGGLE_FRAMEWORK_EDITOR": "ON"
+      }
+    },
+    {
       "name": "linux-debug",
       "inherits": "linux-release",
       "displayName": "Linux - Debug Build",
@@ -171,6 +189,14 @@
     {
       "name": "windows-debug",
       "configurePreset": "windows-debug"
+    },
+    {
+      "name": "windows-release-editor",
+      "configurePreset": "windows-release-editor"
+    },
+    {
+      "name": "windows-debug-editor",
+      "configurePreset": "windows-debug-editor"
     },
     {
       "name": "windows-debug-msbuild",

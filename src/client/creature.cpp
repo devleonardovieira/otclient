@@ -440,24 +440,30 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
                 if (player->isMage() && player->getMaxManaShield() > 0) {
                     barsRect.moveTop(barsRect.bottom() + gap);
-                    g_drawPool.addFilledRect(barsRect, Color::black);
+                    g_drawPool.addFilledRect(barsRect.expanded(-1), Color::black);
 
                     Rect manaShieldRect = barsRect.expanded(-1);
                     const double maxManaShield = player->getMaxManaShield();
                     manaShieldRect.setWidth((maxManaShield ? player->getManaShield() / maxManaShield : 1) * barWidth);
 
                     g_drawPool.addFilledRect(manaShieldRect, Color::darkPink);
+                    if (const auto& manaTexture = g_textures.getTexture("/images/healthbars/thinner.png")) {
+                        g_drawPool.addTexturedRect(barsRect, manaTexture, Color::white);
+                    }
                     gap = 0;
                 }
 
                 barsRect.moveTop(barsRect.bottom() + gap);
-                g_drawPool.addFilledRect(barsRect, Color::black);
+                g_drawPool.addFilledRect(barsRect.expanded(-1), Color::black);
 
                 Rect manaRect = barsRect.expanded(-1);
                 const double maxMana = player->getMaxMana();
                 manaRect.setWidth((maxMana ? player->getMana() / maxMana : 1) * barWidth);
 
                 g_drawPool.addFilledRect(manaRect, Color::blue);
+                if (const auto& manaTexture = g_textures.getTexture("/images/healthbars/thinner.png")) {
+                    g_drawPool.addTexturedRect(barsRect, manaTexture, Color::white);
+                }
             }
         }
 

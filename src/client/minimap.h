@@ -108,6 +108,7 @@ public:
     void touch() { m_lastUpdate.restart(); }
     void mustUpdate() { m_mustUpdate = true; }
     void justSaw() { m_wasSeen = true; }
+    bool isHDReady() const { return m_hdTextureReady; }
     bool wasSeen() const { return m_wasSeen; }
     auto lastUpdate() const { return m_lastUpdate.ticksElapsed(); }
 
@@ -117,6 +118,7 @@ private:
 
     bool m_mustUpdate{ false };
     bool m_wasSeen{ false };
+    bool m_hdTextureReady{ false };
 
     Timer m_lastUpdate;
 };

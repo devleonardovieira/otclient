@@ -14,6 +14,11 @@ local currentStep = 0
 local minimapPreloaded = false
 
 local function preloadMinimap()
+  -- Ensure previous session state does not keep partial cache in memory.
+  if g_minimap and g_minimap.clean then
+    pcall(function() g_minimap.clean() end)
+  end
+
   g_modules.ensureModuleLoaded('game_minimap')
 
   local ok, result = pcall(function()
