@@ -1,0 +1,18 @@
+PerfStatsHud < UIWidget
+  size: 320 34
+  focusable: false
+  phantom: false
+  clipping: false
+  background-color: #00000066
+  border-width: 1
+  border-color: #7a7a7a99
+  draggable: true
+
+  Label
+    id: text
+    anchors.fill: parent
+    text-align: center
+    focusable: false
+    color: #d0d0d0
+    ttf-font: game|20|1.4|gray
+    text: "FPS: --   PING: --"

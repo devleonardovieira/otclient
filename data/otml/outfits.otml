@@ -1,23 +1,6 @@
 outfits
-  1
-    south: -2 -46
   13
-    north: 0 0
-    east: 0 0
-    south: 10 0
-    west: 0 0
-  1330
-    north: -14 -24
-    east: -7 5
-    south: -11 12
-    west: -67 0
-  1358
-    north: 0 0
-    east: 0 0
-    south: 0 0
-    west: 0 0
-  1502
-    north: 0 0
-    east: 0 0
-    south: 0 0
-    west: 0 0
+    north: -19 -11
+    east: -19 -11
+    south: -19 -11
+    west: -19 -11

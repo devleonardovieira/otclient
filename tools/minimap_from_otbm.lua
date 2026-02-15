@@ -4,8 +4,10 @@
 -- Usage in OTClient terminal:
 --   dofile('tools/minimap_from_otbm.lua')
 --   buildMinimapFromOtbm('D:/maps/world.otbm')
+--   buildMinimapFromOtbm('D:/maps/world.otbm', true) -- assume OTBM ids are client ids
 --   buildMinimapOtmmFromOtbm('D:/maps/world.otbm', 'data/minimap.otmm')
 --   buildMinimapOtmmFromOtbm('D:/maps/world.otbm', 'data/minimap.otmm', nil, 'D:/server/data/items/items.otb')
+--   buildMinimapOtmmFromOtbm('D:/maps/world.otbm', 'data/minimap.otmm', nil, nil, true)
 --   buildMinimapOtmmFromLiveCache('data/minimap.otmm')
 
 local function assertEditorBindings()
@@ -22,44 +24,105 @@ local function assertEditorBindings()
   end
 end
 
+local function normalizeReadableFilePath(path, label)
+  assert(type(path) == 'string' and path ~= '', (label or 'path') .. ' must be a non-empty string')
+
+  local normalized = string.gsub(path, '\\', '/')
+
+  -- Absolute Windows path (e.g. D:/maps/world.otbm) needs mounting into PHYSFS.
+  if string.match(normalized, '^%a:/') then
+    local dir, file = string.match(normalized, '^(.*)/([^/]+)$')
+    if not dir or not file then
+      error((label or 'path') .. ' is invalid: ' .. tostring(path))
+    end
+
+    if not g_resources.addSearchPath(dir, true) then
+      error('Unable to add search path for ' .. (label or 'file') .. ': ' .. dir)
+    end
+
+    return '/' .. file
+  end
+
+  -- Keep virtual root paths unchanged.
+  if string.sub(normalized, 1, 1) == '/' then
+    return normalized
+  end
+
+  -- Force project-root relative path instead of /tools/<file>.
+  return '/' .. normalized
+end
+
 local function clearMinimapCacheFiles()
+  if not (g_minimap and g_minimap.cacheBlockFileName) then
+    g_logger.warning('Minimap generator: cacheBlockFileName binding unavailable; skipping .mmz deletion to avoid stale-index file-not-found errors')
+    return
+  end
+
   local files = g_resources.listDirectoryFiles('/minimap') or {}
   for _, fileName in ipairs(files) do
     if string.match(fileName, '^minimap_%d+_%d+%.mmz$') then
       g_resources.deleteFile('/minimap/' .. fileName)
     end
   end
+
+  -- Keep internal saved-block index in sync after deleting cache files.
+  if g_minimap and g_minimap.cacheBlockFileName then
+    g_minimap.cacheBlockFileName()
+  end
 end
 
-local function ensureOtbLoaded(otbPath)
+local function ensureItemResolver(otbPath, useClientIds)
+  if g_map and g_map.setAssumeOtbmClientIds then
+    g_map.setAssumeOtbmClientIds(false)
+  end
+
   if g_things.isOtbLoaded() then
-    return true
+    return 'otb'
   end
 
   if type(otbPath) == 'string' and otbPath ~= '' then
-    g_logger.info('Minimap generator: loading OTB ' .. otbPath)
-    g_things.loadOtb(otbPath)
+    local resolvedOtbPath = normalizeReadableFilePath(otbPath, 'otbPath')
+    g_logger.info('Minimap generator: loading OTB ' .. resolvedOtbPath)
+    g_things.loadOtb(resolvedOtbPath)
   end
 
-  if not g_things.isOtbLoaded() then
-    error('items.otb is required to load OTBM in this editor path. Pass otbPath in buildMinimapOtmmFromOtbm(..., ..., ..., otbPath).')
+  if g_things.isOtbLoaded() then
+    return 'otb'
   end
 
-  return true
+  if useClientIds then
+    if g_map and g_map.setAssumeOtbmClientIds then
+      g_logger.warning('Minimap generator: OTB missing; enabling raw client-id mode for OTBM parsing')
+      g_map.setAssumeOtbmClientIds(true)
+      return 'clientIds'
+    end
+
+    error('This client build does not expose g_map.setAssumeOtbmClientIds. Rebuild the client first.')
+  end
+
+  error('items.otb is required in OTB mode. Pass otbPath or set useClientIds=true.')
 end
 
-function buildMinimapFromOtbm(otbmPath, otbPath)
+function buildMinimapFromOtbm(otbmPath, otbPath, useClientIds)
   assert(type(otbmPath) == 'string' and otbmPath ~= '', 'otbmPath must be a non-empty string')
   assertEditorBindings()
-  ensureOtbLoaded(otbPath)
+  if type(otbPath) == 'boolean' and useClientIds == nil then
+    useClientIds = otbPath
+    otbPath = nil
+  end
+
+  local resolvedOtbmPath = normalizeReadableFilePath(otbmPath, 'otbmPath')
+
+  local resolver = ensureItemResolver(otbPath, useClientIds == true)
+  g_logger.info('Minimap generator: item resolver = ' .. resolver)
 
   g_logger.info('Minimap generator: cleaning current map/minimap state')
   g_map.clean()
   g_minimap.clean()
   clearMinimapCacheFiles()
 
-  g_logger.info('Minimap generator: loading OTBM ' .. otbmPath)
-  g_map.loadOtbm(otbmPath)
+  g_logger.info('Minimap generator: loading OTBM ' .. resolvedOtbmPath)
+  g_map.loadOtbm(resolvedOtbmPath)
 
   local tiles = g_map.getTiles and g_map.getTiles() or {}
   if not tiles or #tiles == 0 then
@@ -248,9 +311,18 @@ function packMmzToOtmm(mmzDir, outputPath, description)
   return outputPath
 end
 
-function buildMinimapOtmmFromOtbm(otbmPath, outputPath, description, otbPath)
-  buildMinimapFromOtbm(otbmPath, otbPath)
-  return packMmzToOtmm('/minimap', outputPath or 'data/minimap.otmm', description or ('Generated from ' .. otbmPath))
+function buildMinimapOtmmFromOtbm(otbmPath, outputPath, description, otbPath, useClientIds)
+  if type(otbPath) == 'boolean' then
+    useClientIds = otbPath
+    otbPath = nil
+  end
+
+  buildMinimapFromOtbm(otbmPath, otbPath, useClientIds)
+  return packMmzToOtmm('/minimap', outputPath or 'data/minimap.otmm', description or ('Generated from ' .. tostring(otbmPath)))
+end
+
+function buildMinimapOtmmFromOtbmClientIds(otbmPath, outputPath, description)
+  return buildMinimapOtmmFromOtbm(otbmPath, outputPath, description, nil, true)
 end
 
 -- Generates OTMM from the current minimap cache received while playing online.

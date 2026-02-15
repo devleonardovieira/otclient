@@ -167,6 +167,8 @@ void Client::registerLuaFunctions()
 #ifdef FRAMEWORK_EDITOR
     g_lua.bindSingletonFunction("g_map", "loadOtbm", &Map::loadOtbm, &g_map);
     g_lua.bindSingletonFunction("g_map", "saveOtbm", &Map::saveOtbm, &g_map);
+    g_lua.bindSingletonFunction("g_map", "setAssumeOtbmClientIds", &Map::setAssumeOtbmClientIds, &g_map);
+    g_lua.bindSingletonFunction("g_map", "isAssumingOtbmClientIds", &Map::isAssumingOtbmClientIds, &g_map);
     g_lua.bindSingletonFunction("g_map", "loadOtcm", &Map::loadOtcm, &g_map);
     g_lua.bindSingletonFunction("g_map", "saveOtcm", &Map::saveOtcm, &g_map);
     g_lua.bindSingletonFunction("g_map", "getHouseFile", &Map::getHouseFile, &g_map);
@@ -208,6 +210,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_minimap", "importOtmm", &Minimap::importOtmm, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "preloadAll", &Minimap::preloadAllBlocks, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "save", &Minimap::save, &g_minimap);
+    g_lua.bindSingletonFunction("g_minimap", "cacheBlockFileName", &Minimap::cacheBlockFileName, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "setHDMode", &Minimap::setHDMode, &g_minimap);
     g_lua.bindSingletonFunction("g_minimap", "isHDMode", &Minimap::isHDMode, &g_minimap);
 
@@ -640,6 +643,9 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<Creature>("getDirection", &Creature::getDirection);
     g_lua.bindClassMemberFunction<Creature>("getStepDuration", &Creature::getStepDuration);
     g_lua.bindClassMemberFunction<Creature>("getStepProgress", &Creature::getStepProgress);
+    g_lua.bindClassMemberFunction<Creature>("getWalkOffset", &Creature::getWalkOffset);
+    g_lua.bindClassMemberFunction<Creature>("getLastStepFromPosition", &Creature::getLastStepFromPosition);
+    g_lua.bindClassMemberFunction<Creature>("getLastStepToPosition", &Creature::getLastStepToPosition);
     g_lua.bindClassMemberFunction<Creature>("getWalkTicksElapsed", &Creature::getWalkTicksElapsed);
     g_lua.bindClassMemberFunction<Creature>("getStepTicksLeft", &Creature::getStepTicksLeft);
     g_lua.bindClassMemberFunction<Creature>("setDirection", &Creature::setDirection);
@@ -1208,12 +1214,14 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<UIMinimap>("setMixZoom", &UIMinimap::setMinZoom);
     g_lua.bindClassMemberFunction<UIMinimap>("setMaxZoom", &UIMinimap::setMaxZoom);
     g_lua.bindClassMemberFunction<UIMinimap>("setCameraPosition", &UIMinimap::setCameraPosition);
+    g_lua.bindClassMemberFunction<UIMinimap>("setCameraOffset", &UIMinimap::setCameraOffset);
     g_lua.bindClassMemberFunction<UIMinimap>("floorUp", &UIMinimap::floorUp);
     g_lua.bindClassMemberFunction<UIMinimap>("floorDown", &UIMinimap::floorDown);
     g_lua.bindClassMemberFunction<UIMinimap>("getTilePoint", &UIMinimap::getTilePoint);
     g_lua.bindClassMemberFunction<UIMinimap>("getTilePosition", &UIMinimap::getTilePosition);
     g_lua.bindClassMemberFunction<UIMinimap>("getTileRect", &UIMinimap::getTileRect);
     g_lua.bindClassMemberFunction<UIMinimap>("getCameraPosition", &UIMinimap::getCameraPosition);
+    g_lua.bindClassMemberFunction<UIMinimap>("getCameraOffset", &UIMinimap::getCameraOffset);
     g_lua.bindClassMemberFunction<UIMinimap>("getMinZoom", &UIMinimap::getMinZoom);
     g_lua.bindClassMemberFunction<UIMinimap>("getMaxZoom", &UIMinimap::getMaxZoom);
     g_lua.bindClassMemberFunction<UIMinimap>("getZoom", &UIMinimap::getZoom);

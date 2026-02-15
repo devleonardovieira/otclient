@@ -37,6 +37,7 @@ public:
     void setMinZoom(const int8_t minZoom) { m_minZoom = minZoom; }
     void setMaxZoom(const int8_t maxZoom) { m_maxZoom = maxZoom; }
     void setCameraPosition(const Position& pos);
+    void setCameraOffset(const Point& offset);
     bool floorUp();
     bool floorDown();
 
@@ -45,6 +46,7 @@ public:
     Position getTilePosition(const Point& mousePos);
 
     Position getCameraPosition() { return m_cameraPosition; }
+    Point getCameraOffset() { return m_cameraOffset; }
     int8_t getZoom() { return m_zoom; }
     int8_t getMinZoom() { return m_minZoom; }
     int8_t getMaxZoom() { return m_maxZoom; }
@@ -62,6 +64,7 @@ protected:
 private:
     Rect m_mapArea;
     Position m_cameraPosition;
+    Point m_cameraOffset;
     float m_scale{ 1.f };
     int8_t m_zoom{ 0 };
     int8_t m_minZoom{ -5 };

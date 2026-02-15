@@ -1,6 +1,127 @@
 -- chunkname: @/modules/gamelib/ui/uiminimap.lua
 
 local DEFAULT_MINIMAP_ZOOM_MAX = 5
+local CROSS_WALK_TICK_MS = 16
+
+local function cancelCrossAnimation(widget)
+	if not widget then
+		return
+	end
+
+	if widget.crossMoveEvent then
+		removeEvent(widget.crossMoveEvent)
+		widget.crossMoveEvent = nil
+	end
+
+	if widget.crossWalkEvent then
+		removeEvent(widget.crossWalkEvent)
+		widget.crossWalkEvent = nil
+	end
+end
+
+local function forceWidgetRepaint(widget)
+	if not widget or widget:isDestroyed() then
+		return
+	end
+
+	if widget.repaint then
+		widget:repaint()
+	end
+end
+
+local function setCrossScreenPosition(widget, cross, target)
+	local snapped = {
+		x = math.floor(target.x + 0.5),
+		y = math.floor(target.y + 0.5)
+	}
+
+	local current = cross:getPosition()
+	if current and current.x == snapped.x and current.y == snapped.y then
+		return false
+	end
+
+	cross:setPosition(snapped)
+	forceWidgetRepaint(widget)
+	return true
+end
+
+local function getCrossTarget(widget, cross, pos)
+	local cameraPos = widget:getCameraPosition()
+	local followCentered = not widget.fullView and not widget:isDragging() and cameraPos
+		and cameraPos.x == pos.x and cameraPos.y == pos.y and cameraPos.z == pos.z
+	if followCentered then
+		local rect = widget:getPaddingRect()
+		if rect and rect.width and rect.height then
+			return {
+				x = rect.x + rect.width / 2 - cross:getWidth() / 2,
+				y = rect.y + rect.height / 2 - cross:getHeight() / 2
+			}
+		end
+	end
+
+	local screenPos = nil
+	local player = g_game.getLocalPlayer()
+	local hasWalkSegment = widget.crossWalkFromPos and widget.crossWalkToPos
+
+	if hasWalkSegment and player and player.isWalking and player.getStepProgress and player:isWalking() then
+		local fromTile = widget:getTilePoint(widget.crossWalkFromPos)
+		local toTile = widget:getTilePoint(widget.crossWalkToPos)
+		if fromTile and toTile and fromTile.x >= 0 and fromTile.y >= 0 and toTile.x >= 0 and toTile.y >= 0 then
+			local t = math.max(0, math.min(player:getStepProgress(), 1))
+			screenPos = {
+				x = fromTile.x + (toTile.x - fromTile.x) * t,
+				y = fromTile.y + (toTile.y - fromTile.y) * t
+			}
+		end
+	end
+
+	if not screenPos then
+		screenPos = widget:getTilePoint(pos)
+	end
+
+	if not screenPos or screenPos.x < 0 or screenPos.y < 0 then
+		return nil
+	end
+
+	return {
+		x = screenPos.x - cross:getWidth() / 2,
+		y = screenPos.y - cross:getHeight() / 2
+	}
+end
+
+local function startCrossWalkLoop(widget)
+	if not widget or widget.crossWalkEvent then
+		return
+	end
+
+	local function tick()
+		if not widget or widget:isDestroyed() then
+			return
+		end
+
+		local cross = widget.cross
+		if not cross or cross:isDestroyed() or not cross.pos then
+			widget.crossWalkEvent = nil
+			return
+		end
+
+		local target = getCrossTarget(widget, cross, cross.pos)
+		if target then
+			setCrossScreenPosition(widget, cross, target)
+		end
+
+		local player = g_game.getLocalPlayer()
+		if player and player.isWalking and player:isWalking() and widget.crossWalkFromPos and widget.crossWalkToPos then
+			widget.crossWalkEvent = scheduleEvent(tick, CROSS_WALK_TICK_MS)
+		else
+			widget.crossWalkEvent = nil
+			widget.crossWalkFromPos = nil
+			widget.crossWalkToPos = nil
+		end
+	end
+
+	tick()
+end
 
 local function getMinimapZoomMin(widget)
 	if widget and widget.getMaxZoom then
@@ -71,6 +192,12 @@ function UIMinimap:onSetup()
 end
 
 function UIMinimap:onDestroy()
+	cancelCrossAnimation(self)
+	if self.dragRestoreHDMode ~= nil and g_minimap and g_minimap.setHDMode then
+		g_minimap:setHDMode(self.dragRestoreHDMode)
+		self.dragRestoreHDMode = nil
+	end
+
 	for _, widget in pairs(self.alternatives) do
 		widget:destroy()
 	end
@@ -104,7 +231,7 @@ end
 
 function UIMinimap:onCameraPositionChange(cameraPos)
 	if self.cross then
-		self:setCrossPosition(self.cross.pos)
+		self:setCrossPosition(self.cross.pos, true)
 	end
 end
 
@@ -173,25 +300,92 @@ local function onFlagMouseRelease(widget, pos, button)
 	return false
 end
 
-function UIMinimap:setCrossPosition(pos)
+function UIMinimap:setCrossPosition(pos, instant)
 	local cross = self.cross
 
 	if not self.cross then
 		cross = g_ui.createWidget("MinimapCross", self)
 
-		cross:setIcon("/images/game/minimap/cross")
+		if cross.setImageSource then
+			cross:setImageSource("/images/game/minimap/cross_white")
+		else
+			cross:setIcon("/images/game/minimap/cross_white")
+		end
+		if cross.setImageColor then
+			cross:setImageColor("green")
+		elseif cross.setIconColor then
+			cross:setIconColor("green")
+		end
 
 		self.cross = cross
 	end
 
-	pos.z = self:getCameraPosition().z
+	if not pos then
+		cancelCrossAnimation(self)
+		cross.pos = nil
+		self.crossWalkFromPos = nil
+		self.crossWalkToPos = nil
+		if not self.crossUsesManualPosition then
+			cross:breakAnchors()
+			self.crossUsesManualPosition = true
+		end
+		return
+	end
+
+	pos = {
+		x = pos.x,
+		y = pos.y,
+		z = self:getCameraPosition().z
+	}
+
+	if not instant and cross.pos and cross.pos.x == pos.x and cross.pos.y == pos.y and cross.pos.z == pos.z then
+		local player = g_game.getLocalPlayer()
+		if player and player.isWalking and player:isWalking() and self.crossWalkFromPos and self.crossWalkToPos then
+			startCrossWalkLoop(self)
+		end
+		return
+	end
+
+	local previousPos = self.crossLastPos
 	cross.pos = pos
 
-	if pos then
-		self:centerInPosition(cross, pos)
-	else
+	if not self.crossUsesManualPosition then
 		cross:breakAnchors()
+		self.crossUsesManualPosition = true
 	end
+
+	self.crossWalkFromPos = nil
+	self.crossWalkToPos = nil
+	local cameraPos = self:getCameraPosition()
+	local followCentered = not self.fullView and not self:isDragging() and cameraPos
+		and cameraPos.x == pos.x and cameraPos.y == pos.y and cameraPos.z == pos.z
+	if not followCentered and previousPos and previousPos.z == pos.z then
+		local walkDx = math.abs(pos.x - previousPos.x)
+		local walkDy = math.abs(pos.y - previousPos.y)
+		if walkDx <= 1 and walkDy <= 1 and (walkDx + walkDy) > 0 then
+			self.crossWalkFromPos = previousPos
+			self.crossWalkToPos = pos
+		end
+	end
+
+	local target = getCrossTarget(self, cross, pos)
+	if not target then
+		cancelCrossAnimation(self)
+		cross:breakAnchors()
+		return
+	end
+
+	setCrossScreenPosition(self, cross, target)
+
+	local player = g_game.getLocalPlayer()
+	if player and player.isWalking and player:isWalking() and self.crossWalkFromPos and self.crossWalkToPos then
+		startCrossWalkLoop(self)
+	elseif self.crossWalkEvent then
+		removeEvent(self.crossWalkEvent)
+		self.crossWalkEvent = nil
+	end
+
+	self.crossLastPos = pos
 end
 
 function UIMinimap:addFlag(pos, icon, description, temporary, color)
@@ -248,6 +442,10 @@ function UIMinimap:onZoomChange(zoom)
 	if clampedZoom ~= zoom then
 		self:setZoom(clampedZoom)
 		return
+	end
+
+	if self.cross and self.cross.pos then
+		self:setCrossPosition(self.cross.pos, true)
 	end
 
 	if self.fullView then
@@ -406,6 +604,13 @@ function UIMinimap:onMouseRelease(pos, button)
 end
 
 function UIMinimap:onDragEnter(pos)
+	if self.fullView and g_minimap and g_minimap.setHDMode and g_minimap.isHDMode then
+		self.dragRestoreHDMode = g_minimap:isHDMode()
+		if self.dragRestoreHDMode then
+			g_minimap:setHDMode(false)
+		end
+	end
+
 	self.dragReference = pos
 	self.dragCameraReference = self:getCameraPosition()
 
@@ -428,6 +633,11 @@ function UIMinimap:onDragMove(pos, moved)
 end
 
 function UIMinimap:onDragLeave(widget, pos)
+	if self.dragRestoreHDMode ~= nil and g_minimap and g_minimap.setHDMode then
+		g_minimap:setHDMode(self.dragRestoreHDMode)
+		self.dragRestoreHDMode = nil
+	end
+
 	return true
 end
 

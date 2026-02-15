@@ -32,6 +32,104 @@ local zoomOutButton = nil
 local zoomLevel = 2
 
 local managerAccountsButton = nil
+local perfHudWidget = nil
+local perfHudLabel = nil
+local perfHudFps = -1
+local perfHudPing = -1
+local PERF_HUD_SETTINGS_KEY = 'perfHudWidget'
+
+local function getPerfHudText()
+    local fpsText = perfHudFps >= 0 and tostring(perfHudFps) or '--'
+    local pingText = perfHudPing >= 0 and (tostring(perfHudPing) .. ' ms') or '--'
+    return string.format('FPS: %s   PING: %s', fpsText, pingText)
+end
+
+local function updatePerfHudText()
+    if perfHudLabel and not perfHudLabel:isDestroyed() then
+        perfHudLabel:setText(getPerfHudText())
+    end
+end
+
+local function getPerfHudSavedPosition()
+    local settings = g_settings.getNode(PERF_HUD_SETTINGS_KEY) or {}
+    if type(settings.x) == 'number' and type(settings.y) == 'number' then
+        return {
+            x = settings.x,
+            y = settings.y
+        }
+    end
+
+    return {
+        x = 20,
+        y = 80
+    }
+end
+
+local function savePerfHudPosition()
+    if not perfHudWidget or perfHudWidget:isDestroyed() then
+        return
+    end
+
+    local pos = perfHudWidget:getPosition()
+    g_settings.setNode(PERF_HUD_SETTINGS_KEY, {
+        x = pos.x,
+        y = pos.y
+    })
+end
+
+local function createPerfHudWidget()
+    if perfHudWidget and not perfHudWidget:isDestroyed() then
+        return
+    end
+
+    perfHudWidget = g_ui.createWidget('PerfStatsHud', rootWidget)
+    perfHudLabel = perfHudWidget:getChildById('text')
+    perfHudFps = g_app.getFps and g_app.getFps() or -1
+    perfHudPing = g_game.getPing and g_game.getPing() or -1
+    updatePerfHudText()
+
+    local startPos = getPerfHudSavedPosition()
+    perfHudWidget:setPosition(startPos)
+    perfHudWidget:bindRectToParent()
+    perfHudWidget:raise()
+
+    function perfHudWidget:onDragEnter(mousePos)
+        self:raise()
+        self:breakAnchors()
+        self.movingReference = {
+            x = mousePos.x - self:getX(),
+            y = mousePos.y - self:getY()
+        }
+        return true
+    end
+
+    function perfHudWidget:onDragMove(mousePos, mouseMoved)
+        if not self.movingReference then
+            return
+        end
+
+        self:setPosition({
+            x = mousePos.x - self.movingReference.x,
+            y = mousePos.y - self.movingReference.y
+        })
+        self:bindRectToParent()
+    end
+
+    function perfHudWidget:onDragLeave(droppedWidget, mousePos)
+        savePerfHudPosition()
+    end
+end
+
+local function destroyPerfHudWidget()
+    savePerfHudPosition()
+
+    if perfHudWidget and not perfHudWidget:isDestroyed() then
+        perfHudWidget:destroy()
+    end
+
+    perfHudWidget = nil
+    perfHudLabel = nil
+end
 -- private functions
 local function addButton(id, description, icon, callback, panel, toggle, front)
     local class
@@ -111,6 +209,8 @@ function init()
 
     topLeftYoutubeLink = topMenu:recursiveGetChildById('youtubeIcon')
     topLeftDiscordLink = topMenu:recursiveGetChildById('discordIcon')
+    g_ui.importStyle('perf_hud')
+    createPerfHudWidget()
 
     Keybind.new("UI", "Toggle Top Menu", "Ctrl+Shift+T", "")
     Keybind.bind("UI", "Toggle Top Menu", {
@@ -147,6 +247,8 @@ function terminate()
     disconnect(g_app, {
         onFps = updateFps
     })
+
+    destroyPerfHudWidget()
 
     topMenu:destroy()
     topMenu = nil
@@ -247,9 +349,14 @@ function offline()
         pingImg:hide()
     end ]]
     fpsMin = -1
+    perfHudPing = -1
+    updatePerfHudText()
 end
 
 function updateFps(fps)
+    perfHudFps = fps or -1
+    updatePerfHudText()
+
     if fpsLabel and fpsLabel:isVisible() then -- for the time being retained for the extended view
         local text = 'FPS ' .. fps
         if g_game.isOnline() then
@@ -297,6 +404,9 @@ function updateFps(fps)
 end
 
 function updatePing(ping)
+    perfHudPing = ping or -1
+    updatePerfHudText()
+
   --[[   if pingLabel:isVisible() then -- for the time being retained for the extended view
 
         local text = 'Ping: '

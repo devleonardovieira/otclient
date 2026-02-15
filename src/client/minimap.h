@@ -153,10 +153,10 @@ public:
 
     void clean();
 
-    void draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color);
-    Point getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale);
-    Position getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale);
-    Rect getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale);
+    void draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color, const Point& cameraOffset = {});
+    Point getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const Point& cameraOffset = {});
+    Position getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale, const Point& cameraOffset = {});
+    Rect getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const Point& cameraOffset = {});
 
     void updateTile(const Position& pos, const TilePtr& tile);
     const MinimapTile& getTile(const Position& pos);

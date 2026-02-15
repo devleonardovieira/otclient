@@ -49,7 +49,7 @@ OptionScrollbar < HorizontalScrollBar
 MainWindow
   id: optionsWindow
   !text: tr('Options')
-  size: 655 426
+  size: 655 626
 
   @onEnter: modules.client_options.hide()
   @onEscape: modules.client_options.hide()

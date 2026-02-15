@@ -42,7 +42,8 @@ MinimapFlag < UIWidget
 MinimapCross < UIWidget
   focusable: false
   phantom: true
-  image: /images/game/minimap/cross
+  image: /images/game/minimap/cross_white
+  image-color: green
   size: 16 16
 
 IconColorButton < UICheckBox

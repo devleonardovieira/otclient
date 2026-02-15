@@ -85,6 +85,8 @@ public:
 
     void loadOtbm(const std::string& fileName);
     void saveOtbm(const std::string& fileName);
+    void setAssumeOtbmClientIds(bool v) { m_assumeOtbmClientIds = v; }
+    bool isAssumingOtbmClientIds() const { return m_assumeOtbmClientIds; }
 
     // otbm attributes (description, size, etc.)
     void setHouseFile(const std::string& file) { m_houseFile = file; }
@@ -266,6 +268,7 @@ private:
     uint32_t m_zoneFlags{ 0 };
 
     float m_zoneOpacity{ 1.f };
+    bool m_assumeOtbmClientIds{ false };
 #endif
 
     uint16_t m_width{ 0 };

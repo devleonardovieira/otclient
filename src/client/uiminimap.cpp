@@ -27,6 +27,7 @@
 #include "uimapanchorlayout.h"
 #include "framework/otml/otmlnode.h"
 #include "framework/ui/uilayout.h"
+#include "framework/graphics/drawpoolmanager.h"
 
 void UIMinimap::drawSelf(const DrawPoolType drawPane)
 {
@@ -37,7 +38,7 @@ void UIMinimap::drawSelf(const DrawPoolType drawPane)
     if (!m_layout)
         m_layout = std::make_shared<UIMapAnchorLayout>(static_self_cast<UIWidget>());
 
-    g_minimap.draw(getPaddingRect(), m_cameraPosition, m_scale, m_color);
+    g_minimap.draw(getPaddingRect(), m_cameraPosition, m_scale, m_color, m_cameraOffset);
 }
 
 bool UIMinimap::setZoom(const int8_t zoom)
@@ -79,6 +80,15 @@ void UIMinimap::setCameraPosition(const Position& pos)
     onCameraPositionChange(pos, oldPos);
 }
 
+void UIMinimap::setCameraOffset(const Point& offset)
+{
+    if (m_cameraOffset == offset)
+        return;
+
+    m_cameraOffset = offset;
+    g_drawPool.repaint(DrawPoolType::FOREGROUND);
+}
+
 bool UIMinimap::floorUp()
 {
     Position pos = m_cameraPosition;
@@ -100,17 +110,17 @@ bool UIMinimap::floorDown()
 
 Point UIMinimap::getTilePoint(const Position& pos)
 {
-    return g_minimap.getTilePoint(pos, getPaddingRect(), m_cameraPosition, m_scale);
+    return g_minimap.getTilePoint(pos, getPaddingRect(), m_cameraPosition, m_scale, m_cameraOffset);
 }
 
 Rect UIMinimap::getTileRect(const Position& pos)
 {
-    return g_minimap.getTileRect(pos, getPaddingRect(), m_cameraPosition, m_scale);
+    return g_minimap.getTileRect(pos, getPaddingRect(), m_cameraPosition, m_scale, m_cameraOffset);
 }
 
 Position UIMinimap::getTilePosition(const Point& mousePos)
 {
-    return g_minimap.getTilePosition(mousePos, getPaddingRect(), m_cameraPosition, m_scale);
+    return g_minimap.getTilePosition(mousePos, getPaddingRect(), m_cameraPosition, m_scale, m_cameraOffset);
 }
 
 void UIMinimap::anchorPosition(const UIWidgetPtr& anchoredWidget, const Fw::AnchorEdge anchoredEdge, const Position& hookedPosition, const Fw::AnchorEdge hookedEdge)

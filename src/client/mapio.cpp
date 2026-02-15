@@ -39,8 +39,15 @@
 void Map::loadOtbm(const std::string& fileName)
 {
     try {
-        if (!g_things.isOtbLoaded())
-            throw Exception("OTB isn't loaded yet to load a map.");
+        const bool otbLoaded = g_things.isOtbLoaded();
+        const bool useClientIds = !otbLoaded && m_assumeOtbmClientIds;
+        if (!otbLoaded && !useClientIds) {
+            throw Exception("OTB isn't loaded yet to load a map. Enable g_map.setAssumeOtbmClientIds(true) to parse OTBM ids as client ids.");
+        }
+
+        if (useClientIds) {
+            g_logger.warning("Loading OTBM '{}' without OTB: treating map item ids as client ids", fileName);
+        }
 
         const FileStreamPtr fin = g_resources.openFile(fileName);
         if (!fin)
@@ -60,22 +67,33 @@ void Map::loadOtbm(const std::string& fileName)
             throw Exception("could not read root property!");
 
         const uint32_t headerVersion = root->getU32();
-        if (headerVersion > 3)
+        if (headerVersion > 4)
             throw Exception("Unknown OTBM version detected: {}.", headerVersion);
+
+        if (headerVersion == 4)
+            g_logger.warning("OTBM version 4 detected. Parsing with compatibility mode.");
 
         setWidth(root->getU16());
         setHeight(root->getU16());
 
         const uint32_t headerMajorItems = root->getU8();
-        if (headerMajorItems > g_things.getOtbMajorVersion()) {
-            throw Exception("This map was saved with different OTB version. read {} what it's supposed to be: {}", headerMajorItems, g_things.getOtbMajorVersion());
-        }
-
         root->skip(3);
         const uint32_t headerMinorItems = root->getU32();
-        if (headerMinorItems > g_things.getOtbMinorVersion()) {
-            g_logger.warning("This map needs an updated OTB. read {} what it's supposed to be: {} or less", headerMinorItems, g_things.getOtbMinorVersion());
+        if (otbLoaded) {
+            if (headerMajorItems > g_things.getOtbMajorVersion()) {
+                throw Exception("This map was saved with different OTB version. read {} what it's supposed to be: {}", headerMajorItems, g_things.getOtbMajorVersion());
+            }
+
+            if (headerMinorItems > g_things.getOtbMinorVersion()) {
+                g_logger.warning("This map needs an updated OTB. read {} what it's supposed to be: {} or less", headerMinorItems, g_things.getOtbMinorVersion());
+            }
+        } else {
+            g_logger.warning("Skipping OTB version checks (major={}, minor={}) because OTB is not loaded", headerMajorItems, headerMinorItems);
         }
+
+        const auto createMapItem = [&](const uint16_t itemId) -> ItemPtr {
+            return otbLoaded ? Item::createFromOtb(itemId) : Item::create(itemId);
+        };
 
         const BinaryTreePtr node = root->getChildren()[0];
         if (node->getU8() != OTBM_MAP_DATA)
@@ -88,13 +106,28 @@ void Map::loadOtbm(const std::string& fileName)
                 case OTBM_ATTR_DESCRIPTION:
                     setDescription(tmp);
                     break;
+                case OTBM_ATTR_EXT_FILE:
+                    // Generic external-file attribute used by newer editors.
+                    break;
                 case OTBM_ATTR_SPAWN_FILE:
                     setSpawnFile(fileName.substr(0, fileName.rfind('/') + 1).c_str() + tmp);
+                    break;
+                case OTBM_ATTR_SPAWN_NPC_FILE:
+                    // Keep first spawn file if already set; this is usually NPC spawn extension in v4 maps.
+                    if (getSpawnFile().empty())
+                        setSpawnFile(fileName.substr(0, fileName.rfind('/') + 1).c_str() + tmp);
                     break;
                 case OTBM_ATTR_HOUSE_FILE:
                     setHouseFile(fileName.substr(0, fileName.rfind('/') + 1).c_str() + tmp);
                     break;
+                case OTBM_ATTR_ZONE_FILE:
+                    // Zone file is irrelevant for client-side minimap generation.
+                    break;
                 default:
+                    if (headerVersion >= 4) {
+                        g_logger.warning("Ignoring unsupported map-data attribute '{}' from OTBM v{}", static_cast<int>(attribute), headerVersion);
+                        break;
+                    }
                     throw Exception("Invalid attribute '{}'", static_cast<int>(attribute));
             }
         }
@@ -148,7 +181,7 @@ void Map::loadOtbm(const std::string& fileName)
                             }
                             case OTBM_ATTR_ITEM:
                             {
-                                addThing(Item::createFromOtb(nodeTile->getU16()), pos);
+                                addThing(createMapItem(nodeTile->getU16()), pos);
                                 break;
                             }
                             default:
@@ -162,7 +195,7 @@ void Map::loadOtbm(const std::string& fileName)
                         if (unlikely(nodeItem->getU8() != OTBM_ITEM))
                             throw Exception("invalid item node");
 
-                        ItemPtr item = Item::createFromOtb(nodeItem->getU16());
+                        ItemPtr item = createMapItem(nodeItem->getU16());
                         item->unserializeItem(nodeItem);
 
                         if (item->isContainer()) {
@@ -170,7 +203,7 @@ void Map::loadOtbm(const std::string& fileName)
                                 if (containerItem->getU8() != OTBM_ITEM)
                                     throw Exception("invalid container item node");
 
-                                ItemPtr cItem = Item::createFromOtb(containerItem->getU16());
+                                ItemPtr cItem = createMapItem(containerItem->getU16());
                                 cItem->unserializeItem(containerItem);
                                 item->addContainerItem(cItem);
                             }
@@ -223,8 +256,13 @@ void Map::loadOtbm(const std::string& fileName)
                     if (waypointPos.isValid() && !name.empty() && !m_waypoints.contains(waypointPos))
                         m_waypoints.emplace(waypointPos, name);
                 }
-            } else
+            } else {
+                if (headerVersion >= 4) {
+                    g_logger.warning("Ignoring unsupported map-data node '{}' from OTBM v{}", static_cast<int>(mapDataType), headerVersion);
+                    continue;
+                }
                 throw Exception("Unknown map data node {}", static_cast<int>(mapDataType));
+            }
         }
 
         fin->close();

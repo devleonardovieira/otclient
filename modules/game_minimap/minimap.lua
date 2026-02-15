@@ -18,8 +18,44 @@ oldPos = nil
 oldFloor = nil
 panelControls = nil
 confirmTeleport = nil
+cameraSmoothEvent = nil
 
 local DEFAULT_MINIMAP_ZOOM_MAX = 5
+local CAMERA_SMOOTH_TICK_MS = 16
+
+local function stopCameraSmoothLoop()
+	if cameraSmoothEvent then
+		removeEvent(cameraSmoothEvent)
+		cameraSmoothEvent = nil
+	end
+end
+
+local function startCameraSmoothLoop()
+	if cameraSmoothEvent then
+		return
+	end
+
+	cameraSmoothEvent = cycleEvent(function()
+		if not g_game.isOnline() or not minimapWidget or not minimapWidget.setCameraOffset then
+			return
+		end
+
+		local player = g_game.getLocalPlayer()
+		if not player or not player.isWalking then
+			return
+		end
+
+		if player:isWalking() then
+			updateCameraPosition()
+			return
+		end
+
+		local cameraOffset = minimapWidget.getCameraOffset and minimapWidget:getCameraOffset() or nil
+		if cameraOffset and (cameraOffset.x ~= 0 or cameraOffset.y ~= 0) then
+			updateCameraPosition()
+		end
+	end, CAMERA_SMOOTH_TICK_MS)
+end
 
 local function getMinimapZoomMin()
 	if minimapWidget and minimapWidget.getMaxZoom then
@@ -752,6 +788,8 @@ function terminate()
 		saveMap()
 	end
 
+	stopCameraSmoothLoop()
+
 	disconnect(g_game, {
 		onGameStart = online,
 		onGameEnd = offline
@@ -986,10 +1024,15 @@ end
 
 function online()
 	loadMap(not preloaded)
+	startCameraSmoothLoop()
 	updateCameraPosition()
 end
 
 function offline()
+	stopCameraSmoothLoop()
+	if minimapWidget and minimapWidget.setCameraOffset then
+		minimapWidget:setCameraOffset({ x = 0, y = 0 })
+	end
 	saveMap()
 
 	if confirmTeleport then
@@ -1147,11 +1190,31 @@ function updateCameraPosition()
 	if not minimapWidget:isDragging() then
 		if not minimapWidget.fullView then
 			oldPos = pos
+			oldFloor = pos.z
 
-			minimapWidget:setCameraPosition(player:getPosition())
+			if minimapWidget.setCameraOffset then
+				local walkOffset = { x = 0, y = 0 }
+				if player.isWalking and player.getWalkOffset and player:isWalking() then
+					local playerWalkOffset = player:getWalkOffset()
+					if playerWalkOffset then
+						walkOffset = {
+							x = playerWalkOffset.x or 0,
+							y = playerWalkOffset.y or 0
+						}
+					end
+				end
+				minimapWidget:setCameraOffset(walkOffset)
+			end
+
+			minimapWidget:setCameraPosition(pos)
+			minimapWidget:setCrossPosition(pos, true)
+		elseif minimapWidget.setCameraOffset then
+			minimapWidget:setCameraOffset({ x = 0, y = 0 })
+			minimapWidget:setCrossPosition(pos)
 		end
 
-		minimapWidget:setCrossPosition(player:getPosition())
+	elseif minimapWidget.setCameraOffset then
+		minimapWidget:setCameraOffset({ x = 0, y = 0 })
 	end
 end
 
@@ -1232,9 +1295,25 @@ function toggleFullMap()
 
 	-- aplica estado desejado
 	local pos = oldPos or minimapWidget:getCameraPosition()
-	pos.z = oldFloor or pos.z
+	if minimapWidget.fullView then
+		-- Entrando no full map: respeita piso manual selecionado, se houver.
+		pos.z = oldFloor or pos.z
+	else
+		-- Saindo do full map: volta para o piso real do player para evitar andar incorreto.
+		local player = g_game.getLocalPlayer()
+		local playerPos = player and player:getPosition() or nil
+		if playerPos then
+			pos.z = playerPos.z
+			oldFloor = playerPos.z
+		else
+			pos.z = oldFloor or pos.z
+		end
+	end
 
 	minimapWidget:setZoom(clampMinimapZoom(oldZoom or getMinimapZoomMin()))
+	if minimapWidget.setCameraOffset then
+		minimapWidget:setCameraOffset({ x = 0, y = 0 })
+	end
 	minimapWidget:setCameraPosition(pos)
 
 	toggleGuides()

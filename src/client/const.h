@@ -1365,6 +1365,10 @@ enum OTBM_ItemAttr
     OTBM_ATTR_SLEEPERGUID = 20,
     OTBM_ATTR_SLEEPSTART = 21,
     OTBM_ATTR_CHARGES = 22,
+    // OTBM v4+ external files in map-data header
+    OTBM_ATTR_SPAWN_NPC_FILE = 23,
+    OTBM_ATTR_ZONE_FILE = 24,
+    // legacy name kept for compatibility with old references
     OTBM_ATTR_CONTAINER_ITEMS = 23,
     OTBM_ATTR_ATTRIBUTE_MAP = 128,
     /// just random numbers, they're not actually used by the binary reader...

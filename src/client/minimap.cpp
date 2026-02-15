@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <chrono>
 #include <iterator>
 #include <limits>
@@ -478,7 +479,7 @@ void Minimap::clean()
     }
 }
 
-void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color)
+void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color, const Point& cameraOffset)
 {
     if (screenRect.isEmpty())
         return;
@@ -498,12 +499,19 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
     applyAsyncLoadedBlocks(lock);
     checkUpdatedTiles(lock);
 
+    const float spriteSize = static_cast<float>(std::max<int>(g_gameConfig.getSpriteSize(), 1));
+    const PointF cameraOffsetTiles(cameraOffset.x / spriteSize, cameraOffset.y / spriteSize);
+    const Point cameraOffsetPx(
+        static_cast<int>(std::round(-cameraOffsetTiles.x * scale)),
+        static_cast<int>(std::round(-cameraOffsetTiles.y * scale))
+    );
+
     const auto& preDraw = [&](const Position& camera) {
         const auto& mapRect = calcMapRect(screenRect, camera, scale);
         const auto& blockOff = getBlockOffset(mapRect.topLeft());
         auto off = (Point((mapRect.size() * scale).toPoint() - screenRect.size().toPoint()) / 2);
 
-        const auto& start = screenRect.topLeft() - (mapRect.topLeft() - blockOff) * scale - off;
+        const auto& start = screenRect.topLeft() - (mapRect.topLeft() - blockOff) * scale - off + cameraOffsetPx;
 
         for (int_fast32_t y = blockOff.y, ys = start.y; ys < screenRect.bottom(); y += MMBLOCK_SIZE, ys += MMBLOCK_SIZE * scale) {
             if (y < 0 || y >= 65536)
@@ -534,9 +542,7 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
                 preDraw(mapCenter);
         } else {
             // Above sea floor: keep one auxiliary floor for context, avoiding full multi-floor cost.
-            if (MMBLOCK_SIZE * scale > 1 && mapCenter.isMapPosition())
-                preDraw(mapCenter);
-
+            // Draw auxiliary first and current floor last, so current floor is never hidden.
             const int auxFloor = std::min<int>(mapCenter.z + 1, g_gameConfig.getMapSeaFloor());
             if (auxFloor != mapCenter.z) {
                 const int offset = mapCenter.z - auxFloor;
@@ -544,6 +550,9 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
                 if (MMBLOCK_SIZE * scale > 1 && auxPos.isMapPosition())
                     preDraw(auxPos);
             }
+
+            if (MMBLOCK_SIZE * scale > 1 && mapCenter.isMapPosition())
+                preDraw(mapCenter);
         }
     } else preDraw(mapCenter);
 
@@ -565,9 +574,14 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
                 const auto& block = getBlock(pos);
                 block->touch();
                 if (m_hdMode) {
-                    if (!block->isHDReady())
-                        block->mustUpdate();
-                    block->updateHD(pos);
+                    if (pos.z == mapCenter.z) {
+                        if (!block->isHDReady())
+                            block->mustUpdate();
+                        block->updateHD(pos);
+                    } else {
+                        // Off-floor context in minimap: keep a cheaper texture update to reduce frame spikes.
+                        block->update();
+                    }
                 } else
                     block->update();
 
@@ -610,7 +624,7 @@ bool Minimap::hasBlock(const Position& pos) {
     return floorBlocks.find(getBlockIndex(pos)) != floorBlocks.end();
 }
 
-Point Minimap::getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale)
+Point Minimap::getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const Point& cameraOffset)
 {
     if (screenRect.isEmpty() || pos.z != mapCenter.z)
         return { -1 };
@@ -618,21 +632,33 @@ Point Minimap::getTilePoint(const Position& pos, const Rect& screenRect, const P
     const auto& mapRect = calcMapRect(screenRect, mapCenter, scale);
     const auto& off = Point((mapRect.size() * scale).toPoint() - screenRect.size().toPoint()) / 2;
     const auto& posoff = (Point(pos.x, pos.y) - mapRect.topLeft()) * scale;
-    return posoff + screenRect.topLeft() - off + (Point(1) * scale) / 2;
+    const float spriteSize = static_cast<float>(std::max<int>(g_gameConfig.getSpriteSize(), 1));
+    const PointF cameraOffsetTiles(cameraOffset.x / spriteSize, cameraOffset.y / spriteSize);
+    const Point cameraOffsetPx(
+        static_cast<int>(std::round(-cameraOffsetTiles.x * scale)),
+        static_cast<int>(std::round(-cameraOffsetTiles.y * scale))
+    );
+    return posoff + screenRect.topLeft() - off + cameraOffsetPx + (Point(1) * scale) / 2;
 }
 
-Position Minimap::getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale)
+Position Minimap::getTilePosition(const Point& point, const Rect& screenRect, const Position& mapCenter, float scale, const Point& cameraOffset)
 {
     if (screenRect.isEmpty())
         return {};
 
     const auto& mapRect = calcMapRect(screenRect, mapCenter, scale);
     const auto& off = Point((mapRect.size() * scale).toPoint() - screenRect.size().toPoint()) / 2;
-    const auto& pos2d = (point - screenRect.topLeft() + off) / scale + mapRect.topLeft();
+    const float spriteSize = static_cast<float>(std::max<int>(g_gameConfig.getSpriteSize(), 1));
+    const PointF cameraOffsetTiles(cameraOffset.x / spriteSize, cameraOffset.y / spriteSize);
+    const Point cameraOffsetPx(
+        static_cast<int>(std::round(-cameraOffsetTiles.x * scale)),
+        static_cast<int>(std::round(-cameraOffsetTiles.y * scale))
+    );
+    const auto& pos2d = (point - screenRect.topLeft() + off - cameraOffsetPx) / scale + mapRect.topLeft();
     return { pos2d.x, pos2d.y, mapCenter.z };
 }
 
-Rect Minimap::getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale)
+Rect Minimap::getTileRect(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const Point& cameraOffset)
 {
     if (screenRect.isEmpty() || pos.z != mapCenter.z)
         return {};
@@ -640,7 +666,7 @@ Rect Minimap::getTileRect(const Position& pos, const Rect& screenRect, const Pos
     const int tileSize = g_gameConfig.getSpriteSize() * scale;
 
     Rect tileRect(0, 0, tileSize, tileSize);
-    tileRect.moveCenter(getTilePoint(pos, screenRect, mapCenter, scale));
+    tileRect.moveCenter(getTilePoint(pos, screenRect, mapCenter, scale, cameraOffset));
     return tileRect;
 }
 
@@ -1677,7 +1703,28 @@ bool Minimap::saveBlock(const uint8_t z, const uint32_t index, const std::array<
 void Minimap::save()
 {
     {
-        std::scoped_lock lock(m_lock);
+        std::unique_lock<std::mutex> lock(m_lock);
+        applyAsyncLoadedBlocks(lock);
+
+        // Ensure queued tile updates are materialized into blocks before writing .mmz files.
+        for (uint16_t guard = 0; guard < 2048; ++guard) {
+            size_t pendingBefore = 0;
+            for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z)
+                pendingBefore += updatedTiles[z].size();
+
+            if (pendingBefore == 0)
+                break;
+
+            checkUpdatedTiles(lock);
+
+            size_t pendingAfter = 0;
+            for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z)
+                pendingAfter += updatedTiles[z].size();
+
+            if (pendingAfter == pendingBefore)
+                break;
+        }
+
         for (uint_fast8_t z = 0; z <= g_gameConfig.getMapMaxZ(); ++z) {
             for (const auto& [index, block] : m_tileBlocks[z]) {
                 if (block && block->wasSeen())
