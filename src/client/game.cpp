@@ -264,8 +264,9 @@ void Game::processGameEnd()
     m_online = false;
     g_lua.callGlobalField("g_game", "onGameEnd");
 
-    g_minimap.save();
-    g_minimap.clean();
+    // Avoid blocking logout/UI while minimap blocks are flushed asynchronously.
+    g_minimap.saveAsync();
+    g_minimap.cleanFast();
 
     if (m_connectionFailWarned) {
         g_lua.callGlobalField("g_game", "onConnectionFailing", false);

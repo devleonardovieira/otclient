@@ -8,8 +8,8 @@ ConsolePhantom < ScrollablePanel
     align-bottom: true
 
 ConsoleLabel < UITextEdit
-  ttf-font: ReggaeOne-Regular|12
-  height: 14
+  ttf-font: ReggaeOne-Regular|20
+
   color: yellow
   margin-left: 2
   text-wrap: true

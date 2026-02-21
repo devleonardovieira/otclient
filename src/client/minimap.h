@@ -152,6 +152,7 @@ public:
     void terminate();
 
     void clean();
+    void cleanFast();
 
     void draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color, const Point& cameraOffset = {});
     Point getTilePoint(const Position& pos, const Rect& screenRect, const Position& mapCenter, float scale, const Point& cameraOffset = {});
@@ -168,6 +169,7 @@ public:
 
     EnumCachedBlockLoad load(const uint8_t z, const uint32_t  index, bool forceIfNotLoaded = false);
     void save();
+    void saveAsync();
     void preloadAllBlocks(bool buildTextures = false, bool forceSync = true);
 
     FrameBufferPtr getFrameBuffer() const {
@@ -207,6 +209,7 @@ private:
 
     // Saves using an immutable tile snapshot captured by the caller while m_lock is held.
     bool saveBlock(const uint8_t z, const uint32_t index, const std::array<MinimapTile, MMBLOCK_SIZE* MMBLOCK_SIZE>& tiles);
+    void doSave(bool waitForSaves);
     bool hasSavedBlock(uint8_t z, uint32_t blockIndex) const;
     void markSavedBlock(uint8_t z, uint32_t blockIndex);
     void flushSavedBlocks(uint8_t z, bool force = false);

@@ -28,6 +28,24 @@ local modifiedOutfits = {}
 local currentOutfitId = 1
 local currentOutfitData = nil
 
+local function clearEditorWidgetRefs()
+  outfitList = nil
+  creaturePreview = nil
+  previewName = nil
+  previewLifeBar = nil
+  previewManaBar = nil
+  previewLifeBarBaseWidth = nil
+  previewLifeBarBaseHeight = nil
+  previewManaBarBaseWidth = nil
+  previewManaBarBaseHeight = nil
+  previewManaBarBaseMarginTop = nil
+  directionCombo = nil
+  offsetX = nil
+  offsetY = nil
+  searchInput = nil
+  currentOutfitData = nil
+end
+
 local function scaleSizeKeepAspect(width, height, targetWidth, targetHeight)
   if width <= 0 or height <= 0 or targetWidth <= 0 or targetHeight <= 0 then
     return 0, 0
@@ -232,6 +250,17 @@ function OutfitEditor.create()
   end
 
   window:hide()
+  function window.onDestroy()
+    if observedMapPanel then
+      disconnect(observedMapPanel, {
+        onZoomChange = OutfitEditor.onMapZoomChange,
+        onGeometryChange = OutfitEditor.onMapGeometryChange
+      })
+      observedMapPanel = nil
+    end
+    clearEditorWidgetRefs()
+    window = nil
+  end
 
   outfitList = window:recursiveGetChildById('outfitList')
   creaturePreview = window:recursiveGetChildById('creaturePreview')
@@ -333,15 +362,11 @@ function OutfitEditor.destroy()
     observedMapPanel = nil
   end
   if window then
-    window:destroy()
+    local oldWindow = window
     window = nil
+    oldWindow:destroy()
   end
-  outfitList = nil
-  creaturePreview = nil
-  directionCombo = nil
-  offsetX = nil
-  offsetY = nil
-  searchInput = nil
+  clearEditorWidgetRefs()
   g_keyboard.unbindKeyDown('Ctrl+Shift+O')
 end
 

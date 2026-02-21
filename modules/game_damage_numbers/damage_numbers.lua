@@ -2,11 +2,11 @@ g_damageNumbers = {
 	screenshotMode = false,
 	default = {
 		fonts = {
-			"baby-14",
-			"baby-20",
-			"baby-26",
-			"baby-32",
-			"critical"
+			"game|20|1.4|gray",
+			"game|20|1.4|gray",
+			"game|20|1.4|gray",
+			"game|20|1.4|gray",
+			"game|20|1.4|gray"
 		},
 		offset = {
 			x = 25,
@@ -19,11 +19,11 @@ g_damageNumbers = {
 	},
 	screenshot = {
 		fonts = {
-			"baby-12",
-			"baby-12",
-			"baby-12",
-			"baby-12",
-			"critical"
+			"game|20|1.4|gray",
+			"game|20|1.4|gray",
+			"game|20|1.4|gray",
+			"game|20|1.4|gray",
+			"game|20|1.4|gray"
 		},
 		offset = {
 			x = 12,

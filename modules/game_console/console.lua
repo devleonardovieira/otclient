@@ -152,6 +152,8 @@ violationReportTab = nil
 ignoredChannels = {}
 filters = {}
 floatingMode = false
+selectDefaultTabEvent = nil
+clearIgnoredChannelsEvent = nil
 
 local communicationSettings = {
 	yelling = false,
@@ -162,6 +164,18 @@ local communicationSettings = {
 	ignoredPlayers = {},
 	whitelistedPlayers = {}
 }
+
+local function cancelDeferredTabEvents()
+	if selectDefaultTabEvent then
+		removeEvent(selectDefaultTabEvent)
+		selectDefaultTabEvent = nil
+	end
+
+	if clearIgnoredChannelsEvent then
+		removeEvent(clearIgnoredChannelsEvent)
+		clearIgnoredChannelsEvent = nil
+	end
+end
 
 function init()
 	connect(g_game, {
@@ -425,6 +439,7 @@ end
 
 function terminate()
 	save()
+	cancelDeferredTabEvents()
 	disconnect(g_game, {
 		onTalk = onTalk,
 		onChannelList = onChannelList,
@@ -454,14 +469,24 @@ function terminate()
 
 	if channelsWindow then
 		channelsWindow:destroy()
+		channelsWindow = nil
 	end
 
 	if communicationWindow then
 		communicationWindow:destroy()
+		communicationWindow = nil
 	end
 
 	if violationWindow then
 		violationWindow:destroy()
+		violationWindow = nil
+	end
+
+	if consoleTabBar then
+		consoleTabBar.onTabChange = nil
+		if consoleTabBar.clearTabs then
+			consoleTabBar:clearTabs()
+		end
 	end
 
 	-- destruir widgets filhos
@@ -475,6 +500,10 @@ function terminate()
 	consoleContentPanel = nil
 	consoleToggleChat = nil
 	consoleTextEdit = nil
+	defaultTab = nil
+	serverTab = nil
+	violationReportTab = nil
+	channels = nil
 
 	ownPrivateName = nil
 	Console = nil
@@ -516,6 +545,8 @@ function onTabChange(tabBar, tab)
 end
 
 function clear()
+	cancelDeferredTabEvents()
+
 	local lastChannelsOpen = g_settings.getNode("lastChannelsOpen") or {}
 	local configChat = g_settings.getNode("configChat") or {}
 	local playerName = g_game.getCharacterName()
@@ -2382,10 +2413,14 @@ function online()
 		end
 	end
 
-	scheduleEvent(function()
+	cancelDeferredTabEvents()
+
+	selectDefaultTabEvent = scheduleEvent(function()
+		selectDefaultTabEvent = nil
 		consoleTabBar:selectTab(defaultTab)
 	end, 500)
-	scheduleEvent(function()
+	clearIgnoredChannelsEvent = scheduleEvent(function()
+		clearIgnoredChannelsEvent = nil
 		ignoredChannels = {}
 	end, 3000)
 end

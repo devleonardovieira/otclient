@@ -113,23 +113,28 @@ void MinimapBlock::updateHD(const Position& pos)
         return;
     }
 
-    bool shouldDraw = false;
+    bool hasAnyItems = false;
+    bool hasAnyColor = false;
     for (int_fast8_t y = -1; ++y < MMBLOCK_SIZE;) {
         for (int_fast8_t x = -1; ++x < MMBLOCK_SIZE;) {
             const auto& tile = getTile(x, y);
-            if (tile.hasItems()) {
-                shouldDraw = true;
+            if (tile.color != UINT8_MAX)
+                hasAnyColor = true;
+            if (tile.hasItems())
+                hasAnyItems = true;
+
+            if (hasAnyColor && hasAnyItems) {
                 break;
             }
         }
 
-        if (shouldDraw)
+        if (hasAnyColor && hasAnyItems)
             break;
     }
 
     m_mustUpdate = false;
 
-    if (!shouldDraw) {
+    if (!hasAnyColor && !hasAnyItems) {
         m_texture = nullptr;
         m_hdTextureReady = true;
         return;
@@ -155,26 +160,45 @@ void MinimapBlock::updateHD(const Position& pos)
         return m_tiles[getTileIndex(x, y)];
     };
 
+    // Draw a color fallback base for every visible minimap tile. This avoids black holes
+    // when HD sprite composition is missing/incomplete for a tile.
+    if (hasAnyColor) {
+        for (int y = 0; y < MMBLOCK_SIZE; ++y) {
+            for (int x = 0; x < MMBLOCK_SIZE; ++x) {
+                const auto& tile = getTile(x, y);
+                if (tile.color == UINT8_MAX)
+                    continue;
+
+                g_drawPool.addFilledRect(
+                    Rect(x * MMTILE_SIZE, y * MMTILE_SIZE, MMTILE_SIZE, MMTILE_SIZE),
+                    Color::from8bit(tile.color)
+                );
+            }
+        }
+    }
+
     const auto oldScale = g_drawPool.getScaleFactor();
     const float scaleFactor = MMTILE_SIZE / static_cast<float>(g_gameConfig.getSpriteSize());
     g_drawPool.setScaleFactor(scaleFactor);
 
-    const int numTiles = MMBLOCK_SIZE + 1;
-    const int numDiagonals = 2 * numTiles - 1;
-    for (int diagonal = 0; diagonal < numDiagonals; ++diagonal) {
-        int advance = std::max<int>(diagonal - numTiles, 0);
-        for (int y = diagonal - advance, x = advance; y >= 0 && x < numTiles; --y, ++x) {
-            const auto& tile = getTile(x, y);
-            if (tile.hasItems()) {
-                int elevation = 0;
-                for (const auto& item : tile.items) {
-                    if (item.id == 0)
-                        break;
+    if (hasAnyItems) {
+        const int numTiles = MMBLOCK_SIZE + 1;
+        const int numDiagonals = 2 * numTiles - 1;
+        for (int diagonal = 0; diagonal < numDiagonals; ++diagonal) {
+            int advance = std::max<int>(diagonal - numTiles, 0);
+            for (int y = diagonal - advance, x = advance; y >= 0 && x < numTiles; --y, ++x) {
+                const auto& tile = getTile(x, y);
+                if (tile.hasItems()) {
+                    int elevation = 0;
+                    for (const auto& item : tile.items) {
+                        if (item.id == 0)
+                            break;
 
-                    const auto& thingType = g_things.getThingType(item.id, ThingCategoryItem);
-                    thingType->draw(Point(x * MMTILE_SIZE, y * MMTILE_SIZE) - elevation, 0, item.xPattern, item.yPattern, item.zPattern, 0, Color::white);
-                    if (thingType->hasElevation())
-                        elevation = std::min<uint8_t>(elevation + thingType->getElevation(), g_gameConfig.getTileMaxElevation());
+                        const auto& thingType = g_things.getThingType(item.id, ThingCategoryItem);
+                        thingType->draw(Point(x * MMTILE_SIZE, y * MMTILE_SIZE) - elevation, 0, item.xPattern, item.yPattern, item.zPattern, 0, Color::white);
+                        if (thingType->hasElevation())
+                            elevation = std::min<uint8_t>(elevation + thingType->getElevation(), g_gameConfig.getTileMaxElevation());
+                    }
                 }
             }
         }
@@ -479,6 +503,27 @@ void Minimap::clean()
     }
 }
 
+void Minimap::cleanFast()
+{
+    flushAllSavedBlocks(true);
+
+    {
+        std::scoped_lock asyncLock(m_asyncLoadLock);
+        std::deque<AsyncLoadRequest>().swap(m_asyncLoadQueue);
+        std::deque<AsyncLoadedBlock>().swap(m_asyncLoadedBlocks);
+        std::unordered_set<uint64_t>().swap(m_asyncQueuedBlocks);
+        std::unordered_map<uint64_t, uint32_t>().swap(m_asyncLoadGeneration);
+        m_asyncActiveLoads = 0;
+    }
+
+    std::unique_lock<std::mutex> lock(m_lock);
+    for (uint_fast8_t i = 0; i <= g_gameConfig.getMapMaxZ(); ++i) {
+        std::unordered_map<uint32_t, MinimapBlock_ptr>().swap(m_tileBlocks[i]);
+        std::unordered_map<uint32_t, CacheBlock>().swap(m_cachedBlock[i]);
+        std::unordered_map<Position, MinimapTile, Position::Hasher>().swap(updatedTiles[i]);
+    }
+}
+
 void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scale, const Color& color, const Point& cameraOffset)
 {
     if (screenRect.isEmpty())
@@ -535,26 +580,10 @@ void Minimap::draw(const Rect& screenRect, const Position& mapCenter, float scal
     g_drawPool.resetClipRect();
 
     const auto& oldClipRect = g_drawPool.getClipRect();
-    if (m_hdMode) {
-        if (mapCenter.z >= g_gameConfig.getMapSeaFloor()) {
-            // Surface and underground: render only the current floor to keep frame time stable.
-            if (MMBLOCK_SIZE * scale > 1 && mapCenter.isMapPosition())
-                preDraw(mapCenter);
-        } else {
-            // Above sea floor: keep one auxiliary floor for context, avoiding full multi-floor cost.
-            // Draw auxiliary first and current floor last, so current floor is never hidden.
-            const int auxFloor = std::min<int>(mapCenter.z + 1, g_gameConfig.getMapSeaFloor());
-            if (auxFloor != mapCenter.z) {
-                const int offset = mapCenter.z - auxFloor;
-                const auto& auxPos = mapCenter.translated(offset, offset, -offset);
-                if (MMBLOCK_SIZE * scale > 1 && auxPos.isMapPosition())
-                    preDraw(auxPos);
-            }
-
-            if (MMBLOCK_SIZE * scale > 1 && mapCenter.isMapPosition())
-                preDraw(mapCenter);
-        }
-    } else preDraw(mapCenter);
+    // Keep minimap rendering deterministic: HD mode renders only the current floor.
+    // Auxiliary-floor composition can leak low-res block textures and cause visual artifacts.
+    if (MMBLOCK_SIZE * scale > 1 && mapCenter.isMapPosition())
+        preDraw(mapCenter);
 
     if (!positionsToDraw.empty()) {
         const auto firstZ = positionsToDraw[0].second.z;
@@ -1700,7 +1729,7 @@ bool Minimap::saveBlock(const uint8_t z, const uint32_t index, const std::array<
     return true;
 }
 
-void Minimap::save()
+void Minimap::doSave(const bool waitForSaves)
 {
     {
         std::unique_lock<std::mutex> lock(m_lock);
@@ -1733,8 +1762,20 @@ void Minimap::save()
         }
     }
 
-    waitAsyncSaves();
-    flushAllSavedBlocks(true);
+    if (waitForSaves)
+        waitAsyncSaves();
+
+    flushAllSavedBlocks(waitForSaves);
+}
+
+void Minimap::save()
+{
+    doSave(true);
+}
+
+void Minimap::saveAsync()
+{
+    doSave(false);
 }
 
 void Minimap::setHDMode(bool v) {

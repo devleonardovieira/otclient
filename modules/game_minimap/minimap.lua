@@ -19,9 +19,113 @@ oldFloor = nil
 panelControls = nil
 confirmTeleport = nil
 cameraSmoothEvent = nil
+cameraPositionSyncEvent = nil
 
 local DEFAULT_MINIMAP_ZOOM_MAX = 5
 local CAMERA_SMOOTH_TICK_MS = 16
+local DEFAULT_MINIMAP_RAM_PRELOAD = false
+local MINIMAP_MMZ_PATTERN = '^minimap_%d+_%d+%.mmz$'
+local OTMM_CANDIDATES = {
+	'/data/minimap.otmm',
+	'data/minimap.otmm',
+	'/data/minimap/minimap.otmm',
+	'data/minimap/minimap.otmm',
+	'/data/world/minimap.otmm',
+	'data/world/minimap.otmm',
+	'/data/world/minimap/minimap.otmm',
+	'data/world/minimap/minimap.otmm',
+	'/mods/game_minimap/minimap.otmm',
+	'mods/game_minimap/minimap.otmm',
+	'/minimap.otmm',
+	'minimap.otmm',
+	'/modules/game_minimap/minimap.otmm',
+	'modules/game_minimap/minimap.otmm'
+}
+
+local function shouldUseRamPreload()
+	local ok, enabled = pcall(g_settings.getBoolean, 'minimapRamPreload', DEFAULT_MINIMAP_RAM_PRELOAD)
+	if ok then
+		return enabled
+	end
+
+	return DEFAULT_MINIMAP_RAM_PRELOAD
+end
+
+local function setCameraOffsetIfChanged(widget, x, y)
+	if not widget or not widget.setCameraOffset then
+		return
+	end
+
+	x = x or 0
+	y = y or 0
+
+	local cameraOffset = widget.getCameraOffset and widget:getCameraOffset() or nil
+	local currentX = cameraOffset and (cameraOffset.x or 0) or 0
+	local currentY = cameraOffset and (cameraOffset.y or 0) or 0
+	if currentX == x and currentY == y then
+		return
+	end
+
+	widget:setCameraOffset({ x = x, y = y })
+end
+
+local function isPlayerMinimapMoving(player)
+	if not player then
+		return false
+	end
+
+	if player.isWalking and player:isWalking() then
+		return true
+	end
+
+	if player.isServerWalking and player:isServerWalking() then
+		return true
+	end
+
+	return false
+end
+
+local function roundNumber(v)
+	if v >= 0 then
+		return math.floor(v + 0.5)
+	end
+	return math.ceil(v - 0.5)
+end
+
+local function computePlayerMinimapWalkOffset(player)
+	local walkOffsetX, walkOffsetY = 0, 0
+
+	if player and player.getWalkOffset then
+		local playerWalkOffset = player:getWalkOffset()
+		if playerWalkOffset then
+			walkOffsetX = playerWalkOffset.x or 0
+			walkOffsetY = playerWalkOffset.y or 0
+		end
+	end
+
+	-- Some walk frames briefly report zero offset at step start. Rebuild a smooth
+	-- fallback from from/to step positions to avoid camera "jump then catch-up".
+	if player and player.getStepProgress and player.getLastStepFromPosition and player.getLastStepToPosition
+		and isPlayerMinimapMoving(player)
+		and walkOffsetX == 0
+		and walkOffsetY == 0 then
+		local fromPos = player:getLastStepFromPosition()
+		local toPos = player:getLastStepToPosition()
+		if fromPos and toPos and fromPos.z == toPos.z then
+			local dx = (toPos.x or 0) - (fromPos.x or 0)
+			local dy = (toPos.y or 0) - (fromPos.y or 0)
+			if math.abs(dx) <= 1 and math.abs(dy) <= 1 and (dx ~= 0 or dy ~= 0) then
+				local stepProgress = math.max(0, math.min(player:getStepProgress() or 0, 1))
+				local spriteSize = (g_gameConfig and g_gameConfig.getSpriteSize and g_gameConfig.getSpriteSize()) or 32
+				local remain = (1 - stepProgress) * spriteSize
+				walkOffsetX = roundNumber(-dx * remain)
+				walkOffsetY = roundNumber(-dy * remain)
+			end
+		end
+	end
+
+	return walkOffsetX, walkOffsetY
+end
 
 local function stopCameraSmoothLoop()
 	if cameraSmoothEvent then
@@ -40,12 +144,16 @@ local function startCameraSmoothLoop()
 			return
 		end
 
-		local player = g_game.getLocalPlayer()
-		if not player or not player.isWalking then
+		if minimapWidget:isDragging() then
 			return
 		end
 
-		if player:isWalking() then
+		local player = g_game.getLocalPlayer()
+		if not player then
+			return
+		end
+
+		if isPlayerMinimapMoving(player) then
 			updateCameraPosition()
 			return
 		end
@@ -54,6 +162,19 @@ local function startCameraSmoothLoop()
 		if cameraOffset and (cameraOffset.x ~= 0 or cameraOffset.y ~= 0) then
 			updateCameraPosition()
 		end
+	end, CAMERA_SMOOTH_TICK_MS)
+end
+
+local function onLocalPlayerPositionChange()
+	if cameraPositionSyncEvent then
+		removeEvent(cameraPositionSyncEvent)
+		cameraPositionSyncEvent = nil
+	end
+
+	-- Let creature walk state/offset settle before snapping minimap camera.
+	cameraPositionSyncEvent = scheduleEvent(function()
+		cameraPositionSyncEvent = nil
+		updateCameraPosition()
 	end, CAMERA_SMOOTH_TICK_MS)
 end
 
@@ -644,6 +765,8 @@ local MAP_COMPOSITIONS = {
 	}
 }
 local COMPOSITIONS_POS_GUIDES = {}
+local COMPOSITIONS_POS_GUIDES_INDEX = {}
+local GUIDE_FLAGS_BY_KEY = {}
 local GUIDES = {
 	Stones = {
 		{
@@ -731,6 +854,10 @@ local GUIDES = {
 	}
 }
 
+local function posToKey(pos)
+	return string.format("%d:%d:%d", pos.x, pos.y, pos.z)
+end
+
 function init()
 	-- Carrega a miniwindow diretamente no RootPanel para evitar ajuste automático aos side panels
 	minimapWindow = g_ui.loadUI("minimap", modules.game_interface.getRootPanel())
@@ -772,7 +899,7 @@ function init()
 		onGameEnd = offline
 	})
 	connect(LocalPlayer, {
-		onPositionChange = updateCameraPosition
+		onPositionChange = onLocalPlayerPositionChange
 	})
 	connect(g_minimap, {
 		onFloorChange = onFloorChange
@@ -789,13 +916,17 @@ function terminate()
 	end
 
 	stopCameraSmoothLoop()
+	if cameraPositionSyncEvent then
+		removeEvent(cameraPositionSyncEvent)
+		cameraPositionSyncEvent = nil
+	end
 
 	disconnect(g_game, {
 		onGameStart = online,
 		onGameEnd = offline
 	})
 	disconnect(LocalPlayer, {
-		onPositionChange = updateCameraPosition
+		onPositionChange = onLocalPlayerPositionChange
 	})
 	disconnect(g_minimap, {
 		onFloorChange = onFloorChange
@@ -898,8 +1029,8 @@ end
 local function countCachedMinimapBlocks()
 	local files = g_resources.listDirectoryFiles('/minimap') or {}
 	local count = 0
-	for _, file in pairs(files) do
-		if string.match(file, '^minimap_%d+_%d+%.mmz$') then
+	for _, file in ipairs(files) do
+		if string.match(file, MINIMAP_MMZ_PATTERN) then
 			count = count + 1
 		end
 	end
@@ -944,24 +1075,7 @@ local function prepareOtmmCache()
 	end
 
 	local otmmFile = nil
-	local otmmCandidates = {
-		'/data/minimap.otmm',
-		'data/minimap.otmm',
-		'/data/minimap/minimap.otmm',
-		'data/minimap/minimap.otmm',
-		'/data/world/minimap.otmm',
-		'data/world/minimap.otmm',
-		'/data/world/minimap/minimap.otmm',
-		'data/world/minimap/minimap.otmm',
-		'/mods/game_minimap/minimap.otmm',
-		'mods/game_minimap/minimap.otmm',
-		'/minimap.otmm',
-		'minimap.otmm',
-		'/modules/game_minimap/minimap.otmm',
-		'modules/game_minimap/minimap.otmm'
-	}
-
-	for _, candidate in ipairs(otmmCandidates) do
+	for _, candidate in ipairs(OTMM_CANDIDATES) do
 		if g_resources.fileExists(candidate) then
 			otmmFile = candidate
 			break
@@ -999,7 +1113,7 @@ function preload()
 
 	prepareOtmmCache()
 	local ramPreloadReady = false
-	if g_minimap and g_minimap.preloadAll then
+	if shouldUseRamPreload() and g_minimap and g_minimap.preloadAll then
 		local ok, err = pcall(function()
 			g_minimap.preloadAll(false, true)
 		end)
@@ -1009,6 +1123,8 @@ function preload()
 		else
 			ramPreloadReady = true
 		end
+	else
+		g_logger.info('Minimap RAM preload disabled (minimapRamPreload=false); blocks will load on demand')
 	end
 
 	loadMap(false)
@@ -1030,10 +1146,12 @@ end
 
 function offline()
 	stopCameraSmoothLoop()
-	if minimapWidget and minimapWidget.setCameraOffset then
-		minimapWidget:setCameraOffset({ x = 0, y = 0 })
+	if cameraPositionSyncEvent then
+		removeEvent(cameraPositionSyncEvent)
+		cameraPositionSyncEvent = nil
 	end
-	saveMap()
+	setCameraOffsetIfChanged(minimapWidget, 0, 0)
+	saveMap(false)
 
 	if confirmTeleport then
 		confirmTeleport:destroy()
@@ -1080,12 +1198,19 @@ end
 function loadGuides()
 	if not minimapWidget then return end
 
-	for k, city in pairs(GUIDES) do
+	for _, city in pairs(GUIDES) do
 		for _, mark in pairs(city) do
-			-- Adiciona flags das cidades/locais guiados
+			local posKey = posToKey(mark.position)
 			minimapWidget:addFlag(mark.position, mark.type, tr(mark.description), true, tocolor(mark.color))
-			-- Armazena posições para alternar visibilidade posteriormente
-			table.insert(COMPOSITIONS_POS_GUIDES, mark.position)
+			if not COMPOSITIONS_POS_GUIDES_INDEX[posKey] then
+				COMPOSITIONS_POS_GUIDES_INDEX[posKey] = true
+				table.insert(COMPOSITIONS_POS_GUIDES, mark.position)
+			end
+
+			local guideFlag = minimapWidget:getFlag(mark.position)
+			if guideFlag then
+				GUIDE_FLAGS_BY_KEY[posKey] = guideFlag
+			end
 		end
 	end
 end
@@ -1093,8 +1218,13 @@ end
 function toggleGuides()
 	if not minimapWidget then return end
 
-	for _, pos in pairs(COMPOSITIONS_POS_GUIDES) do
-		local flag = minimapWidget:getFlag(pos)
+	for _, pos in ipairs(COMPOSITIONS_POS_GUIDES) do
+		local posKey = posToKey(pos)
+		local flag = GUIDE_FLAGS_BY_KEY[posKey]
+		if (not flag or flag:isDestroyed()) and minimapWidget.getFlag then
+			flag = minimapWidget:getFlag(pos)
+			GUIDE_FLAGS_BY_KEY[posKey] = flag
+		end
 		if flag then
 			flag:setVisible(minimapWidget.fullView)
 		end
@@ -1156,6 +1286,9 @@ function loadMap(clean)
 	if clean then
 		g_minimap.clean()
 		mapPrepared = false
+		COMPOSITIONS_POS_GUIDES = {}
+		COMPOSITIONS_POS_GUIDES_INDEX = {}
+		GUIDE_FLAGS_BY_KEY = {}
 	end
 
 	if not mapPrepared then
@@ -1168,13 +1301,26 @@ function loadMap(clean)
 	toggleGuides()
 end
 
-function saveMap()
-	g_minimap.save()
+function saveMap(saveAutomapData)
+	if saveAutomapData == nil then
+		saveAutomapData = true
+	end
 
-	minimapWidget:save()
+	if saveAutomapData then
+		g_minimap.save()
+	end
+
+	if minimapWidget and minimapWidget.save then
+		minimapWidget:save()
+	end
 end
 
 function updateCameraPosition()
+	local widget = minimapWidget
+	if not widget then
+		return
+	end
+
 	local player = g_game.getLocalPlayer()
 
 	if not player then
@@ -1187,34 +1333,22 @@ function updateCameraPosition()
 		return
 	end
 
-	if not minimapWidget:isDragging() then
-		if not minimapWidget.fullView then
+	if not widget:isDragging() then
+		if not widget.fullView then
 			oldPos = pos
 			oldFloor = pos.z
 
-			if minimapWidget.setCameraOffset then
-				local walkOffset = { x = 0, y = 0 }
-				if player.isWalking and player.getWalkOffset and player:isWalking() then
-					local playerWalkOffset = player:getWalkOffset()
-					if playerWalkOffset then
-						walkOffset = {
-							x = playerWalkOffset.x or 0,
-							y = playerWalkOffset.y or 0
-						}
-					end
-				end
-				minimapWidget:setCameraOffset(walkOffset)
-			end
+			local walkOffsetX, walkOffsetY = computePlayerMinimapWalkOffset(player)
 
-			minimapWidget:setCameraPosition(pos)
-			minimapWidget:setCrossPosition(pos, true)
-		elseif minimapWidget.setCameraOffset then
-			minimapWidget:setCameraOffset({ x = 0, y = 0 })
-			minimapWidget:setCrossPosition(pos)
+			setCameraOffsetIfChanged(widget, walkOffsetX, walkOffsetY)
+			widget:setCameraPosition(pos)
+			widget:setCrossPosition(pos, true)
+		else
+			setCameraOffsetIfChanged(widget, 0, 0)
+			widget:setCrossPosition(pos)
 		end
-
-	elseif minimapWidget.setCameraOffset then
-		minimapWidget:setCameraOffset({ x = 0, y = 0 })
+	else
+		setCameraOffsetIfChanged(widget, 0, 0)
 	end
 end
 
@@ -1311,9 +1445,7 @@ function toggleFullMap()
 	end
 
 	minimapWidget:setZoom(clampMinimapZoom(oldZoom or getMinimapZoomMin()))
-	if minimapWidget.setCameraOffset then
-		minimapWidget:setCameraOffset({ x = 0, y = 0 })
-	end
+	setCameraOffsetIfChanged(minimapWidget, 0, 0)
 	minimapWidget:setCameraPosition(pos)
 
 	toggleGuides()
@@ -1329,6 +1461,9 @@ end
 
 function onFloorChange(posZ)
 	oldFloor = posZ
+	if minimapWidget and not minimapWidget.fullView then
+		updateCameraPosition()
+	end
 
 	onSearchPokemon(searchPokemon.name, posZ)
 end
@@ -1348,7 +1483,6 @@ local function npcGetMinimapIconPath(creature)
 end
 
 local function npcAddOrUpdateFlag(creature)
-	print(creature:getName())
 	if not minimapWidget then return end
 	if not creature:isNpc() then return end
 	local iconPath = npcGetMinimapIconPath(creature)
@@ -1362,7 +1496,6 @@ local function npcAddOrUpdateFlag(creature)
 
 	local pos = creature:getPosition()
 	minimapWidget:addFlag(pos, iconPath, creature:getName(), true, 'white')
-	print('pos', pos)
 	npcFlagsByCid[cid] = pos
 end
 

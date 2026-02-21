@@ -65,6 +65,20 @@ local function getClientOption(key, default)
     return default
 end
 
+local function safeBackgroundCall(method)
+    local backgroundModule = modules and modules.client_background
+    if not backgroundModule then
+        return
+    end
+
+    local fn = backgroundModule[method]
+    if type(fn) ~= 'function' then
+        return
+    end
+
+    pcall(fn)
+end
+
 function init()
     g_ui.importStyle('styles/countwindow')
 
@@ -293,7 +307,7 @@ function show()
     connect(g_app, {
         onClose = tryExit
     })
-    modules.client_background.hide()
+    safeBackgroundCall('hide')
     gameRootPanel:show()
     gameRootPanel:focus()
     gameMapPanel:followCreature(g_game.getLocalPlayer())
@@ -347,7 +361,7 @@ function hide()
         countWindow = nil
     end
     gameRootPanel:hide()
-    modules.client_background.show()
+    safeBackgroundCall('show')
 end
 
 function save()
@@ -931,6 +945,7 @@ end
 
 function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, useThing, creatureThing, attackCreature)
     local keyboardModifiers = g_keyboard.getModifiers()
+    local player = g_game.getLocalPlayer()
 
     if g_platform.isMobile() then
         if mouseButton == MouseRightButton then
@@ -1152,7 +1167,7 @@ function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, u
 
         -- classic control
     else
-        local lootControlMode = modules.client_options.getOption('lootControlMode')
+        local lootControlMode = getClientOption('lootControlMode', 0)
         local player = g_game.getLocalPlayer()
 
         -- ###############################

@@ -19,16 +19,6 @@ local function cancelCrossAnimation(widget)
 	end
 end
 
-local function forceWidgetRepaint(widget)
-	if not widget or widget:isDestroyed() then
-		return
-	end
-
-	if widget.repaint then
-		widget:repaint()
-	end
-end
-
 local function setCrossScreenPosition(widget, cross, target)
 	local snapped = {
 		x = math.floor(target.x + 0.5),
@@ -41,7 +31,6 @@ local function setCrossScreenPosition(widget, cross, target)
 	end
 
 	cross:setPosition(snapped)
-	forceWidgetRepaint(widget)
 	return true
 end
 
@@ -555,12 +544,19 @@ function UIMinimap:onFloorDown(value)
 end
 
 function UIMinimap:onMousePress(pos, button)
+	self.draggingMinimap = false
 	if not self:isDragging() then
 		self.allowNextRelease = true
 	end
 end
 
 function UIMinimap:onMouseRelease(pos, button)
+	if self.draggingMinimap then
+		self.draggingMinimap = false
+		self.allowNextRelease = false
+		return true
+	end
+
 	if not self.allowNextRelease then
 		return true
 	end
@@ -604,11 +600,11 @@ function UIMinimap:onMouseRelease(pos, button)
 end
 
 function UIMinimap:onDragEnter(pos)
-	if self.fullView and g_minimap and g_minimap.setHDMode and g_minimap.isHDMode then
-		self.dragRestoreHDMode = g_minimap:isHDMode()
-		if self.dragRestoreHDMode then
-			g_minimap:setHDMode(false)
-		end
+	-- Keep HD mode unchanged while dragging to avoid quality flicker/pop-in.
+	self.draggingMinimap = true
+	self.allowNextRelease = false
+	if self.setCameraOffset then
+		self:setCameraOffset({ x = 0, y = 0 })
 	end
 
 	self.dragReference = pos
@@ -618,6 +614,8 @@ function UIMinimap:onDragEnter(pos)
 end
 
 function UIMinimap:onDragMove(pos, moved)
+	self.draggingMinimap = true
+	self.allowNextRelease = false
 	local scale = self:getScale()
 	local dx = (self.dragReference.x - pos.x) / scale
 	local dy = (self.dragReference.y - pos.y) / scale
@@ -627,17 +625,21 @@ function UIMinimap:onDragMove(pos, moved)
 		z = self.dragCameraReference.z
 	}
 
+	local currentCameraPos = self:getCameraPosition()
+	if currentCameraPos
+		and currentCameraPos.x == pos.x
+		and currentCameraPos.y == pos.y
+		and currentCameraPos.z == pos.z then
+		return true
+	end
+
 	self:setCameraPosition(pos)
 
 	return true
 end
 
 function UIMinimap:onDragLeave(widget, pos)
-	if self.dragRestoreHDMode ~= nil and g_minimap and g_minimap.setHDMode then
-		g_minimap:setHDMode(self.dragRestoreHDMode)
-		self.dragRestoreHDMode = nil
-	end
-
+	self.draggingMinimap = false
 	return true
 end
 

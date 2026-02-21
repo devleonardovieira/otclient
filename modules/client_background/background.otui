@@ -33,8 +33,7 @@ Panel
     text-auto-resize: true
     width: 120
     padding: 2
-    ttf-font: ReggaeOne-Regular
-    ttf-font-size: 22
+    ttf-font: ReggaeOne-Regular|22
     color: #ffffff
     Label
       text: version 0.1a
@@ -44,8 +43,7 @@ Panel
       margin-right: -4
       text-auto-resize: true
       color: #1fbf6e
-      ttf-font: ReggaeOne-Regular
-      ttf-font-size: 12
+      ttf-font: ReggaeOne-Regular|12
       
 
   UIParticles
@@ -57,7 +55,7 @@ Panel
 
   ButtonBlueBase
     size: 40 40
-    !tooltiptip: tr('Open client options.')
+    !tooltip: tr('Open client options.')
     anchors.top: parent.top
     anchors.right: parent.right
     margin-right: 12

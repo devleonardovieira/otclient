@@ -283,7 +283,17 @@ function checkCreatures()
 		return
 	end
 
-	local dimension = modules.game_interface.getMapPanel():getVisibleDimension()
+	local gameInterface = modules and modules.game_interface
+	if not gameInterface or not gameInterface.getMapPanel then
+		return
+	end
+
+	local mapPanel = gameInterface.getMapPanel()
+	if not mapPanel then
+		return
+	end
+
+	local dimension = mapPanel:getVisibleDimension()
 	local spectators = g_map.getSpectatorsInRangeEx(player:getPosition(), false, math.floor(dimension.width / 2), math.floor(dimension.width / 2), math.floor(dimension.height / 2), math.floor(dimension.height / 2))
 	local maxCreatures = battlePanel:getChildCount()
 	local creatures = {}
