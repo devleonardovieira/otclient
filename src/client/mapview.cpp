@@ -32,6 +32,7 @@
 #include "missile.h"
 #include "tile.h"
 #include "framework/core/asyncdispatcher.h"
+#include "framework/core/configmanager.h"
 #include "framework/core/eventdispatcher.h"
 #include <framework/core/graphicalapplication.h>
 #include "framework/graphics/graphics.h"
@@ -224,9 +225,11 @@ void MapView::drawCreatureInformation() {
     if (m_drawHarmony) { flags |= Otc::DrawHarmony; }
 
     // Atualiza a criatura sob o mouse para dicas de interação (ícone "F")
+    bool hasMouseHoveredCreature = false;
     m_posInfo.hoveredCreature = nullptr;
     if (m_lastHighlightTile) {
-        m_posInfo.hoveredCreature = m_lastHighlightTile->getTopCreature();
+        m_posInfo.hoveredCreature = m_lastHighlightTile->getTopCreature(true);
+        hasMouseHoveredCreature = m_posInfo.hoveredCreature != nullptr;
     }
     // Fallback quando o highlight está desativado: usa a última posição do mouse
     // para obter o tile e a criatura do topo, sem selecionar/realçar o tile.
@@ -234,8 +237,10 @@ void MapView::drawCreatureInformation() {
         const bool mouseInside = m_posInfo.rect.contains(g_window.getMousePosition() * g_window.getDisplayDensity());
         if (mouseInside && m_mousePosition.isValid()) {
             const auto& tile = m_shiftPressed ? getTopTile(m_mousePosition) : g_map.getTile(m_mousePosition);
-            if (tile)
-                m_posInfo.hoveredCreature = tile->getTopCreature();
+            if (tile) {
+                m_posInfo.hoveredCreature = tile->getTopCreature(true);
+                hasMouseHoveredCreature = m_posInfo.hoveredCreature != nullptr;
+            }
         }
         // Proximidade do jogador: se não houver hover por mouse, mostra o 'F' para o NPC mais próximo
         // dentro de 1 tile (inclui diagonais, distância de Chebyshev <= 1) no mesmo andar.
@@ -258,6 +263,39 @@ void MapView::drawCreatureInformation() {
                     m_posInfo.hoveredCreature = nearestNpc;
             }
         }
+    }
+
+    CreaturePtr mouseHoveredCreature = hasMouseHoveredCreature ? m_posInfo.hoveredCreature : nullptr;
+    if (mouseHoveredCreature && mouseHoveredCreature->isLocalPlayer())
+        mouseHoveredCreature = nullptr;
+
+    const auto getHoverColor = [](const CreaturePtr& creature) {
+        const auto& colors = g_configs.getPublicConfig().creatureColors;
+        if (creature->isMonster()) {
+            return !colors.monster.empty() ? Color(colors.monster) : Color(0xD9, 0x4A, 0x4A);
+        }
+
+        if (creature->isNpc()) {
+            return !colors.npc.empty() ? Color(colors.npc) : Color(0x4E, 0xC3, 0xD9);
+        }
+
+        if (creature->isPlayer()) {
+            return !colors.player.empty() ? Color(colors.player) : Color(0x7E, 0xE0, 0x6A);
+        }
+
+        return Color(0xFF, 0xD7, 0x00);
+    };
+
+    if (m_mouseHoverCreatureSquare && m_mouseHoverCreatureSquare != mouseHoveredCreature)
+        m_mouseHoverCreatureSquare->hideHoverSquare();
+
+    if (mouseHoveredCreature) {
+        mouseHoveredCreature->showHoverSquare(getHoverColor(mouseHoveredCreature));
+        m_mouseHoverCreatureSquare = mouseHoveredCreature;
+    } else {
+        if (m_mouseHoverCreatureSquare)
+            m_mouseHoverCreatureSquare->hideHoverSquare();
+        m_mouseHoverCreatureSquare = nullptr;
     }
 
     Position _camera = m_posInfo.camera;

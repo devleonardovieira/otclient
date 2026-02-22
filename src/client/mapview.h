@@ -290,6 +290,7 @@ private:
     PainterShaderProgramPtr m_nextShader;
     LightViewPtr m_lightView;
     CreaturePtr m_followingCreature;
+    CreaturePtr m_mouseHoverCreatureSquare;
 
     MapPosInfo m_posInfo;
     Otc::FloorViewMode m_floorViewMode{ Otc::NORMAL };

@@ -90,6 +90,8 @@ public:
     void removeTimedSquare() { m_showTimedSquare = false; }
     void showStaticSquare(const Color& color) { m_showStaticSquare = true; m_staticSquareColor = color; }
     void hideStaticSquare() { m_showStaticSquare = false; }
+    void showHoverSquare(const Color& color);
+    void hideHoverSquare();
 
     // walk related
     void turn(Otc::Direction direction);
@@ -317,6 +319,7 @@ private:
 
     Color m_timedSquareColor{ Color::white };
     Color m_staticSquareColor{ Color::white };
+    Color m_hoverSquareColor{ Color(0xFF, 0xD7, 0x00) };
     Color m_informationColor{ Color::white };
 
     Bounce m_bounce;
@@ -370,6 +373,7 @@ private:
     bool m_allowAppearWalk{ false };
     bool m_showTimedSquare{ false };
     bool m_showStaticSquare{ false };
+    bool m_showHoverSquare{ false };
     bool m_cameraFollowing{ false };
 
     bool m_removed{ true };
@@ -406,6 +410,8 @@ private:
     std::vector<AfterimageSnapshot> m_afterimages;
     bool m_afterimageEnabled{ false };
     ticks_t m_lastAfterimageSpawn{ 0 };
+    ticks_t m_hoverSquareLastUpdate{ 0 };
+    float m_hoverSquareOpacity{ 0.f };
 };
 
 // @bindclass
