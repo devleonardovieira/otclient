@@ -11,7 +11,7 @@ TextListLabel < Label
 MainWindow
   id: outfitEditorWindow
   text: Outfit Editor
-  size: 850 700
+  size: 900 800
   @onEscape: OutfitEditor.hide()
 
   TextEdit
@@ -68,6 +68,18 @@ MainWindow
         width: 64
         height: 64
 
+      UIWidget
+        id: targetPreview
+        anchors.top: creaturePreview.top
+        anchors.left: creaturePreview.left
+        width: 1
+        height: 1
+        image-source: ~
+        image-smooth: false
+        visible: false
+        focusable: false
+        phantom: true
+
       // Simulated Elements inside Preview
       Label
         id: namePreview
@@ -103,7 +115,6 @@ MainWindow
         anchors.left: healthPreview.left
         margin-top: 3
 
-    // Controls
     Label
       id: dirLabel
       text: Direction:
@@ -122,11 +133,27 @@ MainWindow
       margin-left: 5
 
     Label
-      id: xLabel
-      text: Offset X:
+      id: typeLabel
+      text: Type:
       anchors.top: dirLabel.bottom
       anchors.left: dirLabel.left
-      margin-top: 20
+      margin-top: 50
+      width: 70
+
+    ComboBox
+      id: offsetTypeCombo
+      anchors.verticalCenter: typeLabel.verticalCenter
+      anchors.left: typeLabel.right
+      anchors.right: parent.right
+      margin-right: 40
+      margin-left: 5
+
+    Label
+      id: xLabel
+      text: Offset X:
+      anchors.top: typeLabel.bottom
+      anchors.left: dirLabel.left
+      margin-top: 50
       width: 70
 
     SpinBox

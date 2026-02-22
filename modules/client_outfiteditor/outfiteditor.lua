@@ -4,12 +4,14 @@ local window
 local outfitList
 local creaturePreview
 local directionCombo
+local offsetTypeCombo
 local offsetX
 local offsetY
 local searchInput
 local previewName
 local previewLifeBar
 local previewManaBar
+local previewTarget
 local previewLifeBarBaseWidth
 local previewLifeBarBaseHeight
 local previewManaBarBaseWidth
@@ -27,6 +29,100 @@ local offsetsCache = {}
 local modifiedOutfits = {}
 local currentOutfitId = 1
 local currentOutfitData = nil
+local currentOffsetType = "healthbar"
+
+local DIRECTIONS = { "north", "east", "south", "west" }
+local OFFSET_TYPES = { "healthbar", "outfit", "target" }
+local OFFSET_TYPE_LABELS = {
+  healthbar = "Health Bar",
+  outfit = "Outfit",
+  target = "Target"
+}
+
+local function isDirectionKey(value)
+  if not value then return false end
+  value = value:lower()
+  for _, dir in ipairs(DIRECTIONS) do
+    if dir == value then
+      return true
+    end
+  end
+  return false
+end
+
+local function isOffsetTypeKey(value)
+  if not value then return false end
+  value = value:lower()
+  for _, typeName in ipairs(OFFSET_TYPES) do
+    if typeName == value then
+      return true
+    end
+  end
+  return false
+end
+
+local function copyPoint(point)
+  if not point then return nil end
+  return { x = point.x, y = point.y }
+end
+
+local function ensureOutfitDir(cache, outfitId, dir)
+  cache[outfitId] = cache[outfitId] or {}
+  cache[outfitId][dir] = cache[outfitId][dir] or {}
+  return cache[outfitId][dir]
+end
+
+local function getGameOffsetByType(outfitId, direction, offsetType)
+  if offsetType == "healthbar" then
+    if g_game.getOutfitHealthBarOffset then
+      return g_game.getOutfitHealthBarOffset(outfitId, direction)
+    end
+    if g_game.getOutfitOffset then
+      return g_game.getOutfitOffset(outfitId, direction)
+    end
+  elseif offsetType == "outfit" then
+    if g_game.getOutfitSpriteOffset then
+      return g_game.getOutfitSpriteOffset(outfitId, direction)
+    end
+  elseif offsetType == "target" then
+    if g_game.getOutfitTargetOffset then
+      return g_game.getOutfitTargetOffset(outfitId, direction)
+    end
+  end
+
+  return { x = 0, y = 0 }
+end
+
+local function setGameOffsetByType(outfitId, direction, offsetType, point)
+  if offsetType == "healthbar" then
+    if g_game.setOutfitHealthBarOffset then
+      g_game.setOutfitHealthBarOffset(outfitId, direction, point)
+      return
+    end
+    if g_game.setOutfitOffset then
+      g_game.setOutfitOffset(outfitId, direction, point)
+      return
+    end
+  elseif offsetType == "outfit" then
+    if g_game.setOutfitSpriteOffset then
+      g_game.setOutfitSpriteOffset(outfitId, direction, point)
+      return
+    end
+  elseif offsetType == "target" then
+    if g_game.setOutfitTargetOffset then
+      g_game.setOutfitTargetOffset(outfitId, direction, point)
+      return
+    end
+  end
+end
+
+local function getEffectiveOffsetPoint(outfitId, direction, dirStr, offsetType)
+  local pt = getGameOffsetByType(outfitId, direction, offsetType) or { x = 0, y = 0 }
+  if offsetsCache[outfitId] and offsetsCache[outfitId][dirStr] and offsetsCache[outfitId][dirStr][offsetType] then
+    pt = offsetsCache[outfitId][dirStr][offsetType]
+  end
+  return pt
+end
 
 local function clearEditorWidgetRefs()
   outfitList = nil
@@ -34,12 +130,14 @@ local function clearEditorWidgetRefs()
   previewName = nil
   previewLifeBar = nil
   previewManaBar = nil
+  previewTarget = nil
   previewLifeBarBaseWidth = nil
   previewLifeBarBaseHeight = nil
   previewManaBarBaseWidth = nil
   previewManaBarBaseHeight = nil
   previewManaBarBaseMarginTop = nil
   directionCombo = nil
+  offsetTypeCombo = nil
   offsetX = nil
   offsetY = nil
   searchInput = nil
@@ -167,9 +265,92 @@ local function applyPreviewSizeFromMapScale()
   return previewSize / (spriteSize * 2)
 end
 
+local function updateTargetPreviewOverlay(nativeSize, spriteSize, previewScale)
+  if not previewTarget or not creaturePreview or not currentOutfitId then
+    return
+  end
+
+  if currentOffsetType ~= "target" then
+    previewTarget:setVisible(false)
+    return
+  end
+
+  local dirOption = directionCombo and directionCombo:getCurrentOption()
+  if not dirOption or not dirOption.data then
+    previewTarget:setVisible(false)
+    return
+  end
+
+  local dir = dirOption.data.dir
+  local dirStr = dirOption.text:lower()
+  local targetPt = getEffectiveOffsetPoint(currentOutfitId, dir, dirStr, "target") or { x = 0, y = 0 }
+  local outfitPt = getEffectiveOffsetPoint(currentOutfitId, dir, dirStr, "outfit") or { x = 0, y = 0 }
+  local totalTargetPt = { x = (outfitPt.x or 0) + (targetPt.x or 0), y = (outfitPt.y or 0) + (targetPt.y or 0) }
+
+  spriteSize = spriteSize or (g_gameConfig.getSpriteSize and g_gameConfig.getSpriteSize() or 32)
+  if spriteSize <= 0 then
+    previewTarget:setVisible(false)
+    return
+  end
+  nativeSize = nativeSize or spriteSize
+  previewScale = previewScale or (creaturePreview:getWidth() / (spriteSize * 2))
+  if previewScale <= 0 then
+    previewTarget:setVisible(false)
+    return
+  end
+
+  local thingSizeTiles = 1
+  if g_things and g_things.getThingType then
+    local thingType = g_things.getThingType(currentOutfitId, ThingCategoryCreature)
+    if thingType then
+      thingSizeTiles = math.max(thingType:getWidth() or 1, thingType:getHeight() or 1)
+    end
+  end
+
+  local thingSize = thingSizeTiles * spriteSize
+  local texturePath = "/images/targetselector/white" .. thingSize .. ".png"
+  local hasTexture = g_resources and g_resources.fileExists and g_resources.fileExists(texturePath)
+
+  local scaledThing = thingSize * previewScale
+
+  -- Match Creature::draw selection-square anchor with the same base used in healthbar preview.
+  local left = (nativeSize / 2 + spriteSize / 2 + totalTargetPt.x - thingSize / 2) * previewScale
+  local top = (nativeSize / 2 + spriteSize / 2 + totalTargetPt.y - thingSize / 2) * previewScale
+
+  local sizePx = math.max(1, roundToInt(scaledThing))
+  previewTarget:setWidth(sizePx)
+  previewTarget:setHeight(sizePx)
+  previewTarget:setMarginLeft(roundToInt(left))
+  previewTarget:setMarginTop(roundToInt(top))
+
+  previewTarget:removeAnchor(AnchorTop)
+  previewTarget:removeAnchor(AnchorLeft)
+  previewTarget:removeAnchor(AnchorRight)
+  previewTarget:removeAnchor(AnchorBottom)
+  previewTarget:removeAnchor(AnchorHorizontalCenter)
+  previewTarget:removeAnchor(AnchorVerticalCenter)
+  previewTarget:addAnchor(AnchorTop, 'creaturePreview', AnchorTop)
+  previewTarget:addAnchor(AnchorLeft, 'creaturePreview', AnchorLeft)
+
+  if hasTexture then
+    previewTarget:setImageSource(texturePath)
+    previewTarget:setImageColor("#FFFFFFFF")
+    previewTarget:setBorderWidth(0)
+  else
+    previewTarget:setImageSource("")
+    previewTarget:setBackgroundColor("#00000000")
+    previewTarget:setBorderColor("#FFFFFFFF")
+    previewTarget:setBorderWidth(2)
+  end
+
+  previewTarget:setVisible(true)
+  previewTarget:lower()
+end
+
 local function parseOffsetsContent(content)
   local parsed = {}
   local currentId = nil
+  local currentDir = nil
   if not content then
     return parsed
   end
@@ -177,16 +358,41 @@ local function parseOffsetsContent(content)
   for line in content:gmatch("[^\r\n]+") do
     local trimmed = line:match("^%s*(.-)%s*$")
     if trimmed and trimmed ~= "" and trimmed ~= "outfits" then
-      local idMatch = trimmed:match("^(%d+)")
+      local idMatch = trimmed:match("^(%d+)%s*$")
       if idMatch then
         currentId = tonumber(idMatch)
+        currentDir = nil
         if currentId then
           parsed[currentId] = parsed[currentId] or {}
         end
-      elseif currentId and trimmed:find(":") then
-        local dir, x, y = trimmed:match("([a-zA-Z]+)%s*:%s*([-%d]+)%s+([-%d]+)")
-        if dir and x and y then
-          parsed[currentId][dir:lower()] = { x = tonumber(x), y = tonumber(y) }
+      elseif currentId then
+        local keyWithValues, xStr, yStr = trimmed:match("^([a-zA-Z]+)%s*:%s*([-%d]+)%s+([-%d]+)%s*$")
+        if keyWithValues and xStr and yStr then
+          local key = keyWithValues:lower()
+          local point = { x = tonumber(xStr), y = tonumber(yStr) }
+          if isDirectionKey(key) then
+            -- Legacy format: "north: x y" maps to healthbar.
+            local dirData = ensureOutfitDir(parsed, currentId, key)
+            dirData.healthbar = point
+            currentDir = key
+          elseif currentDir and isOffsetTypeKey(key) then
+            -- New format:
+            -- north
+            --   healthbar: x y
+            --   outfit: x y
+            --   target: x y
+            local dirData = ensureOutfitDir(parsed, currentId, currentDir)
+            dirData[key] = point
+          end
+        else
+          local keyOnly = trimmed:match("^([a-zA-Z]+)%s*:?%s*$")
+          if keyOnly then
+            keyOnly = keyOnly:lower()
+            if isDirectionKey(keyOnly) then
+              currentDir = keyOnly
+              ensureOutfitDir(parsed, currentId, currentDir)
+            end
+          end
         end
       end
     end
@@ -203,14 +409,29 @@ local function serializeOffsetsContent(data)
   end
   table.sort(ids)
 
-  local dirs = { "north", "east", "south", "west" }
   for _, id in ipairs(ids) do
     content = content .. "  " .. id .. "\n"
     local outfitData = data[id] or {}
-    for _, dir in ipairs(dirs) do
-      local p = outfitData[dir]
-      if p then
-        content = content .. "    " .. dir .. ": " .. p.x .. " " .. p.y .. "\n"
+    for _, dir in ipairs(DIRECTIONS) do
+      local dirData = outfitData[dir]
+      if dirData then
+        local hasAny = false
+        for _, offsetType in ipairs(OFFSET_TYPES) do
+          if dirData[offsetType] then
+            hasAny = true
+            break
+          end
+        end
+
+        if hasAny then
+          content = content .. "    " .. dir .. "\n"
+          for _, offsetType in ipairs(OFFSET_TYPES) do
+            local p = dirData[offsetType]
+            if p then
+              content = content .. "      " .. offsetType .. ": " .. p.x .. " " .. p.y .. "\n"
+            end
+          end
+        end
       end
     end
   end
@@ -265,16 +486,21 @@ function OutfitEditor.create()
   outfitList = window:recursiveGetChildById('outfitList')
   creaturePreview = window:recursiveGetChildById('creaturePreview')
   directionCombo = window:recursiveGetChildById('directionCombo')
+  offsetTypeCombo = window:recursiveGetChildById('offsetTypeCombo')
   offsetX = window:recursiveGetChildById('offsetX')
   offsetY = window:recursiveGetChildById('offsetY')
   searchInput = window:recursiveGetChildById('searchInput')
 
   -- Find simulated elements (siblings of creaturePreview now)
+  previewTarget = window:recursiveGetChildById('targetPreview')
   previewName = window:recursiveGetChildById('namePreview')
   previewLifeBar = window:recursiveGetChildById('healthPreview')
   previewManaBar = window:recursiveGetChildById('manaPreview')
   if previewName and g_gameConfig.getCreatureNameFontName then
     previewName:setFont(g_gameConfig.getCreatureNameFontName())
+  end
+  if previewTarget then
+    previewTarget:setVisible(false)
   end
   if previewName then
     previewName:setColor('#00BC00')
@@ -300,7 +526,7 @@ function OutfitEditor.create()
     previewManaBar:setMarginTop(previewManaBarBaseMarginTop)
   end
 
-  if not outfitList or not creaturePreview or not directionCombo or not offsetX or not offsetY then
+  if not outfitList or not creaturePreview or not directionCombo or not offsetTypeCombo or not offsetX or not offsetY then
     window:destroy()
     window = nil
     return
@@ -313,7 +539,13 @@ function OutfitEditor.create()
   directionCombo:addOption('West', { dir = 3 })
   directionCombo:setCurrentIndex(3) -- Default South
 
+  offsetTypeCombo:addOption(OFFSET_TYPE_LABELS.healthbar, { type = "healthbar" })
+  offsetTypeCombo:addOption(OFFSET_TYPE_LABELS.outfit, { type = "outfit" })
+  offsetTypeCombo:addOption(OFFSET_TYPE_LABELS.target, { type = "target" })
+  offsetTypeCombo:setCurrentIndex(1)
+
   directionCombo.onOptionChange = OutfitEditor.onDirectionChange
+  offsetTypeCombo.onOptionChange = OutfitEditor.onOffsetTypeChange
   offsetX.onValueChange = OutfitEditor.onOffsetChange
   offsetY.onValueChange = OutfitEditor.onOffsetChange
 
@@ -547,9 +779,15 @@ function OutfitEditor.updatePreviewInformation()
   end
 
   local creature = creaturePreview:getCreature()
-
-  local x = offsetX:getValue()
-  local y = offsetY:getValue()
+  local option = directionCombo and directionCombo:getCurrentOption()
+  if not option or not option.data then
+    return
+  end
+  local dir = option.data.dir
+  local dirStr = option.text:lower()
+  local barPt = getEffectiveOffsetPoint(currentOutfitId, dir, dirStr, "healthbar")
+  local x = barPt.x or 0
+  local y = barPt.y or 0
 
   local spriteSize = 32
   if g_gameConfig.getSpriteSize then
@@ -653,29 +891,31 @@ function OutfitEditor.updatePreviewInformation()
     previewName:setMarginLeft(roundToInt(textLeft))
     previewName:setMarginTop(roundToInt(textTop))
   end
+
+  updateTargetPreviewOverlay(nativeSize, spriteSize, previewScale)
 end
 
 function OutfitEditor.updateUIFromOffsets(id)
   -- The corelib ComboBox doesn't always expose getCurrentData
   -- local index = directionCombo:getCurrentIndex() -- Removed as it causes nil error
 
-  local option = directionCombo:getCurrentOption()
-  if not option or not option.data then return end
+  local dirOption = directionCombo:getCurrentOption()
+  if not dirOption or not dirOption.data then return end
 
-  local dir = option.data.dir
-  local dirStr = option.text:lower()
+  local typeOption = offsetTypeCombo and offsetTypeCombo:getCurrentOption()
+  if typeOption and typeOption.data and typeOption.data.type then
+    currentOffsetType = typeOption.data.type
+  else
+    currentOffsetType = "healthbar"
+  end
+
+  local dir = dirOption.data.dir
+  local dirStr = dirOption.text:lower()
 
   creaturePreview:setDirection(dir)
 
-  -- Get from game memory
-  local pt = g_game.getOutfitOffset(id, dir)
+  local pt = getEffectiveOffsetPoint(id, dir, dirStr, currentOffsetType)
   if not pt then pt = { x = 0, y = 0 } end
-
-  -- Check if we have it in cache (loaded from file) - PRIORITY: CACHE
-  -- If the user defined an offset in the file, we must show it, even if C++ has something else.
-  if offsetsCache[id] and offsetsCache[id][dirStr] then
-    pt = offsetsCache[id][dirStr]
-  end
 
   isSyncingOffsets = true
   if offsetX:getValue() ~= pt.x then
@@ -700,6 +940,14 @@ function OutfitEditor.onDirectionChange()
   end
 end
 
+function OutfitEditor.onOffsetTypeChange()
+  if currentOutfitId then
+    OutfitEditor.updateUIFromOffsets(currentOutfitId)
+  else
+    OutfitEditor.updatePreviewInformation()
+  end
+end
+
 function OutfitEditor.onOffsetChange()
   if not currentOutfitId then return end
   if isSyncingOffsets then
@@ -709,14 +957,18 @@ function OutfitEditor.onOffsetChange()
 
   local option = directionCombo:getCurrentOption()
   if not option or not option.data then return end
+  local typeOption = offsetTypeCombo and offsetTypeCombo:getCurrentOption()
+  if not typeOption or not typeOption.data or not typeOption.data.type then return end
+
   local dir = option.data.dir
-  local dirStr = option.text
+  local dirStr = option.text:lower()
+  local offsetType = typeOption.data.type
 
   local x = offsetX:getValue()
   local y = offsetY:getValue()
 
   -- Update game
-  g_game.setOutfitOffset(currentOutfitId, dir, { x = x, y = y })
+  setGameOffsetByType(currentOutfitId, dir, offsetType, { x = x, y = y })
 
   -- Force redraw of preview
   if currentOutfitData then
@@ -726,8 +978,8 @@ function OutfitEditor.onOffsetChange()
   OutfitEditor.updatePreviewInformation()
 
   -- Update cache
-  if not offsetsCache[currentOutfitId] then offsetsCache[currentOutfitId] = {} end
-  offsetsCache[currentOutfitId][dirStr:lower()] = { x = x, y = y }
+  local dirData = ensureOutfitDir(offsetsCache, currentOutfitId, dirStr)
+  dirData[offsetType] = { x = x, y = y }
   modifiedOutfits[currentOutfitId] = true
 end
 
@@ -758,14 +1010,19 @@ function OutfitEditor.saveOffsets()
     merged = parseOffsetsContent(currentContent)
   end
 
-  local dirs = { "north", "east", "south", "west" }
   for outfitId, _ in pairs(modifiedOutfits) do
     local cached = offsetsCache[outfitId]
     if cached then
       merged[outfitId] = merged[outfitId] or {}
-      for _, dir in ipairs(dirs) do
+      for _, dir in ipairs(DIRECTIONS) do
         if cached[dir] then
-          merged[outfitId][dir] = { x = cached[dir].x, y = cached[dir].y }
+          merged[outfitId][dir] = merged[outfitId][dir] or {}
+          for _, offsetType in ipairs(OFFSET_TYPES) do
+            local p = cached[dir][offsetType]
+            if p then
+              merged[outfitId][dir][offsetType] = copyPoint(p)
+            end
+          end
         end
       end
     end

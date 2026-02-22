@@ -130,7 +130,7 @@ public:
     Point getDrawOffset() { return Point(-1, -1) * getDrawElevation() + m_walkOffset; }
     int getDrawElevation();
 
-    Otc::Direction getDirection() { return m_direction; }
+    Otc::Direction getDirection() const { return m_direction; }
     const auto& getOutfit() { return m_outfit; }
     const Light& getLight() const override;
     bool hasLight() const override { return Thing::hasLight() || getLight().intensity > 0; }
@@ -231,6 +231,8 @@ protected:
 
     void onDetachPaperdoll(const PaperdollPtr& paperdoll);
     void setPaperdollsDirection(Otc::Direction dir) const;
+    Point getOutfitVisualOffset() const;
+    Point getTargetVisualOffset() const;
 
     ThingType* getThingType() const override;
     ThingType* getMountThingType() const;

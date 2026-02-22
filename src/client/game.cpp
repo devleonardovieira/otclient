@@ -69,6 +69,14 @@ void Game::loadOutfitOffsets()
 
         if (!outfitsNode) return;
 
+        const auto parseDirection = [](const std::string& dirStr) -> int {
+            if (dirStr == "north") return Otc::North;
+            if (dirStr == "east") return Otc::East;
+            if (dirStr == "south") return Otc::South;
+            if (dirStr == "west") return Otc::West;
+            return -1;
+        };
+
         for (const auto& node : outfitsNode->children()) {
             int outfitId = 0;
             try {
@@ -78,17 +86,36 @@ void Game::loadOutfitOffsets()
             }
 
             for (const auto& child : node->children()) {
-                std::string dirStr = child->tag();
-                Point offset = child->value<Point>();
-                
-                int dir = -1;
-                if (dirStr == "north") dir = Otc::North;
-                else if (dirStr == "east") dir = Otc::East;
-                else if (dirStr == "south") dir = Otc::South;
-                else if (dirStr == "west") dir = Otc::West;
-                
-                if (dir != -1) {
-                    m_outfitOffsets[outfitId][dir] = offset;
+                const std::string dirStr = child->tag();
+                const int dir = parseDirection(dirStr);
+                if (dir == -1) {
+                    continue;
+                }
+
+                auto& slot = m_outfitOffsets[outfitId][dir];
+
+                // Legacy format:
+                //   north: x y
+                // New format:
+                //   north
+                //     healthbar: x y
+                //     outfit: x y
+                //     target: x y
+                if (child->children().empty()) {
+                    slot.healthbar = child->value<Point>();
+                    continue;
+                }
+
+                for (const auto& part : child->children()) {
+                    const std::string key = part->tag();
+                    const Point offset = part->value<Point>();
+
+                    if (key == "healthbar" || key == "namebar" || key == "info")
+                        slot.healthbar = offset;
+                    else if (key == "outfit" || key == "sprite")
+                        slot.outfit = offset;
+                    else if (key == "target")
+                        slot.target = offset;
                 }
             }
         }
@@ -99,19 +126,65 @@ void Game::loadOutfitOffsets()
 
 void Game::setOutfitOffset(int outfitId, Otc::Direction direction, Point offset)
 {
-    m_outfitOffsets[outfitId][direction] = offset;
+    // Backward-compatible API used by editor/Lua: affects healthbar/info offsets.
+    setOutfitHealthBarOffset(outfitId, direction, offset);
 }
 
 Point Game::getOutfitOffset(int outfitId, Otc::Direction direction)
+{
+    // Backward-compatible API used by editor/Lua: reads healthbar/info offsets.
+    return getOutfitHealthBarOffset(outfitId, direction);
+}
+
+Point Game::getOutfitHealthBarOffset(int outfitId, Otc::Direction direction)
 {
     auto it = m_outfitOffsets.find(outfitId);
     if (it != m_outfitOffsets.end()) {
         auto itDir = it->second.find(direction);
         if (itDir != it->second.end()) {
-            return itDir->second;
+            return itDir->second.healthbar;
         }
     }
     return Point(0, 0);
+}
+
+Point Game::getOutfitSpriteOffset(int outfitId, Otc::Direction direction)
+{
+    auto it = m_outfitOffsets.find(outfitId);
+    if (it != m_outfitOffsets.end()) {
+        auto itDir = it->second.find(direction);
+        if (itDir != it->second.end()) {
+            return itDir->second.outfit;
+        }
+    }
+    return Point(0, 0);
+}
+
+Point Game::getOutfitTargetOffset(int outfitId, Otc::Direction direction)
+{
+    auto it = m_outfitOffsets.find(outfitId);
+    if (it != m_outfitOffsets.end()) {
+        auto itDir = it->second.find(direction);
+        if (itDir != it->second.end()) {
+            return itDir->second.target;
+        }
+    }
+    return Point(0, 0);
+}
+
+void Game::setOutfitHealthBarOffset(int outfitId, Otc::Direction direction, Point offset)
+{
+    m_outfitOffsets[outfitId][direction].healthbar = offset;
+}
+
+void Game::setOutfitSpriteOffset(int outfitId, Otc::Direction direction, Point offset)
+{
+    m_outfitOffsets[outfitId][direction].outfit = offset;
+}
+
+void Game::setOutfitTargetOffset(int outfitId, Otc::Direction direction, Point offset)
+{
+    m_outfitOffsets[outfitId][direction].target = offset;
 }
 
 void Game::terminate()

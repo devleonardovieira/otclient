@@ -138,6 +138,8 @@ void Creature::draw(const Point& dest, const bool drawThings, LightView* /*light
             }
         }
 
+        // Target square must follow the outfit base offset first, then apply target fine-tuning.
+        const Point outfitVisualOffset = (getOutfitVisualOffset() + getTargetVisualOffset()) * g_drawPool.getScaleFactor();
         const auto drawSelectionSquare = [&](const Color& color) {
             const auto thingType = getThingType();
             if (!thingType) {
@@ -151,7 +153,7 @@ void Creature::draw(const Point& dest, const bool drawThings, LightView* /*light
             if (g_resources.fileExists(texturePath)) {
                 const TexturePtr selectionTexture = g_textures.getTexture(texturePath);
                 if (selectionTexture) {
-                    Point centerPos = dest + (m_walkOffset - getDisplacement()) * g_drawPool.getScaleFactor();
+                    Point centerPos = dest + (m_walkOffset - getDisplacement()) * g_drawPool.getScaleFactor() + outfitVisualOffset;
                     centerPos += Point(g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor() / 2, g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor() / 2);
                     centerPos -= Point(thingSize * g_drawPool.getScaleFactor() / 2, thingSize * g_drawPool.getScaleFactor() / 2);
 
@@ -162,16 +164,37 @@ void Creature::draw(const Point& dest, const bool drawThings, LightView* /*light
             }
 
             if (!drawn) {
-                g_drawPool.addBoundingRect(Rect(dest + (m_walkOffset - getDisplacement()) * g_drawPool.getScaleFactor(), Size(g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor())), color, std::max<int>(static_cast<int>(2 * g_drawPool.getScaleFactor()), 1));
+                Point centerPos = dest + (m_walkOffset - getDisplacement()) * g_drawPool.getScaleFactor() + outfitVisualOffset;
+                centerPos += Point(g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor() / 2, g_gameConfig.getSpriteSize() * g_drawPool.getScaleFactor() / 2);
+                centerPos -= Point(thingSize * g_drawPool.getScaleFactor() / 2, thingSize * g_drawPool.getScaleFactor() / 2);
+                g_drawPool.addBoundingRect(Rect(centerPos, Size(thingSize * g_drawPool.getScaleFactor())), color, std::max<int>(static_cast<int>(2 * g_drawPool.getScaleFactor()), 1));
             }
         };
+
+        const ticks_t nowHover = g_clock.millis();
+        if (m_hoverSquareLastUpdate == 0)
+            m_hoverSquareLastUpdate = nowHover;
+        const float hoverDt = std::max<float>(0.f, static_cast<float>(nowHover - m_hoverSquareLastUpdate));
+        m_hoverSquareLastUpdate = nowHover;
+        constexpr float kHoverFadeMs = 120.f;
+        const float hoverDelta = hoverDt / kHoverFadeMs;
+        const float hoverTargetOpacity = m_showHoverSquare ? 1.f : 0.f;
+        if (m_hoverSquareOpacity < hoverTargetOpacity)
+            m_hoverSquareOpacity = std::min(hoverTargetOpacity, m_hoverSquareOpacity + hoverDelta);
+        else if (m_hoverSquareOpacity > hoverTargetOpacity)
+            m_hoverSquareOpacity = std::max(hoverTargetOpacity, m_hoverSquareOpacity - hoverDelta);
 
         if (m_showTimedSquare)
             drawSelectionSquare(m_timedSquareColor);
         if (m_showStaticSquare)
             drawSelectionSquare(m_staticSquareColor);
-        if (m_showHoverSquare)
+        if (m_hoverSquareOpacity > 0.001f) {
+            if (m_hoverSquareOpacity < 0.999f)
+                g_drawPool.setOpacity(m_hoverSquareOpacity, true);
             drawSelectionSquare(m_hoverSquareColor);
+            if (m_hoverSquareOpacity < 0.999f)
+                g_drawPool.resetOpacity();
+        }
 
         auto _dest = dest + m_walkOffset * g_drawPool.getScaleFactor();
 
@@ -288,7 +311,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
     auto creatureOffset = Point(16 - displacementX, -displacementY - 2) + getDrawOffset();
     
     if (m_outfit.isCreature()) {
-        creatureOffset += g_game.getOutfitOffset(m_outfit.getId(), getDirection());
+        creatureOffset += g_game.getOutfitHealthBarOffset(m_outfit.getId(), getDirection());
     }
 
     // Calculate using float precision to avoid subpixel jitter
@@ -582,6 +605,11 @@ void Creature::internalDraw(Point dest, const Color& color)
     };*/
 
     Point originalDest = dest;
+    if (m_outfit.isCreature()) {
+        const Point outfitOffset = getOutfitVisualOffset() * g_drawPool.getScaleFactor();
+        dest += outfitOffset;
+        originalDest += outfitOffset;
+    }
 
     if (!m_jumpOffset.isNull()) {
         const auto& jumpOffset = m_jumpOffset * g_drawPool.getScaleFactor();
@@ -697,6 +725,22 @@ void Creature::internalDraw(Point dest, const Color& color)
         drawAttachedEffect(originalDest, dest, nullptr, true); // On Top
         drawAttachedParticlesEffect(originalDest);
     }
+}
+
+Point Creature::getOutfitVisualOffset() const
+{
+    if (!m_outfit.isCreature())
+        return {};
+
+    return g_game.getOutfitSpriteOffset(m_outfit.getId(), getDirection());
+}
+
+Point Creature::getTargetVisualOffset() const
+{
+    if (!m_outfit.isCreature())
+        return {};
+
+    return g_game.getOutfitTargetOffset(m_outfit.getId(), getDirection());
 }
 
 void Creature::turn(const Otc::Direction direction)
@@ -1315,6 +1359,23 @@ void Creature::addTimedSquare(const uint8_t color)
     g_dispatcher.scheduleEvent([self] {
         self->removeTimedSquare();
     }, g_gameConfig.getVolatileSquareDuration());
+}
+
+void Creature::showHoverSquare(const Color& color)
+{
+    m_hoverSquareColor = color;
+    if (!m_showHoverSquare) {
+        m_showHoverSquare = true;
+        m_hoverSquareLastUpdate = g_clock.millis();
+    }
+}
+
+void Creature::hideHoverSquare()
+{
+    if (m_showHoverSquare) {
+        m_showHoverSquare = false;
+        m_hoverSquareLastUpdate = g_clock.millis();
+    }
 }
 
 void Creature::updateShield()

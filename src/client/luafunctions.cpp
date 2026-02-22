@@ -353,6 +353,12 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "getPing", &Game::getPing, &g_game);
     g_lua.bindSingletonFunction("g_game", "getOutfitOffset", &Game::getOutfitOffset, &g_game);
     g_lua.bindSingletonFunction("g_game", "setOutfitOffset", &Game::setOutfitOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "getOutfitHealthBarOffset", &Game::getOutfitHealthBarOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "setOutfitHealthBarOffset", &Game::setOutfitHealthBarOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "getOutfitSpriteOffset", &Game::getOutfitSpriteOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "setOutfitSpriteOffset", &Game::setOutfitSpriteOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "getOutfitTargetOffset", &Game::getOutfitTargetOffset, &g_game);
+    g_lua.bindSingletonFunction("g_game", "setOutfitTargetOffset", &Game::setOutfitTargetOffset, &g_game);
     g_lua.bindSingletonFunction("g_game", "loadOutfitOffsets", &Game::loadOutfitOffsets, &g_game);
     g_lua.bindSingletonFunction("g_game", "getRecivedPacketsCount", &Game::getRecivedPacketsCount, &g_game);
     g_lua.bindSingletonFunction("g_game", "getRecivedPacketsSize", &Game::getRecivedPacketsSize, &g_game);

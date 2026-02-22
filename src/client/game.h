@@ -393,6 +393,12 @@ public:
     int getPing() { return m_ping; }
     Point getOutfitOffset(int outfitId, Otc::Direction direction);
     void setOutfitOffset(int outfitId, Otc::Direction direction, Point offset);
+    Point getOutfitHealthBarOffset(int outfitId, Otc::Direction direction);
+    Point getOutfitSpriteOffset(int outfitId, Otc::Direction direction);
+    Point getOutfitTargetOffset(int outfitId, Otc::Direction direction);
+    void setOutfitHealthBarOffset(int outfitId, Otc::Direction direction, Point offset);
+    void setOutfitSpriteOffset(int outfitId, Otc::Direction direction, Point offset);
+    void setOutfitTargetOffset(int outfitId, Otc::Direction direction, Point offset);
     void loadOutfitOffsets();
     int getRecivedPacketsCount() { return m_protocolGame ? m_protocolGame->getRecivedPacketsCount() : 0; }
     int getRecivedPacketsSize() { return m_protocolGame ? m_protocolGame->getRecivedPacketsSize() : 0; }
@@ -558,7 +564,12 @@ private:
     Timer m_npcFocusTimer;
     uint16_t m_npcFocusWindowMs{ 1500 };
 
-    std::unordered_map<int, std::map<int, Point>> m_outfitOffsets;
+    struct OutfitOffsetSet {
+        Point healthbar{ 0, 0 };
+        Point outfit{ 0, 0 };
+        Point target{ 0, 0 };
+    };
+    std::unordered_map<int, std::map<int, OutfitOffsetSet>> m_outfitOffsets;
 };
 
 extern Game g_game;
