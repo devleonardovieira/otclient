@@ -23,6 +23,7 @@
 #include "gameconfig.h"
 
 #include "framework/core/configmanager.h"
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -212,6 +213,10 @@ void GameConfig::loadTileNode(const OTMLNodePtr& mainNode) {
             m_tileMaxThings = node->value<int>();
         else if (node->tag() == "transparent-floor-view-range")
             m_tileTransparentFloorViewRange = node->value<int>();
+        else if (node->tag() == "player-cover-auto-transparency")
+            m_playerCoverAutoTransparency = node->value<bool>();
+        else if (node->tag() == "player-cover-auto-transparency-opacity")
+            m_playerCoverAutoTransparencyOpacity = std::clamp(node->value<float>(), 0.f, 1.f);
     }
 }
 

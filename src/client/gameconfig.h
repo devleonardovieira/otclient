@@ -48,6 +48,8 @@ public:
     uint8_t getTileMaxElevation() const { return m_tileMaxElevation; }
     uint8_t getTileMaxThings() const { return m_tileMaxThings; }
     uint8_t getTileTransparentFloorViewRange() const { return m_tileTransparentFloorViewRange; }
+    bool isPlayerCoverAutoTransparencyEnabled() const { return m_playerCoverAutoTransparency; }
+    float getPlayerCoverAutoTransparencyOpacity() const { return m_playerCoverAutoTransparencyOpacity; }
 
     bool isDrawingInformationByWidget() { return m_drawInformationByWidget; }
     bool isForcingNewWalkingFormula() const { return m_forceNewWalkingFormula; }
@@ -105,6 +107,8 @@ private:
     uint8_t m_tileMaxElevation{ 24 };
     uint8_t m_tileMaxThings{ 10 };
     uint8_t m_tileTransparentFloorViewRange{ 2 };
+    bool m_playerCoverAutoTransparency{ true };
+    float m_playerCoverAutoTransparencyOpacity{ 0.45f };
 
     // Creature
     bool m_drawInformationByWidget{ false };

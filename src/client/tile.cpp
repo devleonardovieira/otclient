@@ -35,6 +35,7 @@
 #include "framework/core/clock.h"
 #include "framework/core/eventdispatcher.h"
 #include "framework/graphics/drawpoolmanager.h"
+#include <algorithm>
 #include <limits>
 
 Tile::Tile(const Position& position) : m_position(position) {}
@@ -42,6 +43,71 @@ Tile::Tile(const Position& position) : m_position(position) {}
 void updateElevation(const ThingPtr& thing, uint8_t& drawElevation) {
     if (thing->hasElevation())
         drawElevation = std::min<uint8_t>(drawElevation + thing->getElevation(), g_gameConfig.getTileMaxElevation());
+}
+
+namespace {
+bool isPositionWithinThingFootprint(const Position& pos, const Position& thingPos, const int width, const int height)
+{
+    const int px = static_cast<int>(pos.x);
+    const int py = static_cast<int>(pos.y);
+    const int tx = static_cast<int>(thingPos.x);
+    const int ty = static_cast<int>(thingPos.y);
+
+    return px <= tx
+        && py <= ty
+        && px >= tx - (width - 1)
+        && py >= ty - (height - 1);
+}
+
+bool shouldDrawWithPlayerCoverTransparency(const ThingPtr& thing)
+{
+    if (!thing || !thing->isItem() || thing->isGround() || thing->isGroundBorder()) {
+        return false;
+    }
+
+    if (!g_gameConfig.isPlayerCoverAutoTransparencyEnabled()) {
+        return false;
+    }
+
+    if (thing->isMoveable() || thing->isDontHide() || thing->isTranslucent()) {
+        return false;
+    }
+
+    const auto localPlayer = g_game.getLocalPlayer();
+    if (!localPlayer || !localPlayer->canBeSeen()) {
+        return false;
+    }
+
+    const auto thingPos = thing->getPosition();
+    const auto playerPos = localPlayer->getPosition();
+    if (!thingPos.isValid() || !playerPos.isValid() || thingPos.z != playerPos.z) {
+        return false;
+    }
+
+    int width = std::max<int>(thing->getWidth(), 1);
+    int height = std::max<int>(thing->getHeight(), 1);
+    if (width == 1 && height == 1) {
+        const int spriteSize = std::max<int>(g_gameConfig.getSpriteSize(), 1);
+        const int spanFromRealSize = std::max<int>((thing->getRealSize() + spriteSize - 1) / spriteSize, 1);
+        if (spanFromRealSize > 1)
+            height = spanFromRealSize;
+    }
+
+    if (width <= 1 && height <= 1) {
+        return false;
+    }
+
+    if (isPositionWithinThingFootprint(playerPos, thingPos, width, height)) {
+        return true;
+    }
+
+    if (!localPlayer->isWalking()) {
+        return false;
+    }
+
+    const auto fromPos = localPlayer->getLastStepFromPosition();
+    return fromPos.z == thingPos.z && isPositionWithinThingFootprint(fromPos, thingPos, width, height);
+}
 }
 
 void drawThing(const ThingPtr& thing, const Point& dest, const int flags, uint8_t& drawElevation, LightView* lightView = nullptr)
@@ -60,7 +126,18 @@ void drawThing(const ThingPtr& thing, const Point& dest, const int flags, uint8_
         else
             g_drawPool.setDrawOrder(DrawOrder::THIRD);
 
+        const float coverOpacity = g_gameConfig.getPlayerCoverAutoTransparencyOpacity();
+        const bool applyCoverOpacity = (flags & Otc::DrawThings) != 0
+            && coverOpacity < 1.f
+            && shouldDrawWithPlayerCoverTransparency(thing);
+        if (applyCoverOpacity)
+            g_drawPool.setOpacity(coverOpacity, true);
+
         thing->draw(newDest, flags & Otc::DrawThings, lightView);
+
+        if (applyCoverOpacity)
+            g_drawPool.resetOpacity();
+
         updateElevation(thing, drawElevation);
 
         g_drawPool.resetDrawOrder();
