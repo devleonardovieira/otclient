@@ -35,6 +35,7 @@
 #include "framework/core/clock.h"
 #include "framework/core/eventdispatcher.h"
 #include "framework/graphics/drawpoolmanager.h"
+#include <limits>
 
 Tile::Tile(const Position& position) : m_position(position) {}
 
@@ -576,7 +577,8 @@ ThingPtr Tile::getTopUseThing()
 
 CreaturePtr Tile::getTopCreature(const bool checkAround)
 {
-    if (!hasCreatures()) return nullptr;
+    if (!hasCreatures() && !checkAround)
+        return nullptr;
 
     CreaturePtr creature;
     for (const auto& thing : m_things) {
@@ -586,7 +588,7 @@ CreaturePtr Tile::getTopCreature(const bool checkAround)
             return thing->static_self_cast<Creature>();
     }
 
-    if (creature)
+    if (creature && !checkAround)
         return creature;
 
     if (!m_walkingCreatures.empty())
@@ -594,6 +596,9 @@ CreaturePtr Tile::getTopCreature(const bool checkAround)
 
     // check for walking creatures in tiles around
     if (checkAround) {
+        CreaturePtr bestCoverCreature;
+        int bestCoverDistance = std::numeric_limits<int>::max();
+
         for (const auto& pos : m_position.getPositionsAround()) {
             const auto& tile = g_map.getTile(pos);
             if (!tile) continue;
@@ -604,7 +609,46 @@ CreaturePtr Tile::getTopCreature(const bool checkAround)
                 }
             }
         }
+
+        // Large outfit fallback: treat the creature visual footprint as clickable
+        // across all covered SQMs (not only the standing 32x32 tile).
+        const int spriteSize = std::max<int>(g_gameConfig.getSpriteSize(), 1);
+        for (const auto& [id, c] : g_map.getCreatures()) {
+            if (!c || c->getPosition().z != m_position.z)
+                continue;
+
+            const auto cPos = c->getPosition();
+            if (!cPos.isValid())
+                continue;
+
+            const int exactSize = std::max<int>(c->getExactSize(), spriteSize);
+            const int tileSpan = std::max<int>((exactSize + spriteSize - 1) / spriteSize, 1);
+            if (tileSpan <= 1)
+                continue;
+
+            // Creature draw anchor is on its standing tile; larger sprites expand mostly
+            // to top-left. Cover all SQMs in that footprint to allow targeting anywhere.
+            const bool coversX = m_position.x <= cPos.x && m_position.x > (cPos.x - tileSpan);
+            const bool coversY = m_position.y <= cPos.y && m_position.y > (cPos.y - tileSpan);
+            if (!coversX || !coversY)
+                continue;
+
+            const int distance = std::abs(static_cast<int>(cPos.x) - static_cast<int>(m_position.x))
+                + std::abs(static_cast<int>(cPos.y) - static_cast<int>(m_position.y));
+
+            if (!bestCoverCreature || distance < bestCoverDistance
+                || (distance == bestCoverDistance && bestCoverCreature->isLocalPlayer() && !c->isLocalPlayer())) {
+                bestCoverCreature = c;
+                bestCoverDistance = distance;
+            }
+        }
+
+        if (bestCoverCreature)
+            return bestCoverCreature;
     }
+
+    if (creature)
+        return creature;
 
     return nullptr;
 }

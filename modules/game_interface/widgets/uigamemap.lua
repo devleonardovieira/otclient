@@ -122,12 +122,12 @@ function UIGameMap:onMouseRelease(mousePosition, mouseButton)
     if tile then
         lookThing = tile:getTopLookThing()
         useThing = tile:getTopUseThing()
-        creatureThing = tile:getTopCreature()
+        creatureThing = tile:getTopCreature(true)
     end
 
     local autoWalkTile = g_map.getTile(autoWalkPos)
     if autoWalkTile then
-        attackCreature = autoWalkTile:getTopCreature()
+        attackCreature = autoWalkTile:getTopCreature(true)
     end
 
     local ret = modules.game_interface.processMouseAction(mousePosition, mouseButton, autoWalkPos, lookThing, useThing,

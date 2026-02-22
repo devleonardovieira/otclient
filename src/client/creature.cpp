@@ -370,8 +370,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
              m_damageDisplayedHealth = m_healthPercent;
     }
 
-    // health rect is based on background rect, so no worries
-    const int barWidth = healthBarTexture ? (backgroundRect.width() - 2) : 60;
+    const int barWidth = healthBarTexture ? (backgroundRect.width() - (isMonster() ? 4 : 2)) : 60;
     double totalPercent = std::max<double>(m_damageDisplayedHealth, (double)m_healthPercent) + static_cast<double>(m_shieldPercent);
     double scale = 1.0;
     if (totalPercent > 100.0) {
@@ -391,7 +390,7 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
         shieldWidth = std::max(0, barWidth - damageWidth);
     }
 
-    Rect healthRect = backgroundRect.expanded(-1);
+    Rect healthRect = healthBarTexture && isMonster() ? backgroundRect.expanded(-2) : backgroundRect.expanded(-1);
     healthRect.setWidth(healthWidth);
 
     Rect damageRect = backgroundRect.expanded(-1);
@@ -406,18 +405,19 @@ void Creature::drawInformation(const MapPosInfo& mapRect, const Point& dest, con
 
     if ((drawFlags & Otc::DrawBars) && (g_game.getClientVersion() >= 1100 ? !isNpc() : true)) {
         if (healthBarTexture) {
-            g_drawPool.addFilledRect(backgroundRect.expanded(-1), Color::black);
+            if (!isMonster())
+                g_drawPool.addFilledRect(backgroundRect.expanded(-1), Color::black);
         } else {
             g_drawPool.addFilledRect(backgroundRect, Color::black);
         }
         
-        if (damageRect.width() > 0)
-            g_drawPool.addFilledRect(damageRect, Color(250, 100, 100)); // Light Red
+        if (damageRect.width() > 0 && !isMonster())
+            g_drawPool.addFilledRect(damageRect, Color(250, 100, 100));
 
         if (healthWidth > 0)
             g_drawPool.addFilledRect(healthRect, fillColor);
 
-        if (shieldWidth > 0) {
+        if (shieldWidth > 0 && !isMonster()) {
             Rect shieldRect = backgroundRect.expanded(-1);
             shieldRect.setLeft(backgroundRect.left() + 1 + damageWidth);
             shieldRect.setWidth(shieldWidth);
@@ -1106,13 +1106,10 @@ void Creature::terminateWalk()
 
 void Creature::setHealthPercent(const uint8_t healthPercent)
 {
-    static constexpr Color
-        COLOR1(0x00, 0xBC, 0x00),
-        COLOR2(0x50, 0xA1, 0x50),
-        COLOR3(0xA1, 0xA1, 0x00),
-        COLOR4(0xBF, 0x0A, 0x0A),
-        COLOR5(0x91, 0x0F, 0x0F),
-        COLOR6(0x85, 0x0C, 0x0C);
+    const auto& colors = g_configs.getPublicConfig().creatureColors;
+    const Color PLAYER_HEALTH = !colors.player.empty() ? Color(colors.player) : Color(0x7E, 0xE0, 0x6A);
+    const Color MONSTER_HEALTH = !colors.monster.empty() ? Color(colors.monster) : Color(0xD9, 0x4A, 0x4A);
+    const Color NPC_HEALTH = !colors.npc.empty() ? Color(colors.npc) : Color(0x4E, 0xC3, 0xD9);
 
     if (m_healthPercent == healthPercent) return;
 
@@ -1123,18 +1120,15 @@ void Creature::setHealthPercent(const uint8_t healthPercent)
         m_damageDisplayedHealth = healthPercent;
     }
 
-    if (healthPercent > 92)
-        m_informationColor = COLOR1;
-    else if (healthPercent > 60)
-        m_informationColor = COLOR2;
-    else if (healthPercent > 30)
-        m_informationColor = COLOR3;
-    else if (healthPercent > 8)
-        m_informationColor = COLOR4;
-    else if (healthPercent > 3)
-        m_informationColor = COLOR5;
-    else
-        m_informationColor = COLOR6;
+    if (isPlayer()) {
+        m_informationColor = PLAYER_HEALTH;
+    } else if (isMonster()) {
+        m_informationColor = MONSTER_HEALTH;
+    } else if (isNpc()) {
+        m_informationColor = NPC_HEALTH;
+    } else {
+        m_informationColor = PLAYER_HEALTH;
+    }
 
     const uint8_t oldHealthPercent = m_healthPercent;
     m_healthPercent = healthPercent;
