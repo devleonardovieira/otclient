@@ -12,6 +12,7 @@ local previewName
 local previewLifeBar
 local previewManaBar
 local previewTarget
+local previewBackground
 local previewLifeBarBaseWidth
 local previewLifeBarBaseHeight
 local previewManaBarBaseWidth
@@ -30,6 +31,12 @@ local modifiedOutfits = {}
 local currentOutfitId = 1
 local currentOutfitData = nil
 local currentOffsetType = "healthbar"
+local dragOffsetState = {
+  active = false,
+  grabbedWidget = nil,
+  accumX = 0,
+  accumY = 0
+}
 
 local DIRECTIONS = { "north", "east", "south", "west" }
 local OFFSET_TYPES = { "healthbar", "outfit", "target" }
@@ -124,6 +131,22 @@ local function getEffectiveOffsetPoint(outfitId, direction, dirStr, offsetType)
   return pt
 end
 
+local function canStartPreviewDrag(widget)
+  if not widget then
+    return false
+  end
+
+  local wid = widget:getId() or ""
+  if currentOffsetType == "outfit" then
+    return wid == "creaturePreview" or wid == "creaturePreviewBackground"
+  end
+  if currentOffsetType == "target" then
+    return wid == "targetPreview" or wid == "creaturePreview" or wid == "creaturePreviewBackground"
+  end
+
+  return wid == "healthPreview" or wid == "manaPreview" or wid == "namePreview" or wid == "creaturePreview" or wid == "creaturePreviewBackground"
+end
+
 local function clearEditorWidgetRefs()
   outfitList = nil
   creaturePreview = nil
@@ -131,6 +154,7 @@ local function clearEditorWidgetRefs()
   previewLifeBar = nil
   previewManaBar = nil
   previewTarget = nil
+  previewBackground = nil
   previewLifeBarBaseWidth = nil
   previewLifeBarBaseHeight = nil
   previewManaBarBaseWidth = nil
@@ -142,6 +166,10 @@ local function clearEditorWidgetRefs()
   offsetY = nil
   searchInput = nil
   currentOutfitData = nil
+  dragOffsetState.active = false
+  dragOffsetState.grabbedWidget = nil
+  dragOffsetState.accumX = 0
+  dragOffsetState.accumY = 0
 end
 
 local function scaleSizeKeepAspect(width, height, targetWidth, targetHeight)
@@ -485,6 +513,7 @@ function OutfitEditor.create()
 
   outfitList = window:recursiveGetChildById('outfitList')
   creaturePreview = window:recursiveGetChildById('creaturePreview')
+  previewBackground = window:recursiveGetChildById('creaturePreviewBackground')
   directionCombo = window:recursiveGetChildById('directionCombo')
   offsetTypeCombo = window:recursiveGetChildById('offsetTypeCombo')
   offsetX = window:recursiveGetChildById('offsetX')
@@ -548,6 +577,20 @@ function OutfitEditor.create()
   offsetTypeCombo.onOptionChange = OutfitEditor.onOffsetTypeChange
   offsetX.onValueChange = OutfitEditor.onOffsetChange
   offsetY.onValueChange = OutfitEditor.onOffsetChange
+
+  local function bindPreviewDrag(widget)
+    if not widget then return end
+    widget.onMousePress = OutfitEditor.onPreviewDragPress
+    widget.onMouseMove = OutfitEditor.onPreviewDragMove
+    widget.onMouseRelease = OutfitEditor.onPreviewDragRelease
+  end
+
+  bindPreviewDrag(previewBackground)
+  bindPreviewDrag(creaturePreview)
+  bindPreviewDrag(previewTarget)
+  bindPreviewDrag(previewLifeBar)
+  bindPreviewDrag(previewManaBar)
+  bindPreviewDrag(previewName)
 
   -- Populate list with initial range
   if g_game.isOnline() then
@@ -946,6 +989,98 @@ function OutfitEditor.onOffsetTypeChange()
   else
     OutfitEditor.updatePreviewInformation()
   end
+end
+
+function OutfitEditor.onPreviewDragPress(widget, mousePos, mouseButton)
+  if mouseButton ~= MouseLeftButton then
+    return false
+  end
+  if not currentOutfitId or not offsetX or not offsetY then
+    return false
+  end
+  if not canStartPreviewDrag(widget) then
+    return false
+  end
+
+  if dragOffsetState.active and dragOffsetState.grabbedWidget then
+    dragOffsetState.grabbedWidget:ungrabMouse()
+  end
+
+  dragOffsetState.active = true
+  dragOffsetState.grabbedWidget = widget
+  dragOffsetState.accumX = 0
+  dragOffsetState.accumY = 0
+  widget:grabMouse()
+  return true
+end
+
+function OutfitEditor.onPreviewDragMove(widget, mousePos, mouseMoved)
+  if not dragOffsetState.active then
+    return false
+  end
+
+  if not g_mouse.isPressed(MouseLeftButton) then
+    OutfitEditor.onPreviewDragRelease(widget, mousePos, MouseLeftButton)
+    return true
+  end
+
+  local movedX = mouseMoved and mouseMoved.x or 0
+  local movedY = mouseMoved and mouseMoved.y or 0
+  if movedX == 0 and movedY == 0 then
+    return true
+  end
+
+  local spriteSize = g_gameConfig.getSpriteSize and g_gameConfig.getSpriteSize() or 32
+  local previewScale = creaturePreview and (creaturePreview:getWidth() / (spriteSize * 2)) or 0
+  if previewScale <= 0 then
+    return true
+  end
+
+  dragOffsetState.accumX = dragOffsetState.accumX + (movedX / previewScale)
+  dragOffsetState.accumY = dragOffsetState.accumY + (movedY / previewScale)
+
+  local stepX = 0
+  local stepY = 0
+  if dragOffsetState.accumX >= 1 then
+    stepX = math.floor(dragOffsetState.accumX)
+  elseif dragOffsetState.accumX <= -1 then
+    stepX = math.ceil(dragOffsetState.accumX)
+  end
+
+  if dragOffsetState.accumY >= 1 then
+    stepY = math.floor(dragOffsetState.accumY)
+  elseif dragOffsetState.accumY <= -1 then
+    stepY = math.ceil(dragOffsetState.accumY)
+  end
+
+  if stepX == 0 and stepY == 0 then
+    return true
+  end
+
+  dragOffsetState.accumX = dragOffsetState.accumX - stepX
+  dragOffsetState.accumY = dragOffsetState.accumY - stepY
+
+  offsetX:setValue(offsetX:getValue() + stepX)
+  offsetY:setValue(offsetY:getValue() + stepY)
+  return true
+end
+
+function OutfitEditor.onPreviewDragRelease(widget, mousePos, mouseButton)
+  if not dragOffsetState.active then
+    return false
+  end
+  if mouseButton ~= MouseLeftButton and g_mouse.isPressed(MouseLeftButton) then
+    return false
+  end
+
+  dragOffsetState.active = false
+  dragOffsetState.accumX = 0
+  dragOffsetState.accumY = 0
+  if dragOffsetState.grabbedWidget then
+    dragOffsetState.grabbedWidget:ungrabMouse()
+    dragOffsetState.grabbedWidget = nil
+  end
+  return true
 end
 
 function OutfitEditor.onOffsetChange()

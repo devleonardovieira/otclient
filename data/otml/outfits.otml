@@ -1,15 +1,6 @@
 outfits
-  13
-    north
-      healthbar: -19 -11
-    east
-      healthbar: -19 -11
-    south
-      healthbar: -19 -11
-    west
-      healthbar: -19 -11
   1358
     south
-      healthbar: -46 -32
-      outfit: 7 0
-      target: -9 -7
+      healthbar: -56 -28
+      outfit: -13 3
+      target: -18 -28
